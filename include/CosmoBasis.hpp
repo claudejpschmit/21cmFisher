@@ -15,6 +15,7 @@ class CosmoBasis {
         void generate_params(map<string,double> params);
         void show_params(map<string, double> params);
         double sph_bessel_camb(int l, double x);
+        map<string, double> give_fiducial_params();
     
     protected:
         void check_params(map<string, double> params);

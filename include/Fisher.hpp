@@ -6,6 +6,7 @@
 #include <string>
 #include "stdafx.h"
 #include "interpolation.h"
+#include <fstream>
 
 using namespace alglib;
 using namespace arma;
@@ -23,6 +24,9 @@ class FisherInterface {
        
         /* Variables */
         AnalysisInterface* analysis;
+        map<string,double> fiducial_params, current_params;
+        ofstream Fl_file;
+
 
 };
 

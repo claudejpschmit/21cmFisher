@@ -8,8 +8,6 @@ class AnalysisInterface {
         //  be it k's or f's or z's or whatever.
         //  The Fisher Method will worry about how to use that.
         virtual double Cl(int l, double x1, double x2);
-
-    protected:
         ModelInterface* model;
 };
 

@@ -19,3 +19,8 @@ double CosmoBasis::E(double z)
     return 0;
 }
 
+map<string, double> CosmoBasis::give_fiducial_params();
+{
+    return fiducial_params;
+}
+
