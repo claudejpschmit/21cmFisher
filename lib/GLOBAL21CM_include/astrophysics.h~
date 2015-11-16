@@ -1,0 +1,268 @@
+// astrophysics.h
+// Contains prototypes and constants needed for calculating atomic
+// levels for spectroscopy calculations
+
+#ifndef ASTROPHYSICS_H
+#define ASTROPHYSICS_H
+
+#include "dcosmology.h"
+#include "spline.h"
+#include "spline2D.h"
+
+// Hated cgs units used for ease of connection to astronomy texts
+const double BOHRA0(0.52918e-8);     // Bohr radius in cm 
+const double PLANCKCONSTANT(6.62607e-27);     // h in cgs
+const double RYDBERG_CGS(2.1798719e-11);    // Rydberg in cgs
+const double RYDBERG(13.60569172);          // Rydberg in Electron volts
+const double ELECTRONCHARGE_CGS(4.8033e-10);   //Electron charge in esu units
+const double NULYMANLIMIT(3.28988e15);  //Lyman limit frequency in cgs
+const double SIGMATHOMSON(6.65246e-25); //Thomson scattering x-section (cgs)
+const double RADIATIONA(7.5657e-15); //BB energy density erg cm^-3 K^-4
+
+const double YP(0.247);   //Primordial Helium mass fraction
+const double FHE(YP/4.0/(1.0-YP));  //Primodial He/H ratio
+const double SOLARMASS(1.989e33); //Mass of sun in grams
+const double JANSKY(1.0e-23);  //erg s^-1 cm^-2 Hz^-1
+
+
+//star formation parameters
+const double CLUMPING(2.0);
+const double ZSFR(45.0);  // must be less than 50.0
+const double ZLOW(2.5);   // must be larger than 0.1
+
+const int blflag(0);
+const int lynmax(23); //Maximum level contributing to Lyn
+
+const double XrayEmin(200.0);  //minimum x-ray energy
+const double XrayEmax(1.0e4);  //maximum xray energy
+
+const int MASSFCN(1);  //0: PS  1: ST 2: Jenkins
+const int clumping_flag(0);  //use 2D clumping spline?
+const double NLYA0(6950.0);  //normalisation for flya
+
+
+
+class Astrophysics {
+
+ public:
+  Astrophysics(Cosmology *c1, int popflag_in, int xrayflag_in, int lyaxray_in, double fxray_in);
+  ~Astrophysics();
+
+  //Member functions
+  double getFSTAR(void);
+  double getFESC(void);
+  double getNION(void);
+  double getNLYA(void);
+  double getFLYA(void);
+  double getZeta(void);
+  int getPopflag(void);
+  int getLyaXray(void);
+  double getFXRAY(void);
+  double clumpingIntMEHR(double ldeltai);
+  double volumeIntMEHR(double ldeltai);
+  double getZReion();
+  void setCosmology(Cosmology *c1);
+
+  // Utility functions
+  void initAstrophysics(double fstar, double fesc, double nion, double fx, double nlya, int popflag1, int xrayflag1, int lyaxray1);
+  void setFstar(double fstar);
+  void setNION(double nion);
+  void setFX(double fx);
+  void setFLYA(double flya);
+
+  //redshift dependent astrophysics
+  double getNlyaZ(double z); 
+  double getZetaZ(double z);
+  double getFxrayZ(double z);
+  double getFstarZ(double z);
+
+  // Hydrogen Transition Probability function
+  double hydrogenFreq(double n, double np);
+  double hydrogenWave(double n, double np);
+  double hydrogenEnergy(double n, double np);
+
+
+  //  Math functions for Hypergeometric Functions
+  double intPochhammer(double a, double k);
+  double term2F1(double a, double b, double c, double x);
+  double factorial(double n);
+
+  //Photoionisation cross sections
+  double xsectionPhotoIonise(double nu, double Z);
+  double gaunt1F(double x, double z);
+  double mfpPhotoIonise(double energy, double z, double xfree);
+  double xsectionPhotoIoniseGen(double nu, int z, int n);
+
+  //Starburst functions
+  double lumTotStarBurst(double SFR, double z);
+  double lumNuStarBurst(double nu,double SFR, double z);
+ 
+  //SNr functions
+  double lumTotSNr(double SFR, double z);
+  double lumNuSNr(double nu,double SFR, double z);
+
+  //Mini-Quasar functions
+  double lumTotMiniQuasar(double SFR, double z);
+  double lumNuMiniQuasar(double nu,double SFR, double z);
+
+  //Primary photoelectron fractions
+  double fracPrimaryElectron(double x, int iflag);
+
+  //lyman alpha flux
+  double lyaFlux(double z);
+  double sourceEmission(double nu, double z);
+  double lymanZMax(double z, double n);
+  double lyaRecycle(double n);
+  double getZHII(double z);
+
+  //xray emission 
+  double xrayFlux(double z);
+  double sourceEmissionXray(double E, double z);
+  double xrayHeating(double z, double xe);
+  double XrayTau(double z, double zp, double E);
+  double lyafluxXray(double z, double xe);
+
+  //radio flux
+  double radioFlux(double nu, double z);
+  double radioEmission(double nu, double z);
+
+  //star formation
+  double globalSFR(double z);
+  double globalSFRsim(double z);
+  double globalSFRcol(double z);
+
+  //Compton heating rate
+  double heatingCompton(double z, double Tgas, double xfree, Cosmology *c);
+
+  //spline fcoll
+  double splineFColl(double zuse, Cosmology *c);
+  double dfcdzFast(double z);
+
+  //Global temperature + ionization history
+  void globalHistory(void);
+  void getTIGM(double zin, double result[]);
+  void getTIGMnum(double zin, double result[]);
+  void getTIGMcont(double zin, double result[]);
+
+  double findZReion(void);
+  double findZReionDetail(void);
+
+  double getTK(double z);
+  double getXI(double z);
+  double getXE(double z);
+  double getTCmb(double z);
+
+  //Calculate optical depth to SLS
+  double getTauCMB();
+
+  //Clumping factor
+  double getClumpingMEHR(double Deltai, double z);
+  double getVolumeMEHR(double Deltai, double z);
+  void initPVParamMEHR(double z);
+  double getMEHRindex(double z);
+  double deltaIMEHR(double z, double xi);
+  double clumpingMEHR(double z, double xi);
+
+  //RECFAST related functions
+  void callRECFAST(void);
+  void useRECFAST(double z, double result[]);
+  void getRECFAST(double z, double result[]);
+  double splineRECFASTT(double zuse);
+  double splineRECFASTX(double zuse);
+
+  //halo formation functions
+  double jeansMassFull(double z, double tk);
+  double filterMassFull(double z);
+
+  //clumping 2D spline
+  void setClumping();
+  double getClumping(double z, double xi);
+
+ protected:
+  double omb;
+  double h;
+  double ombhh;
+
+  double FSTAR;
+  double FESC;
+  double NION;
+  double FXRAY;
+  double FLYA;
+  int popflag;
+
+  int xrayflag;  //1: SB  2: SNR  3: mini-quasar
+  int lyaxray; //use lya from xrays: 1: yes 0: no 2: use only lya from x-ray
+  int sourceflag;
+
+  double STARBURSTAGE;  //duration of starburst in years
+  double ZREION;
+
+  Cosmology *c;
+
+  int globalHistoryFlag;
+  Spline globalTK;
+  Spline globalXI;
+  Spline globalXE;
+  Spline MEHRclumping;
+  Spline MEHRvolume;
+  Spline2D clumpingSP;
+
+  //  int lyaHistoryFlag;
+  //Spline globalLya;
+  //Spline globalDJalphaXDZ;
+};
+
+//global history integration
+void setDerivsHistory(double z, double y[],double dy[],Cosmology *c1,Astrophysics *a1,int iflag);
+void derivsHistory(double z, double y[], double dy[]);
+
+//CMB optical depth
+double setTauInt(double z, double zri, Cosmology *c1, Astrophysics *a1,int iflag);
+double getTauInt(double z);
+
+//clumping factor functions
+double getPVNormMEHR(double C0);
+double setPVNormMEHR(double beta1, double C0, double delta01,int iflag);
+double PVMEHR(double Delta, double A, double beta, double C0, double delta0);
+double setPVMEHR(double Delta, double A1, double beta1, double C01, double delta01, int iflag);
+double getPVMEHR(double Delta);
+double getDeltaPVMEHR(double Delta);
+double getDelta2PVMEHR(double Delta);
+double getlPVMEHR(double lDelta);
+double getlDeltaPVMEHR(double lDelta);
+double getlDelta2PVMEHR(double lDelta);
+double getlDelta3PVMEHR(double lDelta);
+
+double setDeltaIMEHR(double deltai, double xi1, Astrophysics *a1, int iflag);
+double dummyDeltaIMEHR(double deltai);
+
+//Lyman alpha flux
+double setDJalphaDzDn(double n1, double z1, double zp, Cosmology *c1, Astrophysics *a1, int iflag);
+double getDJalphaDzDn(double zp);
+double setDJalphaDz(double z1,double zp,Cosmology *c1, Astrophysics *a1, int iflag);
+double getDJalphaDz(double zp);
+
+//Xray flux
+double setDJxrayDzDE(double E, double z1, double zp, Cosmology *c1, Astrophysics *a1,int iflag);
+double getDJxrayDzDE(double E, double zp);
+double getDJxrayDz(double zp);
+double getDJxrayDlE(double lE);
+
+//xray heating
+double getDLambdaXrayDz(double zp);
+double getDLambdaXrayDlE(double lE);
+double getDLambdaXrayDzDE(double E,double zp, Astrophysics *a1, int iflag);
+//xray optical depth
+double setXrayTau(double z1, double zp, double E1, Cosmology *c1, Astrophysics *a1,int iflag);
+double getXrayTau(double zp);
+
+//lya flux from xray excitation of HI
+double getDJalphaXrayDz(double zp);
+double getDJalphaXrayDlE(double lE);
+double getDJalphaXrayDzDE(double E, double zp,Astrophysics *a1, Cosmology *c1, int iflag);
+
+//filter mass dummy function
+double setFilterMassKernel(double z, Astrophysics *a1, int iflag);
+double filterMassKernel(double z);
+
+#endif

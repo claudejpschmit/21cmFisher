@@ -1,0 +1,6 @@
+
+recfast : recfast.for
+	ifort -o recfast recfast.for
+
+clean :
+	rm recfast

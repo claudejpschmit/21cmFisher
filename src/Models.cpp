@@ -1,6 +1,121 @@
 #include "Model.hpp"
-#include "Integrator.hpp"
 #include "Helper.hpp"
+#include "Integrator.hpp"
+ModelInterface::ModelInterface(map<string,double> params)
+    :
+        CosmoBasis(params)
+{}
+
+ModelInterface::~ModelInterface()
+{}
+
+double ModelInterface::Pkz_interp(double k, double z, int Pk_index)
+{
+    return 0;
+}
+
+double ModelInterface::T21_interp(double z, int Tb_index)
+{
+    return 0;
+}
+
+double ModelInterface::q_interp(double z, int q_index)
+{
+    return 0;
+}
+
+double ModelInterface::r_interp(double z)
+{
+    return 0;
+}
+
+double ModelInterface::Hf_interp(double z)
+{
+    return 0;
+}
+
+double ModelInterface::qp_interp(double z, int q_index)
+{
+    return 0;
+}
+
+double ModelInterface::hubble_h(int q_index)
+{
+    return 0;
+}
+
+void ModelInterface::update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
+{}
+
+void ModelInterface::update_Pkz(map<string, double> params, int *Pk_index)
+{}
+void ModelInterface::update_T21(map<string, double> params, int *Tb_index)
+{}
+void ModelInterface::update_q(map<string, double> params, int *q_index)
+{}
+    
+/* Code for ModelParent */    
+    
+template<typename T21>
+ModelParent<T21>::ModelParent(map<string,double> params)
+    :
+        ModelInterface(params)
+{}
+
+template<typename T21>
+double ModelParent<T21>::Pkz_interp(double k, double z, int Pk_index)
+{
+    return spline2dcalc(Pkz_interpolators[Pk_index].interpolator, k, z);
+}
+
+template<typename T21>
+double ModelParent<T21>::T21_interp(double z, int Tb_index)
+{
+    return spline1dcalc(Tb_interpolators[Tb_index].interpolator, z);
+}
+
+template<typename T21>
+double ModelParent<T21>::q_interp(double z, int q_index)
+{
+    return spline1dcalc(q_interpolators[q_index].interpolator, z);
+}
+
+template<typename T21>
+double ModelParent<T21>::r_interp(double z)
+{
+    return q_interp(z, 0);
+}
+
+template<typename T21>
+double ModelParent<T21>::Hf_interp(double z)
+{
+    return spline1dcalc(q_interpolators[0].interpolator_Hf,z);
+}
+
+template<typename T21>
+double ModelParent<T21>::qp_interp(double z, int q_index)
+{
+    return spline1dcalc(q_interpolators[q_index].interpolator_qp,z);
+}
+
+template<typename T21>
+double ModelParent<T21>::hubble_h(int q_index)
+{
+    return q_interpolators[q_index].h;
+}
+
+template<typename T21>
+void ModelParent<T21>::update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
+{
+    update_Pkz(params, Pk_index);
+    update_T21(params, Tb_index);
+    update_q(params, q_index);
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+/*                              Code for CAMB_ARES                           */
+///////////////////////////////////////////////////////////////////////////////
 
 Model_CAMB_ARES::Model_CAMB_ARES(map<string,double> params, int *Pk_index, int *Tb_index, int *q_index)
     :
@@ -275,3 +390,22 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
         *q_index = q_interpolators.size() - 1;
     }    
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+/*                              Code for Santos 2006                           */
+/////////////////////////////////////////////////////////////////////////////////
+
+
+Model_Santos2006::Model_Santos2006(map<string, double> params)
+    :
+        ModelParent(params)
+{}
+Model_Santos2006::~Model_Santos2006()
+{}
+void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
+{}
+void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
+{}
+void Model_Santos2006::update_q(map<string,double> params, int *q_index)
+{}
+

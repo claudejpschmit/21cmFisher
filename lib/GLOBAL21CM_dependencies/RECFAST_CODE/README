@@ -1,0 +1,2 @@
+Modified version of RECFAST that outputs the gas thermal history alongside
+the other variables it would normally output.

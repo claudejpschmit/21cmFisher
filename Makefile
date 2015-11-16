@@ -10,8 +10,8 @@ LIBRARIES = lib/
 	if ! [ -e $(WRKDIR) ]; then mkdir $(WRKDIR) ; mkdir $(WRKDIR)/lib; fi;
 	touch build/.base
 
-vpath %.cpp src:main:$(LIBRARIES)ALGLIB_source
-#:$(LIBRARIES)GLOBAL21CM_source:$(LIBRARIES)ODEsolver_source
+vpath %.cpp src:main:$(LIBRARIES)ALGLIB_source:$(LIBRARIES)GLOBAL21CM_source
+#:$(LIBRARIES)ODEsolver_source
 #vpath %.c $(LIBRARIES)CLASS_source:$(LIBRARIES)CLASS_tools:$(LIBRARIES)CLASS_main
 vpath %.o build
 vpath .base build
@@ -45,7 +45,7 @@ CCFLAG += -D__CLASSDIR__='"$(MDIR)"'
 INCLUDES = -I../include
 #INCLUDES += -I../$(LIBRARIES)CLASS_include
 INCLUDES += -I../$(LIBRARIES)ALGLIB_include
-#INCLUDES += -I../$(LIBRARIES)GLOBAL21CM_include
+INCLUDES += -I../$(LIBRARIES)GLOBAL21CM_include
 #INCLUDES += -I../$(LIBRARIES)ODEsolver_include
 
 # These lines seem to be unnecessary, but I leave them in anyways.
@@ -85,7 +85,8 @@ MAIN = Main.o
 ANALYSE = Analyser.o Analyse.o
 TOMOGRAPHY = calc_tomography.o Tomography.o 
 
-RESTRUCT = CosmoBasis.o ModelInterface.o Model_CAMB_ARES.o Model_Santos2006.o AnalysisInterface.o Cosmology3D.o Tomography2D.o Fisher.o Fisher1.o
+RESTRUCT = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o Fisher.o Fisher1.o Integrator.o CAMB_interface.o ARES_interface.o Global21cmInterface.o
+
 
 all: calc 
 #class_test analyse calc_tomography 
@@ -99,7 +100,7 @@ all: calc
 
 #calc: $(SRC) $(SOURCE) $(TOOLS) $(OUTPUT) $(EXTERNAL) $(ALGLIB) $(GLOBAL21CM) $(ODE) $(MAIN) 
 #	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o calc $(addprefix build/, $(#notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
-calc: $(RESTRUCT) $(MAIN) $(ALGLIB)
+calc: $(RESTRUCT) $(MAIN) $(ALGLIB) $(GLOBAL21CM)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o calc $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 
 #class_test: $(SOURCE) $(TOOLS) $(OUTPUT) $(EXTERNAL) $(CLASS) 

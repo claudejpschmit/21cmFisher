@@ -1,20 +1,20 @@
 #include "Fisher.hpp"
 
-Fisher1::Fisher1(AnalysisInterface* analysis)
+Fisher1::Fisher1(AnalysisInterface* analysis, string Fl_filename, vector<string> param_keys_considered)
 {
     this->analysis = analysis;
     this->fiducial_params = analysis->model->give_fiducial_params(); 
 
-    this->current_params = CALC->give_current_params();
-    kmin = this->fiducial_params["kmin"];
-    kmax = this->fiducial_params["kmax"];
-    model_params_keys = params_keys_considered;
-    for (int i = 0; i < model_params_keys.size(); ++i) {
-        string key = model_params_keys[i];
-        if (current_params[key] == 0.0)
+    //this->current_params = CALC->give_current_params();
+    //kmin = this->fiducial_params["kmin"];
+    //kmax = this->fiducial_params["kmax"];
+    model_param_keys = param_keys_considered;
+    for (int i = 0; i < model_param_keys.size(); ++i) {
+        string key = model_param_keys[i];
+        if (fiducial_params[key] == 0.0)
             var_params.insert(pair<string,double>(key,0.0001));
         else
-            var_params.insert(pair<string,double>(key,current_params[key]/100));
+            var_params.insert(pair<string,double>(key,fiducial_params[key]/100));
     }
     noise = false;
     rsd = false;
@@ -28,11 +28,14 @@ Fisher1::Fisher1(AnalysisInterface* analysis)
 
     Fl_file.open(Fl_filename);
     cout << "... Fisher built ..." << endl;
-    
 }
 void Fisher1::calc_Fls()
 {
     int lmin, lmax, n_points_per_thread, n_threads;
+    lmin = fiducial_params["lmin"];
+    lmax = fiducial_params["lmax"];
+    n_points_per_thread = fiducial_params["n_points_per_thread"];
+    n_threads = fiducial_params["n_threads"];
     // TODO: Find a way to best pass these parameters to the class
     //      -- could just have these as constructor parameters 
     //          those can be different for the different Fisher modes.
@@ -49,11 +52,11 @@ double Fisher1::F_fixed_stepsize(int lmin, int lmax, int n_points_per_thread, in
     filename << filename_prefix;
 
     // now compute F_ab's (symmetric hence = F_ba's)
-    for (int i = 0; i < model_params_keys.size(); i++) {
-        for (int j = i; j < model_params_keys.size(); j++) {
+    for (int i = 0; i < model_param_keys.size(); i++) {
+        for (int j = i; j < model_param_keys.size(); j++) {
             filename.str("");
-            string param_key1 = model_params_keys[i];
-            string param_key2 = model_params_keys[j];
+            string param_key1 = model_param_keys[i];
+            string param_key2 = model_param_keys[j];
             filename << filename_prefix << param_key1 << "_" << param_key2 << ".dat";
             ofstream outfile;
             outfile.open(filename.str());
@@ -113,6 +116,39 @@ double Fisher1::F_fixed_stepsize(int lmin, int lmax, int n_points_per_thread, in
     return 0;
 }
 
+double Fisher1::compute_Fl(int l, string param_key1, string param_key2, double kstepsize, double *cond_num,\
+        int *Pk_index, int *Tb_index, int *q_index)
+{
+    vector<double> krange = give_kmodes(l, this->fiducial_params["kmax"], kstepsize); 
+
+    mat Cl = randu<mat>(krange.size(),krange.size());
+    mat Cl_inv = Cl;
+
+    cout << "... derivative matrix calulation started" << endl;
+    mat Cl_a = this->Cl_derivative_matrix(l, param_key1, Pk_index, Tb_index, q_index, krange);
+    mat Cl_b = randu<mat>(krange.size(),krange.size());
+    if (param_key1 == param_key2)
+        Cl_b = Cl_a;
+    else
+        Cl_b = this->Cl_derivative_matrix(l, param_key2, Pk_index, Tb_index, q_index, krange);
+
+    cout << "-> The derivative matrices are done for l = " << l << endl;
+    cout << "... The Cl and Cl_inv matrices will be calculated for l = " << l << endl;
+
+    Cl = compute_Cl(l, *Pk_index, *Tb_index, *q_index, krange);
+    *cond_num = cond(Cl);
+    //Cl_inv = Cl.i();
+    Cl_inv = pinv(Cl);
+    cout << "-> Cl & Cl_inv are done for l = " << l << endl;
+
+    mat product = Cl_a * Cl_inv;
+    product = product * Cl_b;
+    product = product * Cl_inv;
+
+    return 0.5 * trace(product);
+}
+
+
 mat Fisher1::Cl_derivative_matrix(int l, string param_key, int *Pk_index,\
         int *Tb_index, int *q_index, vector<double> krange)
 {
@@ -145,55 +181,55 @@ mat Fisher1::Cl_derivative_matrix(int l, string param_key, int *Pk_index,\
         mat f3matrix = randu<mat>(krange.size(),krange.size());
         mat f4matrix = randu<mat>(krange.size(),krange.size());
         working_params[param_key] = x + 2 * h;
-        this->update_Model(working_params, Pk_index, Tb_index, q_index);
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
         for (unsigned int i = 0; i < krange.size(); ++i) {
             double k1 = krange[i];
             for (unsigned int j = i; j < krange.size(); ++j) {
                 double k2 = krange[j];
-                double res = this->CALC->Cl(l, k1, k2, this->kmin, this->kmax, *Pk_index, *Tb_index, *q_index);
+                double res = analysis->Cl(l, k1, k2, *Pk_index, *Tb_index, *q_index);
                 f1matrix(i,j) = res;
                 f1matrix(j,i) = res;
             }
         }
 
         working_params[param_key] = x + h;
-        this->update_Model(working_params, Pk_index, Tb_index, q_index);
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
         for (unsigned int i = 0; i < krange.size(); ++i) {
             double k1 = krange[i];
             for (unsigned int j = i; j < krange.size(); ++j) {
                 double k2 = krange[j];
-                double res = this->CALC->Cl(l, k1, k2, this->kmin, this->kmax, *Pk_index, *Tb_index, *q_index);
+                double res = analysis->Cl(l, k1, k2, *Pk_index, *Tb_index, *q_index);
                 f2matrix(i,j) = res;
                 f2matrix(j,i) = res;
             }
         }
 
         working_params[param_key] = x - h;
-        this->update_Model(working_params, Pk_index, Tb_index, q_index);
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
         for (unsigned int i = 0; i < krange.size(); ++i) {
             double k1 = krange[i];
             for (unsigned int j = i; j < krange.size(); ++j) {
                 double k2 = krange[j];
-                double res = this->CALC->Cl(l, k1, k2, this->kmin, this->kmax, *Pk_index, *Tb_index, *q_index);
+                double res = analysis->Cl(l, k1, k2, *Pk_index, *Tb_index, *q_index);
                 f3matrix(i,j) = res;
                 f3matrix(j,i) = res;
             }
         }
 
         working_params[param_key] = x - 2 * h;
-        this->update_Model(working_params, Pk_index, Tb_index, q_index);
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
         for (unsigned int i = 0; i < krange.size(); ++i) {
             double k1 = krange[i];
             for (unsigned int j = i; j < krange.size(); ++j) {
                 double k2 = krange[j];
-                double res = this->CALC->Cl(l, k1, k2, this->kmin, this->kmax, *Pk_index, *Tb_index, *q_index);
+                double res = analysis->Cl(l, k1, k2, *Pk_index, *Tb_index, *q_index);
                 f4matrix(i,j) = res;
                 f4matrix(j,i) = res;
             }
         }
 
         working_params[param_key] = x;
-        this->update_Model(working_params, Pk_index, Tb_index, q_index);
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
         double num;
         for (unsigned int i = 0; i < krange.size(); ++i) {
@@ -241,7 +277,7 @@ mat Fisher1::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, vector<d
             double k1 = krange[i];
             for (unsigned int j = i; j < krange.size(); ++j) {
                 double k2 = krange[j];
-                double res = this->CALC->Cl(l, k1, k2, this->kmin, this->kmax, Pk_index, Tb_index, q_index);
+                double res = analysis->Cl(l, k1, k2, Pk_index, Tb_index, q_index);
                 Cl(i,j) = res;
                 Cl(j,i) = res;
             }
@@ -259,7 +295,18 @@ mat Fisher1::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, vector<d
     if (noise) {
         for (unsigned int i = 0; i < krange.size(); ++i) {
             double k1 = krange[i];
-            Cl(i,i) += this->CALC->Cl_noise(l,k1,k1);  
+            Cl(i,i) += analysis->Cl_noise(l,k1,k1);  
+        }
+    }
+    if (foreground) {
+        for (unsigned int i = 0; i < krange.size(); ++i) {
+            double k1 = krange[i];
+            for (unsigned int j = i; j < krange.size(); ++j) {
+                double k2 = krange[j];
+                double res = analysis->Cl_foreground(l, k1, k2);
+                Cl(i,j) += res;
+                Cl(j,i) += res;
+            }
         }
     }
 
@@ -483,17 +530,36 @@ void Fisher1::initializer(string param_key, int *Pk_index, int *Tb_index, int *q
     double h = this->var_params[param_key];
     double x = working_params[param_key];
     working_params[param_key] = x + 2 * h;
-    this->update_Model(working_params, Pk_index, Tb_index, q_index);
+    analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x + h;
-    this->update_Model(working_params, Pk_index, Tb_index, q_index);
+    analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x - h;
-    this->update_Model(working_params, Pk_index, Tb_index, q_index);
+    analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x - 2 * h;
-    this->update_Model(working_params, Pk_index, Tb_index, q_index);
+    analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x;
-    this->update_Model(working_params, Pk_index, Tb_index, q_index);
+    analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 }
+
+vector<double> Fisher1::give_kmodes(int l, double k_max, double kstepsize)
+{
+    double k_min = (double)l / analysis->model->r_interp(fiducial_params["zmax"]);
+    int steps = (k_max - k_min)/kstepsize + 1;
+    vector<double> range;
+    double new_max = 0;
+    for (int i = 0; i <= steps; ++i)
+    {
+        new_max = k_min + i * kstepsize;
+        range.push_back(new_max); 
+    }
+    stringstream ss;
+    ss << "The k_range is [" << k_min << "," << new_max << "] in " << steps+1 <<\
+        " steps for l = " << l << ".\n";
+    cout << ss.str();
+    return range;
+}
+
