@@ -52,3 +52,15 @@ bool FisherInterface::check_file(string filename)
     file.close();
     return res;
 }
+
+/*
+int FisherInterface::check_Cl_file(params)
+{
+    //returns the value of the run where the same information was used.
+    //returns 0 if new calculation is necessary.
+    ifstream InfoFile("output/Fisher/RUN_INFO.dat");
+    int run_number = 0;
+
+    return run_number;
+}
+*/

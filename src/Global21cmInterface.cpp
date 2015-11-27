@@ -53,16 +53,78 @@ void Global21cmInterface::updateGlobal21cm(map<string,double> params)
     //om0 = 0.3;
     //lam0 = 0.7;
     c = new Cosmology(om0,lam0,omb,h,s8,n,omNu);
+    cout << c->getOmega0() << endl;
+    cout << c->getOmegam() << endl;
+    cout << c->getOmegab() << endl;
+    cout << c->getOmbhh() << endl;
+    cout << c->getOm0hh() << endl;
+    cout << c->getLambda0() << endl;
+    cout << c->getH() << endl;
+    cout << c->getnSpec() << endl;
+    cout << c->getScale() << endl;
+    cout << c->getShape() << endl;
     int popflag_in = 0;
     int xin = 1;
     int lyaxray_in = 0;
+    cout << " ******************** " << endl;
+    cout << s8 << " " << h << " " << omb << " " << T_CMB << " " << O_cdm << " " <<\
+        " " << O_k << " " << w << " " << n << " " << fstar << " " << fesc << " " << nion <<\
+        " " << fx << " " << popflag << " " << lyaxrayflag << " " << params["zmin"] <<\
+        " " << params["zmax"] <<  endl;
+    cout << " ******************** " << endl;
+    cout << om0 << " " << lam0 << " " << omb << " " << h << " " << s8 << " " <<\
+        " " << n << " " << omNu << " " << popflag_in << " " << xin << " " << lyaxray_in << " " << fstar<<\
+        " " << fesc << " " << flya << " " << params["zmin"] <<\
+        " " << params["zmax"] <<  endl;
+
+
     a = new Astrophysics(c,popflag_in,xin,lyaxray_in,1.0);
+    cout << a->getFSTAR() << endl;
+    cout << a->getFESC() << endl;
+    cout << a->getNION() << endl;
+    cout << a->getNLYA() << endl;
+    cout << a->getFLYA() << endl;
+    cout << a->getZeta() << endl;
+    cout << a->getPopflag() << endl;
+    cout << a->getLyaXray() << endl;
+    cout << a->getZReion() << endl;
     tocm = new TwentyOneCM(c,a);
 
+    cout << fstar << " " << fesc << " " << nion << " " << fx << " " << flya <<\
+        " " << popflag << " " << xrayflag << " " << lyaxrayflag << endl;
     //Astrophysics a(&c,popflag_in,xin,lyaxray_in,1.0);
     a->initAstrophysics(fstar,fesc,nion,fx,flya,popflag,xrayflag,lyaxrayflag, true);
+    cout << a->getFSTAR() << endl;
+    cout << a->getFESC() << endl;
+    cout << a->getNION() << endl;
+    cout << a->getNLYA() << endl;
+    cout << a->getFLYA() << endl;
+    cout << a->getZeta() << endl;
+    cout << a->getPopflag() << endl;
+    cout << a->getLyaXray() << endl;
+    cout << a->getZReion() << endl;
 
+    double *result;
+    result=dvector(1,3);
+    a->getTIGM(7,result);
+    double tk=result[1];
+    double xi=result[2];
+    double xe=result[3];
+    cout << tk << " " << xi << " " << xe << endl;
+    cout << " ******************** " << endl;
     calc_Tb(params["zmin"]-1, params["zmax"]+1, 20);
+    cout << " ******************** " << endl;
+    cout << s8 << " " << h << " " << omb << " " << T_CMB << " " << O_cdm << " " <<\
+        " " << O_k << " " << w << " " << n << " " << fstar << " " << fesc << " " << nion <<\
+        " " << fx << " " << popflag << " " << lyaxrayflag << " " << params["zmin"] <<\
+        " " << params["zmax"] <<  endl;
+    cout << " ******************** " << endl;
+    cout << om0 << " " << lam0 << " " << omb << " " << h << " " << s8 << " " <<\
+        " " << n << " " << omNu << " " << popflag_in << " " << xin << " " << lyaxray_in << " " << fstar<<\
+        " " << fesc << " " << flya << " " << params["zmin"] <<\
+        " " << params["zmax"] <<  endl;
+
+
 }
 
 void Global21cmInterface::updateGlobal21cm_full(map<string,double> params)
@@ -165,6 +227,7 @@ void Global21cmInterface::calc_Tb(double zmin, double zmax, int zsteps)
         tk=result[1];
         xi=result[2];
         xe=result[3];
+        cout << tk << " " << xi << " " << xe << endl;
         lyaflux=a->lyaFlux(z);
         tb=(1.0-xi)*tocm->tBrightGen(z,tk,xe,lyaflux);
         fout << z << " " << tb << endl;

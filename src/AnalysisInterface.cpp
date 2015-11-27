@@ -16,3 +16,8 @@ double AnalysisInterface::Cl_foreground(int l, double x1, double x2)
 {
     return 0;
 }
+
+string AnalysisInterface::give_analysisID()
+{
+    return analysisID;
+}

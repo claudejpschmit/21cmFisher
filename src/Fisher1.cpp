@@ -1,5 +1,7 @@
 #include "Fisher.hpp"
 
+#define TESTMATRIX true
+
 Fisher1::Fisher1(AnalysisInterface* analysis, string Fl_filename, vector<string> param_keys_considered)
 {
     this->analysis = analysis;
@@ -46,7 +48,8 @@ double Fisher1::F_fixed_stepsize(int lmin, int lmax, int n_points_per_thread, in
 {
     int lsteps = n_points_per_thread * n_threads;
     int lstepsize = ((double)(lmax-lmin))/(double)lsteps;
-    double kstepsize = 0.0178;
+    //double kstepsize = 0.0178;
+    double kstepsize = 0.1;
     string filename_prefix = update_runinfo(lmin, lmax, lstepsize, kstepsize);
     stringstream filename;
     filename << filename_prefix;
@@ -54,16 +57,19 @@ double Fisher1::F_fixed_stepsize(int lmin, int lmax, int n_points_per_thread, in
     // now compute F_ab's (symmetric hence = F_ba's)
     for (int i = 0; i < model_param_keys.size(); i++) {
         for (int j = i; j < model_param_keys.size(); j++) {
+            
+
             filename.str("");
             string param_key1 = model_param_keys[i];
             string param_key2 = model_param_keys[j];
+            cout <<  "STARTING with " << param_key1 << " and " << param_key2 << endl;
             filename << filename_prefix << param_key1 << "_" << param_key2 << ".dat";
             ofstream outfile;
             outfile.open(filename.str());
             int Pk_index = 0;
             int Tb_index = 0;
             int q_index = 0;
-            double kstepsize = 0.0178;
+            //double kstepsize = 0.0178;
             if (param_key1 == param_key2) {
                 initializer(param_key1, &Pk_index, &Tb_index, &q_index);
             } else {
@@ -76,20 +82,23 @@ double Fisher1::F_fixed_stepsize(int lmin, int lmax, int n_points_per_thread, in
             // The following line parallelizes the code
             // use #pragma omp parallel num_threads(4) private(Pk_index, Tb_index, q_index) 
             // to define how many threads should be used.
-
+            
+            cout << "Entering Parallel regime" << endl;
             #pragma omp parallel num_threads(n_threads) private(Pk_index, Tb_index, q_index) 
             {
                 //somehow this is necessary to fix a memory bug, that I don't know why it 
                 //occurs between before and after parallelization
+                /*
                 if (param_key1 == param_key2) {
                     initializer(param_key1, &Pk_index, &Tb_index, &q_index);
                 } else {
                     initializer(param_key1, &Pk_index, &Tb_index, &q_index);
                     initializer(param_key2, &Pk_index, &Tb_index, &q_index);
                 }
-
+                */
                 #pragma omp for reduction (+:sum)
                 for (int k = 1; k <= lsteps; ++k) {
+                    // note: k has nothing to do with scale here, just an index!
                     int m;
                     if (k == lsteps)
                         m = lsteps;
@@ -110,6 +119,7 @@ double Fisher1::F_fixed_stepsize(int lmin, int lmax, int n_points_per_thread, in
                 }
             }
             outfile.close();
+            cout << "Calculations done for " << param_key1 << " and " << param_key2 << endl;
         }
     }
 
@@ -161,7 +171,15 @@ mat Fisher1::Cl_derivative_matrix(int l, string param_key, int *Pk_index,\
         suffix = "r";
     else 
         suffix = "nr";
-    matrix_filename << "output/matrices/Cla_" << param_key << "_"<< l << "_" <<\
+    
+    string prefix;
+    if (TESTMATRIX){
+        prefix = "output/matrices_test/Cla_";
+    }
+    else {
+        prefix = "output/matrices/Cla_";
+    }
+    matrix_filename << prefix << param_key << "_"<< l << "_" <<\
         krange[0] << "_" << krange[krange.size()-1] << "_"<< krange.size() << "_"<<\
         fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
     if (check_file(matrix_filename.str()))
@@ -261,7 +279,15 @@ mat Fisher1::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, vector<d
         suffix = "nr";
     if (limber)
         suffix += "_limber";
-    matrix_filename << "output/matrices/Cl_" << l << "_"<<\
+
+    string prefix;
+    if (TESTMATRIX){
+        prefix = "output/matrices_test/Cl_";
+    }
+    else {
+        prefix = "output/matrices/Cl_";
+    }
+    matrix_filename << prefix << l << "_"<<\
         krange[0] << "_" << krange[krange.size()-1] << "_"<< krange.size() << "_"<<\
         fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
     if (check_file(matrix_filename.str()))
@@ -332,6 +358,7 @@ string Fisher1::update_runinfo(int lmin, int lmax,\
     //set_runnumber();
     ifstream run_info_file_in;
     run_info_file_in.open("output/Fisher/RUN_INFO.dat");
+
     vector<string> run_info;
     string first_line;
     getline(run_info_file_in, first_line);
@@ -513,6 +540,14 @@ string Fisher1::update_runinfo(int lmin, int lmax,\
     buffss << " k_mode stepsize= " << kstepsize;
     run_info.push_back(buffss.str());
     
+    buffss.str("");
+    buffss << " ModelID        = " << analysis->model->give_modelID();
+    run_info.push_back(buffss.str());
+    buffss.str("");
+    buffss << " AnalysisID     = " << analysis->give_analysisID();
+    run_info.push_back(buffss.str());
+
+    
     //then write it all to file.
     ofstream run_info_file_out;
     run_info_file_out.open("output/Fisher/RUN_INFO.dat");
@@ -526,22 +561,33 @@ string Fisher1::update_runinfo(int lmin, int lmax,\
 
 void Fisher1::initializer(string param_key, int *Pk_index, int *Tb_index, int *q_index)
 {
+    cout << "...Initializer Run..." << endl;
     map<string,double> working_params = fiducial_params;
     double h = this->var_params[param_key];
     double x = working_params[param_key];
     working_params[param_key] = x + 2 * h;
+    cout << "model update for: " << param_key << " with value: " <<\
+        working_params[param_key] << endl;
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x + h;
+    cout << "model update for: " << param_key << " with value: " <<\
+        working_params[param_key] << endl;
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x - h;
+    cout << "model update for: " << param_key << " with value: " <<\
+        working_params[param_key] << endl;
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x - 2 * h;
+    cout << "model update for: " << param_key << " with value: " <<\
+        working_params[param_key] << endl;
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x;
+    cout << "model update for: " << param_key << " with value: " <<\
+        working_params[param_key] << endl;
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 }
 

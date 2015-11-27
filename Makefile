@@ -62,7 +62,7 @@ ifneq ($(HYREC),)
 vpath %.c $(HYREC)
 CCFLAG += -DHYREC
 #LDFLAGS += -DHYREC
-INCLUDES += -I../$(LIBRARIES)CLASS_hyrec
+#INCLUDES += -I../$(LIBRARIES)CLASS_hyrec
 EXTERNAL += hyrectools.o helium.o hydrogen.o history.o
 endif
 
@@ -88,12 +88,12 @@ TOMOGRAPHY = calc_tomography.o Tomography.o
 RESTRUCT = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o Fisher.o Fisher1.o Integrator.o CAMB_interface.o ARES_interface.o Global21cmInterface.o
 
 
-all: calc 
+all: calc analyse 
 #class_test analyse calc_tomography 
 
-#analyse: $(ALGLIB) $(ANALYSE)
-#	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o analyse $(addprefix build/,# $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
-#
+analyse: $(ALGLIB) $(ANALYSE)
+	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o analyse $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
+
 #calc_tomography: $(TOMOGRAPHY) $(SRC) $(SOURCE) $(TOOLS) $(OUTPUT) $(EXTERNAL) $(ALGLIB) $(GLOBAL21CM)
 #	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o calc_tomography $(addprefix# build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 

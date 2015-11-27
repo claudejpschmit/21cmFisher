@@ -6,6 +6,7 @@
 #include "Helper.hpp"
 #include "ARES_interface.hpp"
 #include "CAMB_interface.hpp"
+#include "Global21cmInterface.hpp"
 
 // CAREFUL, WITH THIS TEMPLATIZATION ONLY USE 1 CPP FILE!!!!
 
@@ -21,10 +22,14 @@ class ModelInterface : public CosmoBasis {
         virtual double qp_interp(double z, int q_index);
         virtual void update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index); 
         virtual double hubble_h(int q_index);
+        virtual void writePK_T21_q();
+        string give_modelID();
     protected:
         virtual void update_Pkz(map<string,double> params, int *Pk_index);
         virtual void update_T21(map<string,double> params, int *Tb_index);
         virtual void update_q(map<string,double> params, int *q_index);
+        
+        string modelID;
 
 };
 
@@ -41,6 +46,7 @@ class ModelParent : public ModelInterface {
         double qp_interp(double z, int q_index);
         void update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index); 
         double hubble_h(int q_index);
+        void writePK_T21_q();
     protected:
         
         vector<Pk_interpolator> Pkz_interpolators;
@@ -50,10 +56,12 @@ class ModelParent : public ModelInterface {
 };
 
 /**     Adding a new Model just needs to inherit from ModelParent    **/
+/**     a Tb interpolator structure needs to be specified which      **/
+/**     defines what parameters the Tb signal is sensitive to.       **/
 
 /**     My Model        **/
 class Model_CAMB_ARES : public ModelParent<Tb_interpolator_ares> {
-     
+   
     public:
         Model_CAMB_ARES(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index);
         ~Model_CAMB_ARES();
@@ -65,6 +73,27 @@ class Model_CAMB_ARES : public ModelParent<Tb_interpolator_ares> {
         /* Variables */
         CAMB_CALLER* CAMB;
         AresInterface* ARES;
+
+        double zmin_Ml, zmax_Ml, stepsize_Ml;
+        int zsteps_Ml;
+
+};
+
+/**     My Model with G21      **/
+
+class Model_CAMB_G21 : public ModelParent<Tb_interpolator> {
+    
+    public:
+        Model_CAMB_G21(map<string,double> params, int *Pk_index, int *Tb_index, int *q_index);
+        ~Model_CAMB_G21(); 
+    private:
+        void update_Pkz(map<string,double> params, int *Pk_index);
+        void update_T21(map<string,double> params, int *Tb_index);
+        void update_q(map<string,double> params, int *q_index);
+        
+        /* Variables */
+        CAMB_CALLER* CAMB;
+        Global21cmInterface* G21;
 
         double zmin_Ml, zmax_Ml, stepsize_Ml;
         int zsteps_Ml;

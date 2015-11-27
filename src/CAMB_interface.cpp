@@ -58,7 +58,6 @@ CAMB_CALLER::~CAMB_CALLER()
 //corresponding parameter values that were used to calculate it.
 void CAMB_CALLER::call(map<string, double> params)
 {
-    cout << "CAMB is called with an ombh2 value of " << params["ombh2"] << endl;
     update_params_ini(params);
 
     //call camb with new_params.ini

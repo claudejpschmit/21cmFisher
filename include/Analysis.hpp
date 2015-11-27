@@ -11,7 +11,11 @@ class AnalysisInterface {
                 int Pk_index, int Tb_index, int q_index);
         virtual double Cl_noise(int l, double x1, double x2);
         virtual double Cl_foreground(int l, double x1, double x2);
+        string give_analysisID();
         ModelInterface* model;
+        
+    protected:
+        string analysisID;
 };
 
 /**     Adding a new Method just needs to inherit from AnalysisInterface    **/

@@ -16,10 +16,9 @@ class FisherInterface {
     public:
         ~FisherInterface();
         virtual void calc_Fls();
-
+        mat read_matrix(string filename, int n_rows, int n_cols);
     protected: 
         void write_matrix(mat matrix, string filename);
-        mat read_matrix(string filename, int n_rows, int n_cols);
         bool check_file(string filename);
        
         /* Variables */

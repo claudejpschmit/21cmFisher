@@ -3,11 +3,12 @@
 
 Cosmology3D::Cosmology3D(ModelInterface* model)
 {
-    cout << "... Beginning to build Analysis Class: 3DCosmoloy ..." << endl;
+    cout << "... Beginning to build Analysis Class: 3DCosmology ..." << endl;
     this->model = model;
+    analysisID = "Cosmology3D";
     kmin = model->give_fiducial_params("kmin");
     kmax = model->give_fiducial_params("kmax");
-   
+    
     pi = model->pi;
     prefactor_Ml = 2*model->get_b_bias()*model->c/pi;
     zmin_Ml = model->give_fiducial_params("zmin");
@@ -15,59 +16,6 @@ Cosmology3D::Cosmology3D(ModelInterface* model)
     zsteps_Ml = model->give_fiducial_params("zsteps");
     stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
     k_stepsize = model->give_fiducial_params("k_stepsize");
-    //this->zmax_interp = this->fiducial_params["zmax_interp"];
-    //generate object that is the CAMB interface.
-   // CAMB = new CAMB_CALLER;
-
-    /*cout << "... precalculating Ml dependencies ..." << endl;
-    //this->update_q_full();
-    //this->update_q_prime_full();
-    //this->update_Hf();
-
-    this->update_q(fiducial_params, q_index);
-    //this->update_q_prime();
-    
-    //this->prefactor_Ml = 2*this->b_bias * this->c / this->pi;
-    cout << "... Dependencies calculated ..." << endl;
-    cout << "... precalculating inverse r ..." << endl;
-    //this->update_r_inverse();
-    cout << "... r inverse is calculated ..." << endl;
-    cout << "... Initializing Pk interpolator ..." << endl;
-    //this->update_Pkz_interpolator(this->fiducial_params);
-    
-    this->update_Pkz_interpolator_direct(this->fiducial_params, Pk_index);
-    
-    //this->update_Pkz_interpolator_full(this->fiducial_params);
-    cout << "... Pks calculated ..." << endl;
-
-    cout << "... Creating Bessels ..." << endl;
-    //this->create_bessel_interpolant_ALGLIB(0, this->fiducial_params["l_max"]);
-    //this->create_bessel_interpolant_OWN(this->fiducial_params["l_min"],this->fiducial_params["l_max"]);
-    cout << "... Bessels built ..." << endl;
-    
-    //set to true if ARES should be used,
-    //set to false if G21 should be used.
-    use_ARES = ARES_MACRO;
-
-    cout << "... generating 21cm interface ..." << endl;
-    if (!use_ARES) {
-        G21 = new Global21cmInterface();
-        this->update_G21(fiducial_params, Tb_index);
-    } 
-    else {
-        ARES = new AresInterface();
-        this->update_ARES(fiducial_params, Tb_index);
-    }
-    //this->update_G21_full(fiducial_params);
-    cout << "... 21cm interface built ..." << endl;
-
-    cout << "... generate analytic Tb ..." << endl;
-    //this->update_Tb_analytic(fiducial_params, Tb_index);
-    cout << "... Tb analytic done..." << endl;
-
-    cout << "... CosmoCalc built ..." << endl;
-*/
-
 }
 
 double Cosmology3D::Cl(int l, double k1, double k2,\
@@ -81,15 +29,23 @@ double Cosmology3D::Cl(int l, double k1, double k2,\
     bool limber = false;
     if (model->give_fiducial_params("limber") == 1.0)
         limber = true;
-
-    if (rsd && !limber)
+    //cout << k_low << " " << k_high << endl;
+    if (rsd && !limber){
+        //cout << "case 1 Cl" << endl;
         return this->corr_Tb_rsd(l, k1, k2, k_low, k_high, Pk_index, Tb_index, q_index);
-    else if (!rsd && !limber) 
+    }
+    else if (!rsd && !limber) {
+        //cout << "case 2 Cl" << endl;
         return this->corr_Tb(l, k1, k2, k_low, k_high, Pk_index, Tb_index, q_index);
-    else if (rsd && limber)
+    }
+    else if (rsd && limber){
+        //cout << "case 3 Cl" << endl;
         return this->Cl_limber_rsd(l,  k1, k2, Pk_index, Tb_index, q_index);
-    else
+    }
+    else{
+        //cout << "case 4 Cl" << endl;
         return this->Cl_limber(l, k1, k2, Pk_index, Tb_index, q_index);
+    }
 }
 
 double Cosmology3D::Cl_noise(int l, double k1, double k2)
@@ -167,7 +123,8 @@ double Cosmology3D::corr_Tb(int l, double k1, double k2, double k_low,\
             return pow(kappa,2) * this->M(l,k1,kappa,Pk_index,Tb_index,q_index) *\
                 this->M(l,k2,kappa,Pk_index,Tb_index,q_index);
         };
-
+        //cout << "integrate between " << lower_kappa_bound << " and " << higher_kappa_bound << endl;
+        //cout << steps << endl;
         //return integrate(integrand, k_low, k_high, this->k_steps, simpson());
         return integrate_simps(integrand, lower_kappa_bound, higher_kappa_bound, steps);
     }
@@ -325,10 +282,14 @@ double Cosmology3D::M(int l, double k1, double kappa, int Pk_index, int Tb_index
         //return pow(r,2) * this->Tb_interp_full(z, Tb_index) * this->bessel_j_interp_cubic(l,k1*r) *\
         //   this->bessel_j_interp_cubic(l,k2*q) * sqrt(this->Pkz_interp_full(k2*qs[q_index].h,z,Pk_index)/\
         //            pow(qs[q_index].h,3)) / (Hf_interp(z)*1000.0);
-
-        return pow(r,2) * model->T21_interp(z, Tb_index) * model->sph_bessel_camb(l,k1*r) *\
-                model->sph_bessel_camb(l,kappa*q) * sqrt(model->Pkz_interp(kappa*h,z, Pk_index)/\
-                pow(h,3)) / (model->Hf_interp(z)*1000.0);
+        double t21 = model->T21_interp(z,Tb_index);
+        double jr = model->sph_bessel_camb(l,k1*r);
+        double pk = model->Pkz_interp(kappa*h,z, Pk_index);
+        double hf = model->Hf_interp(z);
+        //if (z == 7)
+        //    cout << r << " " << q << " " << h << " " << jr << " " << pk << " " << hf << " " << t21 << endl;
+        return pow(r,2) * t21 * jr * model->sph_bessel_camb(l,kappa*q) *\
+            sqrt(pk/pow(h,3)) / (hf*1000.0);
     };
 
     //double integral = integrate(integrand, this->zmin_Ml, this->zmax_Ml,

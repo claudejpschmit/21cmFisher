@@ -3,6 +3,7 @@
 Tomography2D::Tomography2D(ModelInterface* model)
 {
     this->model = model;
+    analysisID = "Tomography2D";
 }
 
 double Tomography2D::Cl(int l, double f1, double f2,\
