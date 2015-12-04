@@ -39,6 +39,13 @@ void CosmoBasis::generate_params(map<string,double> params)
 
     this->current_params = params;
 }
+
+void CosmoBasis::set_fiducial_params(map<string, double> params)
+{
+    this->fiducial_params = params;
+    generate_params(params);
+}
+
 void CosmoBasis::show_params(map<string, double> params)
 {
     cout << c << endl;
@@ -227,6 +234,7 @@ void CosmoBasis::check_params()
     //Parameters determining the functionality of the program
     //1 = true
     //0 = false
+    this->fiducial_params.insert(pair<string,double>("foreground",0.0));
     this->fiducial_params.insert(pair<string,double>("noise",1.0));
     this->fiducial_params.insert(pair<string,double>("rsd",1.0));
     this->fiducial_params.insert(pair<string,double>("limber",0.0)); 

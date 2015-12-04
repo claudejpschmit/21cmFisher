@@ -63,7 +63,7 @@ void ModelInterface::update_q(map<string, double> params, int *q_index)
 {}
 
 /************************/
-/* Code for ModelParent */    
+/* Code for ModelParent */   
 /************************/
 
 template<typename T21>
@@ -209,7 +209,8 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
                 params["T_CMB"] == Pkz_interpolators[i].tcmb &&\
                 params["w_DE"] == Pkz_interpolators[i].w_DE &&\
                 params["n_s"] == Pkz_interpolators[i].n_s &&\
-                params["A_s"] == Pkz_interpolators[i].A_s){
+                params["A_s"] == Pkz_interpolators[i].A_s &&\
+                params["tau_reio"] == Pkz_interpolators[i].tau){
 
             cout << "Found precalculated Pkz" << endl;
             do_calc = false;
@@ -231,6 +232,7 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
         interp.w_DE = params["w_DE"];
         interp.n_s = params["n_s"];
         interp.A_s = params["A_s"];
+        interp.tau = params["tau_reio"];
 
 
         CAMB->call(params);    
@@ -457,7 +459,8 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
 /*                              Code for CAMB_G21                            */
 ///////////////////////////////////////////////////////////////////////////////
 
-Model_CAMB_G21::Model_CAMB_G21(map<string,double> params, int *Pk_index, int *Tb_index, int *q_index)
+Model_CAMB_G21::Model_CAMB_G21(map<string,double> params,\
+        int *Pk_index, int *Tb_index, int *q_index)
     :
         ModelParent(params)
 {
@@ -504,7 +507,8 @@ void Model_CAMB_G21::update_Pkz(map<string,double> params, int *Pk_index)
                 params["T_CMB"] == Pkz_interpolators[i].tcmb &&\
                 params["w_DE"] == Pkz_interpolators[i].w_DE &&\
                 params["n_s"] == Pkz_interpolators[i].n_s &&\
-                params["A_s"] == Pkz_interpolators[i].A_s){
+                params["A_s"] == Pkz_interpolators[i].A_s &&\
+                params["tau_reio"] == Pkz_interpolators[i].tau){
 
             cout << "Found precalculated Pkz" << endl;
             do_calc = false;
@@ -526,6 +530,7 @@ void Model_CAMB_G21::update_Pkz(map<string,double> params, int *Pk_index)
         interp.w_DE = params["w_DE"];
         interp.n_s = params["n_s"];
         interp.A_s = params["A_s"];
+        interp.tau = params["tau_reio"];
 
 
         CAMB->call(params);    
@@ -589,8 +594,6 @@ void Model_CAMB_G21::update_T21(map<string,double> params, int *Tb_index)
     }
     if (do_calc) {
         cout << "Calculating T21 from scratch" << endl;
-        ofstream file;
-        file.open("temp.dat");
         Tb_interpolator interp;
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
@@ -622,10 +625,6 @@ void Model_CAMB_G21::update_T21(map<string,double> params, int *Tb_index)
             g21_Tb[i] = vTb[i];
         }
         
-        for (unsigned int i = 0; i < vTb.size(); i++){
-            file << g21_z[i] << " " << g21_Tb[i] << endl;
-        }
-        file.close();
         spline1dinterpolant interpolator;
         spline1dbuildcubic(g21_z, g21_Tb, interpolator);
         interp.interpolator = interpolator;
@@ -745,19 +744,345 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
 /*                              Code for Santos 2006                           */
 /////////////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////////////////////////
+// Note that this is the model Santos et al. 2006 use as their Fiducial model  //
+// and so it is only valid in a redshift range of z in [15, 25].               //
+/////////////////////////////////////////////////////////////////////////////////
 
-Model_Santos2006::Model_Santos2006(map<string, double> params)
+Model_Santos2006::Model_Santos2006(map<string, double> params,\
+        int *Pk_index, int *Tb_index, int *q_index)
     :
         ModelParent(params)
 {
+    //Changing fiducial values to the ones they have used.
+    map<string, double> new_params = give_fiducial_params();
+    new_params["omch2"] = 0.1277;
+    new_params["ombh2"] = 0.02229;
+    new_params["hubble"] = 73.2;
+    new_params["n_s"] = 0.958;
+    new_params["A_s"] = 1.562e-9;
+    new_params["tau_reio"] = 0.089 ;
+    set_fiducial_params(new_params);
+    zmin_Ml = fiducial_params["zmin"];
+    zmax_Ml = fiducial_params["zmax"];
+    zsteps_Ml = fiducial_params["zsteps"];
+    stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
+    CAMB = new CAMB_CALLER;
+    
     modelID = "Santos2006";
+    
+    cout << "... precalculating q ..." << endl;
+    update_q(fiducial_params, q_index);
+    cout << "... q done ..." << endl;
+
+    cout << "... precalculating Pkz ..." << endl;
+    update_Pkz(fiducial_params, Pk_index);
+    cout << "... Pkz done ..." << endl;
+
+    cout << "... precalculating 21cm interface ..." << endl;
+    cout << "...  -> Santos Model for 21cm signal ..." << endl;
+    update_T21(fiducial_params, Tb_index);
+    
+    cout << "... 21cm interface built ..." << endl;
+    cout << "... Model_Santos2006 built ..." << endl;
+
+
 }
 Model_Santos2006::~Model_Santos2006()
 {}
+
 void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
-{}
+{
+    bool do_calc = true;
+    for (unsigned int i = 0; i < Pkz_interpolators.size(); ++i) {
+        if (params["ombh2"] == Pkz_interpolators[i].ombh2 &&\
+                params["omnuh2"] == Pkz_interpolators[i].omnuh2 &&\
+                params["omch2"] == Pkz_interpolators[i].omch2 &&\
+                params["omk"] == Pkz_interpolators[i].omk &&\
+                params["hubble"] == Pkz_interpolators[i].hubble &&\
+                params["T_CMB"] == Pkz_interpolators[i].tcmb &&\
+                params["w_DE"] == Pkz_interpolators[i].w_DE &&\
+                params["n_s"] == Pkz_interpolators[i].n_s &&\
+                params["A_s"] == Pkz_interpolators[i].A_s &&\
+                params["tau_reio"] == Pkz_interpolators[i].tau){
+
+            cout << "Found precalculated Pkz" << endl;
+            do_calc = false;
+            *Pk_index = i;
+            break;
+        }
+    }
+
+    if (do_calc) {
+        cout << "Calculating Pkz from scratch"<< endl;
+        Pk_interpolator interp;
+        interp.ombh2 = params["ombh2"];
+        interp.omnuh2 = params["omnuh2"];
+        interp.omch2 = params["omch2"];
+        interp.omk = params["omk"];
+        interp.hubble = params["hubble"];
+        interp.tcmb = params["T_CMB"];
+        interp.w_DE = params["w_DE"];
+        interp.n_s = params["n_s"];
+        interp.A_s = params["A_s"];
+        interp.tau = params["tau_reio"];
+
+
+        CAMB->call(params);    
+        vector<double> vk = CAMB->get_k_values();
+        vector<vector<double>> Pz = CAMB->get_Pz_values();
+
+        double z_stepsize = (params["zmax"] - params["zmin"])/(params["Pk_steps"] - 1);
+        vector<double> vz, vP;
+        for (unsigned int i = 0; i < Pz.size(); ++i) {
+            vz.push_back(params["zmin"] + i * z_stepsize);
+            vP.insert(vP.end(), Pz[i].begin(), Pz[i].end());
+        }
+
+        real_1d_array matterpowerspectrum_k, matterpowerspectrum_z, matterpowerspectrum_P;
+        matterpowerspectrum_k.setlength(vk.size());
+        matterpowerspectrum_z.setlength(vz.size());
+        matterpowerspectrum_P.setlength(vP.size());
+        for (unsigned int i = 0; i < vk.size(); i++){
+            matterpowerspectrum_k[i] = vk[i];
+        }
+        for (unsigned int i = 0; i < vP.size(); i++){
+            matterpowerspectrum_P[i] = vP[i];
+        }
+        for (unsigned int i = 0; i < vz.size(); i++){
+            matterpowerspectrum_z[i] = vz[i];
+        }
+
+        spline2dinterpolant interpolator;
+        spline2dbuildbilinearv(matterpowerspectrum_k, vk.size(),matterpowerspectrum_z, vz.size(),\
+                matterpowerspectrum_P, 1, interpolator);
+        interp.interpolator = interpolator;
+
+        Pkz_interpolators.push_back(interp);
+        *Pk_index = Pkz_interpolators.size() - 1;
+    }
+}
+
 void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
-{}
+{
+    bool do_calc = true;
+    for (unsigned int i = 0; i < Tb_interpolators.size(); ++i) {
+        if (params["ombh2"] == Tb_interpolators[i].ombh2 &&\
+                params["omnuh2"] == Tb_interpolators[i].omnuh2 &&\
+                params["omch2"] == Tb_interpolators[i].omch2 &&\
+                params["hubble"] == Tb_interpolators[i].hubble &&\
+                params["T_CMB"] == Tb_interpolators[i].t_cmb)
+        {
+            cout << "found precalculated Analytic 21cm Signal" << endl;
+            do_calc = false;
+            *Tb_index = i;
+            break;
+        }
+    }
+    if (do_calc) {
+        cout << "Calculating T21 from scratch" << endl;
+        ofstream file;
+        Tb_analytic_interpolator interp;
+        interp.ombh2 = params["ombh2"];
+        interp.omnuh2 = params["omnuh2"];
+        interp.omch2 = params["omch2"];
+        interp.hubble = params["hubble"];
+        interp.t_cmb = params["T_CMB"];
+        file.open("output/t21_analytic.dat");
+        //NO!!!!!!!! This is bad with parallel threads...
+        //update params that go into calculating dTb ...
+        //the working params now live in current_params.
+        int q_index = 0;
+
+        vector<double> vz, vTb;
+
+        double zmin;
+        if (params["zmin"] - 2 < 0)
+            zmin = 0;
+        else 
+            zmin = params["zmin"] - 2; 
+        double zmax = params["zmax"] + 2;
+        double stepsize = 0.05;
+        int steps = abs(zmax - zmin)/stepsize;
+        for (int i = 0; i < steps; i++)
+        {
+            double z = zmin + i*stepsize;
+            vz.push_back(z);
+            double dTb = t21(z, params);
+            vTb.push_back(dTb);
+        }
+
+        real_1d_array g21_z, g21_Tb;
+        g21_z.setlength(vz.size());
+        g21_Tb.setlength(vTb.size());
+
+        for (unsigned int i = 0; i < vz.size(); i++){
+            g21_z[i] = vz[i];
+        }
+        for (unsigned int i = 0; i < vTb.size(); i++){
+            g21_Tb[i] = vTb[i];
+        }
+        file.close();
+                
+        spline1dinterpolant interpolator;
+        spline1dbuildcubic(g21_z, g21_Tb, interpolator);
+        interp.interpolator = interpolator;
+
+        Tb_interpolators.push_back(interp);
+        *Tb_index = Tb_interpolators.size() - 1;
+    }
+
+}
 void Model_Santos2006::update_q(map<string,double> params, int *q_index)
-{}
+{
+    bool limber = false;
+    if (params["limber"] == 1.0)
+        limber = true;
+
+    // We first update q and then q' if the limber approximation is being used..
+    bool do_calc = true;
+    for (unsigned int i = 0; i < q_interpolators.size(); ++i) {
+        if (params["ombh2"] == q_interpolators[i].ombh2 &&\
+                params["omnuh2"] == q_interpolators[i].omnuh2 &&\
+                params["omch2"] == q_interpolators[i].omch2 &&\
+                params["omk"] == q_interpolators[i].omk &&\
+                params["hubble"] == q_interpolators[i].hubble &&\
+                params["T_CMB"] == q_interpolators[i].t_cmb &&\
+                params["w_DE"] == q_interpolators[i].w_DE) {
+            
+            cout << "Found precalculated q" << endl;
+            do_calc = false;
+            *q_index = i;
+            break;
+        }
+    }
+
+    if (do_calc) {
+        cout << "Calculating q from scratch"<< endl;
+
+        q_interpolator interp;
+        interp.ombh2 = params["ombh2"];
+        interp.omnuh2 = params["omnuh2"];
+        interp.omch2 = params["omch2"];
+        interp.omk = params["omk"];
+        interp.hubble = params["hubble"];
+        interp.t_cmb = params["T_CMB"];
+        interp.w_DE = params["w_DE"];
+        // TODO: Do this in a way that works with parallelism....
+        // UPDATE D_C to use the above parameters.
+
+        double T_CMB2 = params["T_CMB"];
+        double H_02 = params["hubble"];
+        double h2 = H_02 / 100.0;
+        double O_b2 = params["ombh2"] / pow(h2,2);
+        double O_cdm2 = params["omch2"] / pow(h2,2);
+        double O_nu2 = params["omnuh2"] / pow(h2,2);
+        double O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
+                          (15.0*8.098*pow(10,-11)*pow(h2,2));
+        double O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+        double O_R2 = O_gamma2 + O_nu_rel2;
+        double O_k2 = params["omk"];
+        double O_M2 = O_b2 + O_cdm2 + O_nu2;
+        double O_tot2 = 1.0 - O_k2;
+        double O_V2 = O_tot2 - O_M2 - O_R2;
+        double D_H2 = c / (1000.0 * H_02);
+        double w2 = params["w_DE"];
+
+        real_1d_array xs, ys, qps, hs;
+        xs.setlength(this->zsteps_Ml+1);
+        ys.setlength(this->zsteps_Ml+1);
+        qps.setlength(this->zsteps_Ml+1);
+        hs.setlength(this->zsteps_Ml+1);
+        double h = 10e-4;
+        double z;
+        for (int n = 0; n <= this->zsteps_Ml; ++n) {
+            z = this->zmin_Ml + n * this->stepsize_Ml;
+            xs[n] = z;
+
+            auto integrand = [&](double zp)
+            {
+                return 1/sqrt(O_V2 * pow(1+zp,3*(1+w2)) + O_R2 * pow(1+zp,4) +\
+                        O_M2 * pow(1+zp,3) + O_k2 * pow(1+zp,2));
+            };
+            double Z = integrate(integrand, 0.0, z, 1000, simpson());
+            
+            if (limber) {
+                double dc1 = integrate(integrand, 0.0, z+2*h, 1000, simpson());
+                double dc2 = integrate(integrand, 0.0, z+h, 1000, simpson());
+                double dc3 = integrate(integrand, 0.0, z-h, 1000, simpson());
+                double dc4 = integrate(integrand, 0.0, z-2*h, 1000, simpson());
+                qps[n] =  abs(D_H2 * (-dc1 + 8 * dc2 - 8 * dc3 + dc4));
+            }
+            else
+                qps[n] = (double)n;
+
+            ys[n] = D_H2 * Z;
+            hs[n] = H_02 * sqrt(O_V2 * pow(1+z,3*(1+w2)) + O_R2 * pow(1+z,4) +\
+                    O_M2 * pow(1+z,3) + O_k2 * pow(1+z,2));
+        }
+        spline1dinterpolant interpolator, interpolator_Hf, interpolator_qp;
+        spline1dbuildlinear(xs,ys,interpolator);
+        spline1dbuildlinear(xs,hs,interpolator_Hf);
+        spline1dbuildlinear(xs,qps,interpolator_qp);
+
+        // If limber == false, the qp_interpolator will just be empty but that
+        // is fine because it won't be used in that case.
+        interp.h = h2;
+        interp.interpolator = interpolator;
+        interp.interpolator_Hf = interpolator_Hf;
+        interp.interpolator_qp = interpolator_qp;
+
+        q_interpolators.push_back(interp);
+        *q_index = q_interpolators.size() - 1;
+    }    
+}
+
+//////
+//double Model_Santos2006::
+// This uses the frequency in MHz!
+double Model_Santos2006::z_from_nu(double nu)
+{
+    return (1420.0/nu - 1.0);
+}
+
+double Model_Santos2006::t21(double nu, map<string,double> params)
+{
+    double z = z_from_nu(nu);
+    double tc = Tc(z, params);
+    
+    return tc;
+}
+
+double Model_Santos2006::Tk(double z)
+{
+    double A = 397.85/(145.0*145.0);
+    return A * pow(1+z,2);
+}
+
+// This is in mK!!
+double Model_Santos2006::Tc(double z, map<string,double> params)
+{
+    //Assuming fully neutral IGM.
+    double xHI = 1.0;
+    double ombh2 = params["ombh2"];
+    double omch2 = params["omch2"];
+    double h_local = params["hubble"]/100.0;
+    
+    return 23 * xHI * (0.7/h_local) * (ombh2/0.02) * sqrt((0.15/omch2)*((1+z)/10.0));
+}
+
+void Model_Santos2006::update_gamma(map<string,double> params)
+{
+
+}
+
+double Model_Santos2006::gamma(double z, map<string,double> params)
+{
+    return 0;
+}
+
+double Model_Santos2006::y_tot(double z, map<string,double> params)
+{
+    return 0;
+}
 

@@ -27,7 +27,7 @@ CAMB_CALLER::CAMB_CALLER()
         getline(params_ini_file, line);
         file_content.push_back(line);
     }
-    num_params = 12;
+    num_params = 13;
     parameter_names[0] = "ombh2";
     parameter_names[1] = "omch2";
     parameter_names[2] = "omnuh2";
@@ -37,9 +37,10 @@ CAMB_CALLER::CAMB_CALLER()
     parameter_names[6] = "w";
     parameter_names[7] = "scalar_amp(1)";
     parameter_names[8] = "scalar_spectral_index(1)";
-    parameter_names[9] = "transfer_num_redshifts";
-    parameter_names[10] = "transfer_redshift(1)";
-    parameter_names[11] = "transfer_matterpower(1)";
+    parameter_names[9] = "re_optical_depth";
+    parameter_names[10] = "transfer_num_redshifts";
+    parameter_names[11] = "transfer_redshift(1)";
+    parameter_names[12] = "transfer_matterpower(1)";
 
     for (int i = 0; i < num_params; i++)
         parameters_found.push_back(false);
@@ -94,7 +95,8 @@ void CAMB_CALLER::update_params_ini_full(map<string, double> params)
         }
         for (int j = 0; j < num_params; j++) {
             //pos[j] = file_content[i].find(parameter_names[j]);
-            if (file_content[i].find(parameter_names[j]) != string::npos && file_content[i].at(0) != '#' &&\
+            if (file_content[i].find(parameter_names[j]) != string::npos &&\
+                    file_content[i].at(0) != '#' &&\
                     !parameters_found[j]) {
                 found_n_params += 1;
                 string pn = parameter_names[j];
@@ -111,7 +113,9 @@ void CAMB_CALLER::update_params_ini_full(map<string, double> params)
                     val << params["w_DE"];
                 else if (pn == "scalar_spectral_index(1)")
                     val << params["n_s"];
-
+                else if (pn == "re_optical_depth"){
+                    val << params["tau_reio"];
+                }
                 else
                     val << params[pn];
 
@@ -172,6 +176,9 @@ void CAMB_CALLER::update_params_ini(map<string, double> params)
                     val << params["n_s"];
                 else if (pn == "scalar_amp(1)")
                     val << params["A_s"];
+                else if (pn == "re_optical_depth")
+                    val << params["tau_reio"];
+
                 else
                     val << params[pn];
 

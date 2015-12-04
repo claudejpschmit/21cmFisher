@@ -20,7 +20,8 @@ class ModelInterface : public CosmoBasis {
         virtual double r_interp(double z);
         virtual double Hf_interp(double z);
         virtual double qp_interp(double z, int q_index);
-        virtual void update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index); 
+        virtual void update(map<string, double> params,\
+                int *Pk_index, int *Tb_index, int *q_index); 
         virtual double hubble_h(int q_index);
         virtual void writePK_T21_q();
         string give_modelID();
@@ -44,7 +45,8 @@ class ModelParent : public ModelInterface {
         double r_interp(double z);
         double Hf_interp(double z);
         double qp_interp(double z, int q_index);
-        void update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index); 
+        void update(map<string, double> params,\
+                int *Pk_index, int *Tb_index, int *q_index); 
         double hubble_h(int q_index);
         void writePK_T21_q();
     protected:
@@ -63,7 +65,8 @@ class ModelParent : public ModelInterface {
 class Model_CAMB_ARES : public ModelParent<Tb_interpolator_ares> {
    
     public:
-        Model_CAMB_ARES(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index);
+        Model_CAMB_ARES(map<string, double> params,\
+                int *Pk_index, int *Tb_index, int *q_index);
         ~Model_CAMB_ARES();
     private:  
         void update_Pkz(map<string,double> params, int *Pk_index);
@@ -84,7 +87,8 @@ class Model_CAMB_ARES : public ModelParent<Tb_interpolator_ares> {
 class Model_CAMB_G21 : public ModelParent<Tb_interpolator> {
     
     public:
-        Model_CAMB_G21(map<string,double> params, int *Pk_index, int *Tb_index, int *q_index);
+        Model_CAMB_G21(map<string,double> params,\
+                int *Pk_index, int *Tb_index, int *q_index);
         ~Model_CAMB_G21(); 
     private:
         void update_Pkz(map<string,double> params, int *Pk_index);
@@ -102,14 +106,32 @@ class Model_CAMB_G21 : public ModelParent<Tb_interpolator> {
 
 /**     Model used in Santos & Cooray 2006      **/
 
-class Model_Santos2006 : public ModelParent<Tb_interpolator> {
+class Model_Santos2006 : public ModelParent<Tb_analytic_interpolator> {
     
     public:
-        Model_Santos2006(map<string, double> params);
+        Model_Santos2006(map<string, double> params,\
+                int *Pk_index, int *Tb_index, int *q_index);
         ~Model_Santos2006(); 
     private:
         void update_Pkz(map<string,double> params, int *Pk_index);
         void update_T21(map<string,double> params, int *Tb_index);
         void update_q(map<string,double> params, int *q_index);
+        
+        /* Model specific functions */
+        double z_from_nu(double nu);
+        double t21(double nu, map<string,double> params);
+        double Tk(double z);
+        double Tc(double z, map<string,double> params);
+        double y_tot(double z, map<string,double> params);
+        double P_a(double z);
+
+        void update_gamma(map<string,double> params);
+        double gamma(double z, map<string,double> params);
+
+        /* Variables */
+        CAMB_CALLER* CAMB;
+        double zmin_Ml, zmax_Ml, stepsize_Ml;
+        int zsteps_Ml;
+
 };
 

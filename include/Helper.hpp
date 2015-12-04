@@ -15,7 +15,7 @@ using namespace arma;
  * parameter values.
  */
 struct Pk_interpolator {
-    double ombh2, omnuh2, omch2, omk, hubble, tcmb, w_DE, n_s, A_s;
+    double ombh2, omnuh2, omch2, omk, hubble, tcmb, w_DE, n_s, A_s, tau;
     spline2dinterpolant interpolator;
 };
 

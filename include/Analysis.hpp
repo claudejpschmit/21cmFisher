@@ -54,10 +54,29 @@ class Tomography2D : public AnalysisInterface {
     public:
         Tomography2D(ModelInterface* model);
 
-        double Cl(int l, double f1, double f2,\
+        double Cl(int l, double nu1, double nu2,\
                 int Pk_index, int Tb_index, int q_index);
-        double Cl_noise(int l, double f1, double f2);
-        double Cl_foreground(int l, double f1, double f2);
+        double Cl_noise(int l, double nu1, double nu2);
+        double Cl_foreground(int l, double nu1, double nu2);
 
+        void write_gamma();
+        
+    private:
+        double F(double k, double z);
+        double I(int l, double k, double z);
+        double J(int l, double k, double z);
+        double f(double z);
+        double P(double k, double z1, double z2);
+        
+        double alpha_fiducial(double z);
+        void determine_alpha();
+        double beta_fiducial(double z);
+        void determine_beta();
+        double gamma_fiducial(double z);
+        void determine_gamma();
+
+        double a_alpha, b_alpha, c_alpha, d_alpha, e_alpha, f_alpha, g_alpha, h_alpha;
+        double a_beta, b_beta;
+        double a_gamma, b_gamma, c_gamma;
 
 };

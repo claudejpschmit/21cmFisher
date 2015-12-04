@@ -121,5 +121,5 @@ void AresInterface::read_Tb()
         Tb.push_back(t);
     }
     infile.close();
-    system("rm dTb_ares.dat");
+    //system("rm dTb_ares.dat");
 }

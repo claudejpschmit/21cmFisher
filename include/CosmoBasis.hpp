@@ -18,7 +18,7 @@ class CosmoBasis {
         double sph_bessel_camb(int l, double x);
         map<string, double> give_fiducial_params();
         double give_fiducial_params(string param_key);
-
+        void set_fiducial_params(map<string, double> params);
         /*  Basic Cosmology Functions  */
 
         void show_cosmo_calcs();
@@ -309,7 +309,7 @@ class CosmoBasis {
     
     protected:
         void check_params();
-
+        
         //making this function a virtual function means that if the function
         //is overloaded at a later stage in one of the child classes, all
         //instances where it is used will use the updated version. If no

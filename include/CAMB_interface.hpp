@@ -20,7 +20,7 @@ class CAMB_CALLER {
         vector<string> file_content;
         vector<double> k_values;
         vector<vector<double>> Pz_values;
-        string parameter_names [12];
+        string parameter_names [13];
         vector<bool> parameters_found;
         void update_params_ini(map<string, double> params);
         void update_params_ini_full(map<string, double> params);
