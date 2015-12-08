@@ -88,7 +88,6 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
         int *Tb_index, int *q_index, vector<double> range)
 {
     mat res = randu<mat>(range.size(),range.size());
-
     // Remove the lines below and the if/else statement when not reading/writing matrix
     stringstream matrix_filename;
     string suffix = generate_matrix_file_suffix();
@@ -101,7 +100,8 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     }
     matrix_filename << prefix << param_key << "_"<< l << "_" <<\
         range[0] << "_" << range[range.size()-1] << "_"<< range.size() << "_"<<\
-        fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
+        67.5 << "_"<< 72.5 << "_" << suffix << ".bin";
+    cout << " here " << endl;
     if (check_file(matrix_filename.str()))
     {
         cout << "///reading matrix from file///" << endl;
@@ -258,12 +258,13 @@ double FisherInterface::compute_Fl(int l, string param_key1, string param_key2,\
         int *Pk_index, int *Tb_index, int *q_index)
 {
     vector<double> range = set_range(l, xmin, xmax); 
-
+    
     mat Cl = randu<mat>(range.size(),range.size());
     mat Cl_inv = Cl;
 
     cout << "... derivative matrix calulation started" << endl;
     mat Cl_a = this->Cl_derivative_matrix(l, param_key1, Pk_index, Tb_index, q_index, range);
+    cout << " here " << endl;
     mat Cl_b = randu<mat>(range.size(),range.size());
     if (param_key1 == param_key2)
         Cl_b = Cl_a;

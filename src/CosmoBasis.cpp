@@ -224,7 +224,7 @@ void CosmoBasis::check_params()
     //Ae = effective area per antenna
     this->fiducial_params.insert(pair<string,double>("Ae",0.1));
     //df = frequency bandwidth
-    this->fiducial_params.insert(pair<string,double>("df",0.05));
+    this->fiducial_params.insert(pair<string,double>("df",0.1));
     this->fiducial_params.insert(pair<string,double>("Tsys",300000));
     this->fiducial_params.insert(pair<string,double>("fcover",1.0));
     this->fiducial_params.insert(pair<string,double>("lmax_noise",5000));

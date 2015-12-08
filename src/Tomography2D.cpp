@@ -30,9 +30,11 @@ double Tomography2D::Cl(int l, double nu1, double nu2,\
         double F2 = F(k,z2, alpha, beta, RLy);
         // nu_0 = 70MHz
         double I1 = I(l,k,70);
-        double I2 = I(l,k,70);
+        double I2 = I1;
+        //double I2 = I(l,k,70);
         double J1 = J(l,k,70);
-        double J2 = J(l,k,70);
+        double J2 = J1;
+        //double J2 = J(l,k,70);
         double f1 = model->fz_interp(z1, Tb_index);
         double f2 = model->fz_interp(z2, Tb_index);
         double Pdd = P(k,z1,z2, Pk_index);

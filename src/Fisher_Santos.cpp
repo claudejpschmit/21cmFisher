@@ -12,10 +12,12 @@ Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
         if (fiducial_params[key] == 0.0)
             var_params.insert(pair<string,double>(key,0.0001));
         else
-            var_params.insert(pair<string,double>(key,fiducial_params[key]/100));
+            var_params.insert(pair<string,double>(key,abs(fiducial_params[key])/100));
     }
     
     Fl_file.open(Fl_filename);
+    set_range_stepsize();
+
     cout << "... Santos Fisher built ..." << endl;
 }
 
@@ -40,6 +42,7 @@ void Fisher_Santos::calc_Fls()
 string Fisher_Santos::generate_matrix_file_suffix()
 {
     string suffix = "santos";
+    return suffix;
 }
 
 void Fisher_Santos::set_range_stepsize()
@@ -49,16 +52,17 @@ void Fisher_Santos::set_range_stepsize()
 
 vector<double> Fisher_Santos::set_range(int l, double xmin, double xmax)
 {
+
     int steps = (xmax - xmin)/xstepsize + 1;
     vector<double> range;
     double nu;
-    for (int i = 0; i <= steps; ++i)
+    for (int i = 0; i < steps; ++i)
     {
         nu = xmin + i * xstepsize;
         range.push_back(nu); 
     }
     stringstream ss;
-    ss << "The range is [" << xmin << "," << nu << "] in " << steps+1 <<\
+    ss << "The range is [" << xmin << "," << nu << "] in " << steps <<\
         " steps for l = " << l << ".\n";
     cout << ss.str();
     return range;
@@ -79,7 +83,9 @@ void Fisher_Santos::run(int lmin, int lmax, int n_points_per_thread, int n_threa
     filename << filename_prefix;
     
     // frequency range in MHz
-    double interval_size = 20;
+    double interval_size = 5;
+    //double freq_min = 60;
+    //double freq_max = 80;
     double freq_min = 70-interval_size/2.0;
     double freq_max = 70+interval_size/2.0;
   

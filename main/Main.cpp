@@ -17,11 +17,23 @@ int main ()
     params.insert(pair<string,double>("noise",1.0));
     params.insert(pair<string,double>("rsd",0.0));
     params.insert(pair<string,double>("limber",0.0));
-    params.insert(pair<string,double>("tau_noise",3600000));//1000hours
-    params.insert(pair<string,double>("n_points_per_thread", 1));
-    params.insert(pair<string,double>("n_threads", 3));
+    params.insert(pair<string,double>("tau_noise",7200000));//2000hours
+    params.insert(pair<string,double>("n_points_per_thread", 10));
+    params.insert(pair<string,double>("n_threads", 7));
     params.insert(pair<string,double>("zmin", 15));
-    
+    params.insert(pair<string,double>("lmin",600));
+    params.insert(pair<string,double>("lmax",2000));
+
+    params.insert(pair<string,double>("ombh2",0.0223));
+    params.insert(pair<string,double>("omch2",0.127));
+    params.insert(pair<string,double>("omnuh2",0.00064));
+    params.insert(pair<string,double>("omk",0.0));
+    params.insert(pair<string,double>("hubble",73.2));
+    params.insert(pair<string,double>("A_s",1.562e-9));
+    params.insert(pair<string,double>("n_s",0.951));
+    params.insert(pair<string,double>("sigma8",0.74));
+    params.insert(pair<string,double>("tau_reio",0.089));
+
     params.insert(pair<string,double>("gamma", -3.13));
     params.insert(pair<string,double>("beta", 0.223));
     params.insert(pair<string,double>("alpha", 0.48));
