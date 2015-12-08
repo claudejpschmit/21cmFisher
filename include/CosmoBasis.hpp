@@ -363,6 +363,4 @@ class CosmoBasis {
         /// \brief Scales at horizon crossing [Mpc^-1].
         double k_eq;
         
-
-              
 };

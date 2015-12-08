@@ -41,6 +41,11 @@ double ModelInterface::qp_interp(double z, int q_index)
     return 0;
 }
 
+double ModelInterface::fz_interp(double z, int Tb_index)
+{
+    return 0;
+}
+
 double ModelInterface::hubble_h(int q_index)
 {
     return 0;
@@ -50,6 +55,9 @@ string ModelInterface::give_modelID()
 {
     return modelID;
 }
+void ModelInterface::set_Santos_params(double *alpha, double *beta,\
+                double *gamma, double *RLy, int Tb_index)
+{}
 
 void ModelInterface::update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
 {}
@@ -110,6 +118,12 @@ double ModelParent<T21>::qp_interp(double z, int q_index)
 }
 
 template<typename T21>
+double ModelParent<T21>::fz_interp(double z, int Tb_index)
+{
+    return spline1dcalc(Tb_interpolators[Tb_index].fz_interpolator,z);
+}
+
+template<typename T21>
 double ModelParent<T21>::hubble_h(int q_index)
 {
     return q_interpolators[q_index].h;
@@ -153,9 +167,6 @@ void ModelParent<T21>::writePK_T21_q()
         t21 << z << " " << T21_interp(z,0) << endl;
     }
     t21.close();
-
-
-
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -871,7 +882,13 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
                 params["omnuh2"] == Tb_interpolators[i].omnuh2 &&\
                 params["omch2"] == Tb_interpolators[i].omch2 &&\
                 params["hubble"] == Tb_interpolators[i].hubble &&\
-                params["T_CMB"] == Tb_interpolators[i].t_cmb)
+                params["T_CMB"] == Tb_interpolators[i].t_cmb &&\
+                params["omk"] == Tb_interpolators[i].omk &&\
+                params["alpha"] == Tb_interpolators[i].alpha &&\
+                params["beta"] == Tb_interpolators[i].beta &&\
+                params["gamma"] == Tb_interpolators[i].gamma &&\             
+                params["RLy"] == Tb_interpolators[i].RLy
+                )
         {
             cout << "found precalculated Analytic 21cm Signal" << endl;
             do_calc = false;
@@ -880,21 +897,26 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
         }
     }
     if (do_calc) {
+        
+       
         cout << "Calculating T21 from scratch" << endl;
         ofstream file;
-        Tb_analytic_interpolator interp;
+        Tb_interpolator_Santos interp;
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
         interp.omch2 = params["omch2"];
         interp.hubble = params["hubble"];
+        interp.omk = params["omk"];
         interp.t_cmb = params["T_CMB"];
+        interp.alpha = params["alpha"];
+        interp.beta = params["beta"];
+        interp.gamma = params["gamma"];
+        interp.RLy = params["RLy"];
         file.open("output/t21_analytic.dat");
-        //NO!!!!!!!! This is bad with parallel threads...
-        //update params that go into calculating dTb ...
-        //the working params now live in current_params.
+        
         int q_index = 0;
 
-        vector<double> vz, vTb;
+        vector<double> vz, vTb, vfz;
 
         double zmin;
         if (params["zmin"] - 2 < 0)
@@ -910,28 +932,37 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
             vz.push_back(z);
             double dTb = t21(z, params);
             vTb.push_back(dTb);
+            double f = fz(z, params);
+            vfz.push_back(f);
         }
 
-        real_1d_array g21_z, g21_Tb;
-        g21_z.setlength(vz.size());
-        g21_Tb.setlength(vTb.size());
+        real_1d_array t21_z, t21_Tb, t21_fz;
+        t21_z.setlength(vz.size());
+        t21_Tb.setlength(vTb.size());
+        t21_fz.setlength(vfz.size());
+
 
         for (unsigned int i = 0; i < vz.size(); i++){
-            g21_z[i] = vz[i];
-        }
-        for (unsigned int i = 0; i < vTb.size(); i++){
-            g21_Tb[i] = vTb[i];
+            t21_z[i] = vz[i];
+            t21_Tb[i] = vTb[i];
+            t21_fz[i] = vfz[i];
         }
         file.close();
                 
         spline1dinterpolant interpolator;
-        spline1dbuildcubic(g21_z, g21_Tb, interpolator);
+        spline1dbuildcubic(t21_z, t21_Tb, interpolator);
         interp.interpolator = interpolator;
+
+        spline1dinterpolant fz_interpolator;
+        spline1dbuildcubic(t21_z, t21_fz, fz_interpolator);
+        interp.fz_interpolator = fz_interpolator;
 
         Tb_interpolators.push_back(interp);
         *Tb_index = Tb_interpolators.size() - 1;
-    }
 
+
+
+    }
 }
 void Model_Santos2006::update_q(map<string,double> params, int *q_index)
 {
@@ -1037,6 +1068,15 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
     }    
 }
 
+void Model_Santos2006::set_Santos_params(double *alpha, double *beta,\
+                double *gamma, double *RLy, int Tb_index)
+{
+    *alpha = Tb_interpolators[Tb_index].alpha; 
+    *beta = Tb_interpolators[Tb_index].beta; 
+    *gamma = Tb_interpolators[Tb_index].gamma; 
+    *RLy = Tb_interpolators[Tb_index].RLy; 
+}
+
 //////
 //double Model_Santos2006::
 // This uses the frequency in MHz!
@@ -1045,13 +1085,40 @@ double Model_Santos2006::z_from_nu(double nu)
     return (1420.0/nu - 1.0);
 }
 
-double Model_Santos2006::t21(double nu, map<string,double> params)
+double Model_Santos2006::t21(double z, map<string,double> params)
 {
-    double z = z_from_nu(nu);
+    //double z = z_from_nu(nu);
     double tc = Tc(z, params);
     
     return tc;
 }
+
+double Model_Santos2006::fz(double z, map<string,double> params)
+{
+    // This is taken from Ned Wright's cosmology tutorial section 3.5 Growth of linear perturbations
+    // Lahav et al 1991;
+    double T_CMB2 = params["T_CMB"];
+    double H_02 = params["hubble"];
+    double h2 = H_02 / 100.0;
+    double O_b2 = params["ombh2"] / pow(h2,2);
+    double O_cdm2 = params["omch2"] / pow(h2,2);
+    double O_nu2 = params["omnuh2"] / pow(h2,2);
+    double O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
+                 (15.0*8.098*pow(10,-11)*pow(h2,2));
+    double O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+    double O_R2 = O_gamma2 + O_nu_rel2;
+    double O_k2 = params["omk"];
+    double O_M2 = O_b2 + O_cdm2 + O_nu2;
+    double O_tot2 = 1.0 - O_k2;
+    double O_Lambda = O_tot2 - O_M2 - O_R2;
+  
+    double num = O_M2 * pow(1+z,3);
+    double denom = O_M2 * (1+z) - (O_M2 + O_Lambda - 1) * pow(1+z,2) + O_Lambda;
+    double res = pow(num/denom,4.0/7.0);
+
+    return res;
+}
+
 
 double Model_Santos2006::Tk(double z)
 {

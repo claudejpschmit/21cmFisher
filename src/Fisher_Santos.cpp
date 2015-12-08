@@ -79,8 +79,9 @@ void Fisher_Santos::run(int lmin, int lmax, int n_points_per_thread, int n_threa
     filename << filename_prefix;
     
     // frequency range in MHz
-    double freq_min = 55;
-    double freq_max = 85;
+    double interval_size = 20;
+    double freq_min = 70-interval_size/2.0;
+    double freq_max = 70+interval_size/2.0;
   
     // now compute F_ab's (symmetric hence = F_ba's)
     for (int i = 0; i < model_param_keys.size(); i++) {

@@ -29,6 +29,8 @@ struct Tb_interpolator {
     double ombh2, omnuh2, omch2, omk, hubble, s8, T_CMB, n_s, w_DE,\
         fstar, fesc, nion, fx, flya;
     spline1dinterpolant interpolator;
+    //Not used here
+    spline1dinterpolant fz_interpolator;
 };
 
 /**
@@ -41,6 +43,8 @@ struct Tb_interpolator_ares {
     double ombh2, omnuh2, omch2, omk, hubble, s8, T_CMB, n_s, w_DE,\
         fstar, fesc, nion, fX, Tmin, Nlw, cX, HeByMass;
     spline1dinterpolant interpolator;
+    //Not used here
+    spline1dinterpolant fz_interpolator;
 };
 
 /**
@@ -62,9 +66,11 @@ struct q_interpolator {
  * corresponding to those parameter values. This version is for the analytic
  * determination of Tb(z).
  */
-struct Tb_analytic_interpolator {
-    double ombh2, omnuh2, omch2, hubble, t_cmb;
+struct Tb_interpolator_Santos {
+    double ombh2, omnuh2, omch2, hubble, t_cmb, omk;
+    double alpha, beta, gamma, RLy;
     spline1dinterpolant interpolator;
+    spline1dinterpolant fz_interpolator;
 };
 
 /**

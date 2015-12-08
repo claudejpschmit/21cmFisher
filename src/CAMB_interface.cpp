@@ -27,6 +27,10 @@ CAMB_CALLER::CAMB_CALLER()
         getline(params_ini_file, line);
         file_content.push_back(line);
     }
+
+   
+
+
     num_params = 13;
     parameter_names[0] = "ombh2";
     parameter_names[1] = "omch2";
@@ -41,6 +45,21 @@ CAMB_CALLER::CAMB_CALLER()
     parameter_names[10] = "transfer_num_redshifts";
     parameter_names[11] = "transfer_redshift(1)";
     parameter_names[12] = "transfer_matterpower(1)";
+
+    NP_parameter_names[0] = "omega_baryon";
+    NP_parameter_names[1] = "omega_cdm";
+    NP_parameter_names[2] = "omega_lambda";
+    NP_parameter_names[3] = "omega_neutrino";
+    NP_parameter_names[4] = "hubble";
+    NP_parameter_names[5] = "temp_cmb";
+    NP_parameter_names[6] = "w";
+    NP_parameter_names[7] = "scalar_amp(1)";
+    NP_parameter_names[8] = "scalar_spectral_index(1)";
+    NP_parameter_names[9] = "re_optical_depth";
+    NP_parameter_names[10] = "transfer_num_redshifts";
+    NP_parameter_names[11] = "transfer_redshift(1)";
+    NP_parameter_names[12] = "transfer_matterpower(1)";
+
 
     for (int i = 0; i < num_params; i++)
         parameters_found.push_back(false);
@@ -63,7 +82,7 @@ void CAMB_CALLER::call(map<string, double> params)
 
     //call camb with new_params.ini
     system("./CAMB/camb CAMB/new_params.ini");
-
+    
     //recovering Power spectrum.
     read_matterpower_files(params["Pk_steps"]);    
 }
@@ -145,49 +164,118 @@ void CAMB_CALLER::update_params_ini_full(map<string, double> params)
 
 void CAMB_CALLER::update_params_ini(map<string, double> params)
 {
+    if (params.find("omega_lambda") == params.end())
+    {
+        use_non_physical = false;
+    }
+    else
+    {
+        use_non_physical = true;
+    }
+
     int n_redshifts = params["Pk_steps"];
     double zmin = params["zmin"];
     double zmax = params["zmax"];
     double stepsize_z = (zmax - zmin)/(double)(n_redshifts - 1);
-
     int found_n_params = 0;
     for (int i = 0; i < file_content.size(); ++i) {
         if (file_content[i].find("output_root =") != string::npos) {
             file_content[i] = "output_root = CAMB/test";
         }
-        for (int j = 0; j < num_params; j++) {
-            //pos[j] = file_content[i].find(parameter_names[j]);
-            if (file_content[i].find(parameter_names[j]) != string::npos && file_content[i].at(0) != '#' &&\
-                    !parameters_found[j]) {
-                found_n_params += 1;
-                string pn = parameter_names[j];
-                stringstream val;
-                if (pn == "transfer_num_redshifts")
-                    val << n_redshifts;
-                else if (pn == "transfer_redshift(1)")
-                    val << zmax;
-                else if (pn =="transfer_matterpower(1)") 
-                    val << "matterpower_1.dat";
-                else if (pn == "temp_cmb")
-                    val << params["T_CMB"]; 
-                else if (pn == "w")
-                    val << params["w_DE"];
-                else if (pn == "scalar_spectral_index(1)")
-                    val << params["n_s"];
-                else if (pn == "scalar_amp(1)")
-                    val << params["A_s"];
-                else if (pn == "re_optical_depth")
-                    val << params["tau_reio"];
-
-                else
-                    val << params[pn];
-
-                string new_parameter = parameter_names[j] + " = " + val.str();
-                file_content[i] = new_parameter;
-                parameters_found[j] = true;
-                break;
+        if (use_non_physical) {
+            if (file_content[i].find("use_physical") != string::npos) {
+                file_content[i] = "use_physical = F";
             }
         }
+        for (int j = 0; j < num_params; j++) {
+            //pos[j] = file_content[i].find(parameter_names[j]);
+            if (!use_non_physical){
+                if (file_content[i].find(parameter_names[j]) != string::npos &&\
+                        file_content[i].at(0) != '#' &&\
+                        !parameters_found[j]) {
+                    found_n_params += 1;
+                    string pn = parameter_names[j];
+                    stringstream val;
+                    if (pn == "transfer_num_redshifts")
+                        val << n_redshifts;
+                    else if (pn == "transfer_redshift(1)")
+                        val << zmax;
+                    else if (pn =="transfer_matterpower(1)") 
+                        val << "matterpower_1.dat";
+                    else if (pn == "temp_cmb")
+                        val << params["T_CMB"]; 
+                    else if (pn == "w")
+                        val << params["w_DE"];
+                    else if (pn == "scalar_spectral_index(1)")
+                        val << params["n_s"];
+                    else if (pn == "scalar_amp(1)")
+                        val << params["A_s"];
+                    else if (pn == "re_optical_depth")
+                        val << params["tau_reio"];
+
+                    else
+                        val << params[pn];
+
+                    string new_parameter = parameter_names[j] + " = " + val.str();
+                    file_content[i] = new_parameter;
+                    parameters_found[j] = true;
+                    break;
+                }
+            }
+            else
+            {
+                if (file_content[i].find(NP_parameter_names[j]) != string::npos &&\
+                        file_content[i].at(0) != '#' &&\
+                        !parameters_found[j]) {
+                    found_n_params += 1;
+                    string pn = NP_parameter_names[j];
+                    stringstream val;
+                    if (pn == "transfer_num_redshifts")
+                        val << n_redshifts;
+                    else if (pn == "transfer_redshift(1)")
+                        val << zmax;
+                    else if (pn =="transfer_matterpower(1)") 
+                        val << "matterpower_1.dat";
+                    else if (pn == "temp_cmb")
+                        val << params["T_CMB"]; 
+                    else if (pn == "w")
+                        val << params["w_DE"];
+                    else if (pn == "scalar_spectral_index(1)")
+                        val << params["n_s"];
+                    else if (pn == "scalar_amp(1)")
+                        val << params["A_s"];
+                    else if (pn == "re_optical_depth")
+                        val << params["tau_reio"];
+                    else if (pn == "omega_baryon")
+                    {
+                        double h = params["hubble"]/100.0;
+                        double res = params["ombh2"]/(h*h);
+                        val << res;
+                    }
+                    else if (pn == "omega_cdm")
+                    {
+                        double h = params["hubble"]/100.0;
+                        double res = params["omch2"]/(h*h);
+                        val << res;
+                    }
+                    else if (pn == "omega_neutrino")
+                    {
+                        double h = params["hubble"]/100.0;
+                        double res = params["omnuh2"]/(h*h);
+                        val << res;
+                    }
+
+                    else
+                        val << params[pn];
+                    
+                    string new_parameter = NP_parameter_names[j] + " = " + val.str();
+                    file_content[i] = new_parameter;
+                    parameters_found[j] = true;
+                    break;
+                }
+            }
+        }
+
         if (found_n_params == num_params){
             break;
         }

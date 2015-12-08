@@ -20,6 +20,9 @@ class ModelInterface : public CosmoBasis {
         virtual double r_interp(double z);
         virtual double Hf_interp(double z);
         virtual double qp_interp(double z, int q_index);
+        virtual double fz_interp(double z, int Tb_index);
+        virtual void set_Santos_params(double *alpha, double *beta,\
+                double *gamma, double *RLy, int Tb_index);
         virtual void update(map<string, double> params,\
                 int *Pk_index, int *Tb_index, int *q_index); 
         virtual double hubble_h(int q_index);
@@ -45,6 +48,7 @@ class ModelParent : public ModelInterface {
         double r_interp(double z);
         double Hf_interp(double z);
         double qp_interp(double z, int q_index);
+        double fz_interp(double z, int Tb_index);
         void update(map<string, double> params,\
                 int *Pk_index, int *Tb_index, int *q_index); 
         double hubble_h(int q_index);
@@ -106,12 +110,15 @@ class Model_CAMB_G21 : public ModelParent<Tb_interpolator> {
 
 /**     Model used in Santos & Cooray 2006      **/
 
-class Model_Santos2006 : public ModelParent<Tb_analytic_interpolator> {
+class Model_Santos2006 : public ModelParent<Tb_interpolator_Santos> {
     
     public:
         Model_Santos2006(map<string, double> params,\
                 int *Pk_index, int *Tb_index, int *q_index);
         ~Model_Santos2006(); 
+        void set_Santos_params(double *alpha, double *beta,\
+                double *gamma, double *RLy, int Tb_index);
+
     private:
         void update_Pkz(map<string,double> params, int *Pk_index);
         void update_T21(map<string,double> params, int *Tb_index);
@@ -119,7 +126,8 @@ class Model_Santos2006 : public ModelParent<Tb_analytic_interpolator> {
         
         /* Model specific functions */
         double z_from_nu(double nu);
-        double t21(double nu, map<string,double> params);
+        double t21(double z, map<string,double> params);
+        double fz(double z, map<string,double> params);
         double Tk(double z);
         double Tc(double z, map<string,double> params);
         double y_tot(double z, map<string,double> params);

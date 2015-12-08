@@ -62,18 +62,21 @@ class Tomography2D : public AnalysisInterface {
         void write_gamma();
         
     private:
-        double F(double k, double z);
-        double I(int l, double k, double z);
-        double J(int l, double k, double z);
+        double F(double k, double z, double alpha, double beta, double RLy);
+        double I(int l, double k, double nu_0);
+        double J(int l, double k, double nu_0);
         double f(double z);
-        double P(double k, double z1, double z2);
-        
+        double P(double k, double z1, double z2, double Pk_index);
+       
+        double z_from_nu(double nu);
         double alpha_fiducial(double z);
         void determine_alpha();
         double beta_fiducial(double z);
         void determine_beta();
         double gamma_fiducial(double z);
         void determine_gamma();
+
+        double interval_size;
 
         double a_alpha, b_alpha, c_alpha, d_alpha, e_alpha, f_alpha, g_alpha, h_alpha;
         double a_beta, b_beta;
