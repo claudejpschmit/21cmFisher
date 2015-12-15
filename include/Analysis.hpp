@@ -29,6 +29,8 @@ class Cosmology3D : public AnalysisInterface {
                 int Pk_index, int Tb_index, int q_index);
         double Cl_noise(int l, double k1, double k2);
         double Cl_foreground(int l, double k1, double k2);
+        void writeT21(string name);
+
     private:
         double corr_Tb(int l, double k1, double k2, double k_low,\
                 double k_high, int Pk_index, int Tb_index, int q_index);
@@ -59,6 +61,8 @@ class Tomography2D : public AnalysisInterface {
         double Cl_noise(int l, double nu1, double nu2);
         double Cl_foreground(int l, double nu1, double nu2);
 
+        void writeT21(string name);
+
         void write_gamma();
         
     private:
@@ -67,6 +71,10 @@ class Tomography2D : public AnalysisInterface {
         double J(int l, double k, double nu_0);
         double f(double z);
         double P(double k, double z1, double z2, double Pk_index);
+
+        void set_FG_params();
+        double I_FG(int i, double nu1, double nu2);
+        double Cl_FG(int i, int l, double nu);
        
         double z_from_nu(double nu);
         double alpha_fiducial(double z);
@@ -81,5 +89,8 @@ class Tomography2D : public AnalysisInterface {
         double a_alpha, b_alpha, c_alpha, d_alpha, e_alpha, f_alpha, g_alpha, h_alpha;
         double a_beta, b_beta;
         double a_gamma, b_gamma, c_gamma;
+        int num_FG_sources;
+        vector<double> A_FG, beta_FG, alpha_FG, chi_FG;
+
 
 };

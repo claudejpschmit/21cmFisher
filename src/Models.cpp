@@ -56,7 +56,7 @@ string ModelInterface::give_modelID()
     return modelID;
 }
 void ModelInterface::set_Santos_params(double *alpha, double *beta,\
-                double *gamma, double *RLy, int Tb_index)
+        double *gamma, double *RLy, int Tb_index)
 {}
 
 void ModelInterface::update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
@@ -74,62 +74,62 @@ void ModelInterface::update_q(map<string, double> params, int *q_index)
 /* Code for ModelParent */   
 /************************/
 
-template<typename T21>
+    template<typename T21>
 ModelParent<T21>::ModelParent(map<string,double> params)
     :
         ModelInterface(params)
 {}
 
-template<typename T21>
+    template<typename T21>
 double ModelParent<T21>::Pkz_interp(double k, double z, int Pk_index)
 {
     return spline2dcalc(Pkz_interpolators[Pk_index].interpolator, k, z);
 }
 
-template<typename T21>
+    template<typename T21>
 double ModelParent<T21>::T21_interp(double z, int Tb_index)
 {
     // The factor of 1000 is so I get the result in mK.
     return spline1dcalc(Tb_interpolators[Tb_index].interpolator, z);
 }
 
-template<typename T21>
+    template<typename T21>
 double ModelParent<T21>::q_interp(double z, int q_index)
 {
     return spline1dcalc(q_interpolators[q_index].interpolator, z);
 }
 
-template<typename T21>
+    template<typename T21>
 double ModelParent<T21>::r_interp(double z)
 {
     return q_interp(z, 0);
 }
 
-template<typename T21>
+    template<typename T21>
 double ModelParent<T21>::Hf_interp(double z)
 {
     return spline1dcalc(q_interpolators[0].interpolator_Hf,z);
 }
 
-template<typename T21>
+    template<typename T21>
 double ModelParent<T21>::qp_interp(double z, int q_index)
 {
     return spline1dcalc(q_interpolators[q_index].interpolator_qp,z);
 }
 
-template<typename T21>
+    template<typename T21>
 double ModelParent<T21>::fz_interp(double z, int Tb_index)
 {
     return spline1dcalc(Tb_interpolators[Tb_index].fz_interpolator,z);
 }
 
-template<typename T21>
+    template<typename T21>
 double ModelParent<T21>::hubble_h(int q_index)
 {
     return q_interpolators[q_index].h;
 }
 
-template<typename T21>
+    template<typename T21>
 void ModelParent<T21>::update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
 {
     try {
@@ -142,26 +142,26 @@ void ModelParent<T21>::update(map<string, double> params, int *Pk_index, int *Tb
         cout << "---- Error: " << e.msg.c_str() << endl;
     }
 }
-template<typename T21>
+    template<typename T21>
 void ModelParent<T21>::writePK_T21_q()
 {
     ofstream pk, q, t21;
     pk.open("PKZ.dat");
     q.open("Q.dat");
     t21.open("T21.dat");
-    
+
     for (int i = 0; i < 10000; i++) {
         double k = 0.001 + i*0.001;
         pk << k << " " << Pkz_interp(k,7,0) << endl;
     }
     pk.close();
-    
+
     for (int i = 0; i < 1000; i++) {
         double z = 7 + i*0.001;
         q << z << " " << q_interp(z,0) << endl;
     }
     q.close();
-    
+
     for (int i = 0; i < 1000; i++) {
         double z = 7 + i*0.001;
         t21 << z << " " << T21_interp(z,0) << endl;
@@ -183,7 +183,7 @@ Model_CAMB_ARES::Model_CAMB_ARES(map<string,double> params, int *Pk_index, int *
     modelID = "CAMB_ARES";
     stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
     CAMB = new CAMB_CALLER;
-    
+
     cout << "... precalculating q ..." << endl;
     update_q(fiducial_params, q_index);
     cout << "... q done ..." << endl;
@@ -196,7 +196,7 @@ Model_CAMB_ARES::Model_CAMB_ARES(map<string,double> params, int *Pk_index, int *
     cout << "...  -> ARES for 21cm signal ..." << endl;
     ARES = new AresInterface();
     update_T21(fiducial_params, Tb_index);
-    
+
     cout << "... 21cm interface built ..." << endl;
     cout << "... Model_CAMB_ARES built ..." << endl;
 
@@ -221,7 +221,8 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
                 params["w_DE"] == Pkz_interpolators[i].w_DE &&\
                 params["n_s"] == Pkz_interpolators[i].n_s &&\
                 params["A_s"] == Pkz_interpolators[i].A_s &&\
-                params["tau_reio"] == Pkz_interpolators[i].tau){
+                params["tau_reio"] == Pkz_interpolators[i].tau &&\
+                params["omega_lambda"] == Pkz_interpolators[i].omega_lambda ){
 
             cout << "Found precalculated Pkz" << endl;
             do_calc = false;
@@ -244,6 +245,10 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
         interp.n_s = params["n_s"];
         interp.A_s = params["A_s"];
         interp.tau = params["tau_reio"];
+        if (params.find("omega_lambda") == params.end())
+            interp.omega_lambda = -1;
+        else
+            interp.omega_lambda = params["omega_lambda"];
 
 
         CAMB->call(params);    
@@ -286,26 +291,27 @@ void Model_CAMB_ARES::update_T21(map<string,double> params, int *Tb_index)
     bool do_calc = true;
     for (unsigned int i = 0; i < Tb_interpolators.size(); ++i) {
         if (params["ombh2"] == Tb_interpolators[i].ombh2 &&\
-            params["omnuh2"] == Tb_interpolators[i].omnuh2 &&\
-            params["omch2"] == Tb_interpolators[i].omch2 &&\ 
-            params["omk"] == Tb_interpolators[i].omk &&\
-            params["hubble"] == Tb_interpolators[i].hubble &&\
-            params["sigma8"] == Tb_interpolators[i].s8 &&\
-            params["T_CMB"] == Tb_interpolators[i].T_CMB &&\
-            params["n_s"] == Tb_interpolators[i].n_s &&\
-            params["fstar"] == Tb_interpolators[i].fstar &&\
-            params["fesc"] == Tb_interpolators[i].fesc &&\
-            params["nion"] == Tb_interpolators[i].nion &&\
-            params["fx"] == Tb_interpolators[i].fX ) {
-                
+                params["omnuh2"] == Tb_interpolators[i].omnuh2 &&\
+                params["omch2"] == Tb_interpolators[i].omch2 &&\ 
+                params["omk"] == Tb_interpolators[i].omk &&\
+                params["hubble"] == Tb_interpolators[i].hubble &&\
+                params["sigma8"] == Tb_interpolators[i].s8 &&\
+                params["T_CMB"] == Tb_interpolators[i].T_CMB &&\
+                params["n_s"] == Tb_interpolators[i].n_s &&\
+                params["fstar"] == Tb_interpolators[i].fstar &&\
+                params["fesc"] == Tb_interpolators[i].fesc &&\
+                params["nion"] == Tb_interpolators[i].nion &&\
+                params["fx"] == Tb_interpolators[i].fX &&\
+                params["omega_lambda"] == Tb_interpolators[i].omega_lambda) {
+
             /* **** These parameters aren't part of the fiducial parameter
              * set, or, as is the case for w_DE, aren't used by ARES.
-                params["Tmin"] == Tb_interpolators[i].Tmin &&\
-                params["w_DE"] == Tb_interpolators[i].w_DE &&\
-                params["Nlw"] == Tb_interpolators[i].Nlw &&\
-                params["cX"] == Tb_interpolators[i].cX &&\
-                params["HeByMass"] == Tb_interpolators[i].HeByMass
-            */
+             params["Tmin"] == Tb_interpolators[i].Tmin &&\
+             params["w_DE"] == Tb_interpolators[i].w_DE &&\
+             params["Nlw"] == Tb_interpolators[i].Nlw &&\
+             params["cX"] == Tb_interpolators[i].cX &&\
+             params["HeByMass"] == Tb_interpolators[i].HeByMass
+             */
             cout << "found precalculated Ares" << endl;
             do_calc = false;
             *Tb_index = i;
@@ -328,14 +334,18 @@ void Model_CAMB_ARES::update_T21(map<string,double> params, int *Tb_index)
         interp.fesc = params["fesc"];
         interp.nion = params["nion"];
         interp.fX = params["fx"];
+        if (params.find("omega_lambda") == params.end())
+            interp.omega_lambda = -1;
+        else
+            interp.omega_lambda = params["omega_lambda"];
 
-        
+
         interp.w_DE = -1; //params["w_DE"];
         interp.Tmin = -1; //params["Tmin"];
         interp.Nlw = -1; //params["Nlw"];
         interp.cX = -1; //params["cX"];
         interp.HeByMass = -1; //params["HeByMass"];
-        
+
 
         cout << "Ares is being updated" << endl;
         ARES->updateAres(params);
@@ -379,8 +389,9 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
                 params["omk"] == q_interpolators[i].omk &&\
                 params["hubble"] == q_interpolators[i].hubble &&\
                 params["T_CMB"] == q_interpolators[i].t_cmb &&\
-                params["w_DE"] == q_interpolators[i].w_DE) {
-            
+                params["w_DE"] == q_interpolators[i].w_DE &&\
+                params["omega_lambda"] == q_interpolators[i].omega_lambda) {
+
             cout << "Found precalculated q" << endl;
             do_calc = false;
             *q_index = i;
@@ -395,27 +406,48 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
         interp.omch2 = params["omch2"];
-        interp.omk = params["omk"];
         interp.hubble = params["hubble"];
         interp.t_cmb = params["T_CMB"];
         interp.w_DE = params["w_DE"];
+        bool use_non_physical;
+        if (params.find("omega_lambda") == params.end()) {
+            use_non_physical = false;
+            interp.omk = params["omk"];
+            interp.omega_lambda = -1;
+        }
+        else
+        {
+            use_non_physical = true;
+            interp.omk = -1;
+            interp.omega_lambda = params["omega_lambda"];
+        }
+
         // TODO: Do this in a way that works with parallelism....
         // UPDATE D_C to use the above parameters.
+        double T_CMB2, H_02, h2, O_b2, O_cdm2, O_nu2, O_nu_rel2;
+        double O_gamma2, O_R2, O_k2, O_M2, O_Lambda, O_tot2;
+        T_CMB2 = params["T_CMB"];
+        H_02 = params["hubble"];
+        h2 = H_02 / 100.0;
+        O_b2 = params["ombh2"] / pow(h2,2);
+        O_cdm2 = params["omch2"] / pow(h2,2);
+        O_nu2 = params["omnuh2"] / pow(h2,2);
+        O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
+                   (15.0*8.098*pow(10,-11)*pow(h2,2));
+        O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+        O_R2 = O_gamma2 + O_nu_rel2;
+        O_M2 = O_b2 + O_cdm2 + O_nu2;
 
-        double T_CMB2 = params["T_CMB"];
-        double H_02 = params["hubble"];
-        double h2 = H_02 / 100.0;
-        double O_b2 = params["ombh2"] / pow(h2,2);
-        double O_cdm2 = params["omch2"] / pow(h2,2);
-        double O_nu2 = params["omnuh2"] / pow(h2,2);
-        double O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
-                          (15.0*8.098*pow(10,-11)*pow(h2,2));
-        double O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
-        double O_R2 = O_gamma2 + O_nu_rel2;
-        double O_k2 = params["omk"];
-        double O_M2 = O_b2 + O_cdm2 + O_nu2;
-        double O_tot2 = 1.0 - O_k2;
-        double O_V2 = O_tot2 - O_M2 - O_R2;
+        if (!use_non_physical){
+            O_k2 = params["omk"];
+            O_tot2 = 1.0 - O_k2;
+            O_Lambda = O_tot2 - O_M2 - O_R2;
+        }
+        else {
+            O_Lambda = params["omega_lambda"];
+            O_k2 = 1 - O_Lambda - O_R2 - O_M2;
+        }
+
         double D_H2 = c / (1000.0 * H_02);
         double w2 = params["w_DE"];
 
@@ -432,11 +464,11 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
 
             auto integrand = [&](double zp)
             {
-                return 1/sqrt(O_V2 * pow(1+zp,3*(1+w2)) + O_R2 * pow(1+zp,4) +\
+                return 1/sqrt(O_Lambda * pow(1+zp,3*(1+w2)) + O_R2 * pow(1+zp,4) +\
                         O_M2 * pow(1+zp,3) + O_k2 * pow(1+zp,2));
             };
             double Z = integrate(integrand, 0.0, z, 1000, simpson());
-            
+
             if (limber) {
                 double dc1 = integrate(integrand, 0.0, z+2*h, 1000, simpson());
                 double dc2 = integrate(integrand, 0.0, z+h, 1000, simpson());
@@ -446,7 +478,7 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
             }
 
             ys[n] = D_H2 * Z;
-            hs[n] = H_02 * sqrt(O_V2 * pow(1+z,3*(1+w2)) + O_R2 * pow(1+z,4) +\
+            hs[n] = H_02 * sqrt(O_Lambda * pow(1+z,3*(1+w2)) + O_R2 * pow(1+z,4) +\
                     O_M2 * pow(1+z,3) + O_k2 * pow(1+z,2));
         }
         spline1dinterpolant interpolator, interpolator_Hf, interpolator_qp;
@@ -472,8 +504,8 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
 
 Model_CAMB_G21::Model_CAMB_G21(map<string,double> params,\
         int *Pk_index, int *Tb_index, int *q_index)
-    :
-        ModelParent(params)
+:
+    ModelParent(params)
 {
     zmin_Ml = fiducial_params["zmin"];
     zmax_Ml = fiducial_params["zmax"];
@@ -481,7 +513,7 @@ Model_CAMB_G21::Model_CAMB_G21(map<string,double> params,\
     stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
     modelID = "CAMB_G21";
     CAMB = new CAMB_CALLER;
-    
+
     cout << "... precalculating q ..." << endl;
     update_q(fiducial_params, q_index);
     cout << "... q done ..." << endl;
@@ -494,7 +526,7 @@ Model_CAMB_G21::Model_CAMB_G21(map<string,double> params,\
     cout << "...  -> G21 for 21cm signal ..." << endl;
     G21 = new Global21cmInterface();
     update_T21(fiducial_params, Tb_index);
-    
+
     cout << "... 21cm interface built ..." << endl;
     cout << "... Model_CAMB_ARES built ..." << endl;
 
@@ -519,7 +551,8 @@ void Model_CAMB_G21::update_Pkz(map<string,double> params, int *Pk_index)
                 params["w_DE"] == Pkz_interpolators[i].w_DE &&\
                 params["n_s"] == Pkz_interpolators[i].n_s &&\
                 params["A_s"] == Pkz_interpolators[i].A_s &&\
-                params["tau_reio"] == Pkz_interpolators[i].tau){
+                params["tau_reio"] == Pkz_interpolators[i].tau &&\
+                params["omega_lambda"] == Pkz_interpolators[i].omega_lambda ){
 
             cout << "Found precalculated Pkz" << endl;
             do_calc = false;
@@ -542,6 +575,10 @@ void Model_CAMB_G21::update_Pkz(map<string,double> params, int *Pk_index)
         interp.n_s = params["n_s"];
         interp.A_s = params["A_s"];
         interp.tau = params["tau_reio"];
+        if (params.find("omega_lambda") == params.end())
+            interp.omega_lambda = -1;
+        else
+            interp.omega_lambda = params["omega_lambda"];
 
 
         CAMB->call(params);    
@@ -635,7 +672,7 @@ void Model_CAMB_G21::update_T21(map<string,double> params, int *Tb_index)
         for (unsigned int i = 0; i < vTb.size(); i++){
             g21_Tb[i] = vTb[i];
         }
-        
+
         spline1dinterpolant interpolator;
         spline1dbuildcubic(g21_z, g21_Tb, interpolator);
         interp.interpolator = interpolator;
@@ -660,8 +697,9 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
                 params["omk"] == q_interpolators[i].omk &&\
                 params["hubble"] == q_interpolators[i].hubble &&\
                 params["T_CMB"] == q_interpolators[i].t_cmb &&\
-                params["w_DE"] == q_interpolators[i].w_DE) {
-            
+                params["w_DE"] == q_interpolators[i].w_DE &&\
+                params["omega_lambda"] == q_interpolators[i].omega_lambda) {
+
             cout << "Found precalculated q" << endl;
             do_calc = false;
             *q_index = i;
@@ -676,27 +714,48 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
         interp.omch2 = params["omch2"];
-        interp.omk = params["omk"];
         interp.hubble = params["hubble"];
         interp.t_cmb = params["T_CMB"];
         interp.w_DE = params["w_DE"];
+        bool use_non_physical;
+        if (params.find("omega_lambda") == params.end()) {
+            use_non_physical = false;
+            interp.omk = params["omk"];
+            interp.omega_lambda = -1;
+        }
+        else
+        {
+            use_non_physical = true;
+            interp.omk = -1;
+            interp.omega_lambda = params["omega_lambda"];
+        }
+
         // TODO: Do this in a way that works with parallelism....
         // UPDATE D_C to use the above parameters.
+        double T_CMB2, H_02, h2, O_b2, O_cdm2, O_nu2, O_nu_rel2;
+        double O_gamma2, O_R2, O_k2, O_M2, O_Lambda, O_tot2;
+        T_CMB2 = params["T_CMB"];
+        H_02 = params["hubble"];
+        h2 = H_02 / 100.0;
+        O_b2 = params["ombh2"] / pow(h2,2);
+        O_cdm2 = params["omch2"] / pow(h2,2);
+        O_nu2 = params["omnuh2"] / pow(h2,2);
+        O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
+                   (15.0*8.098*pow(10,-11)*pow(h2,2));
+        O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+        O_R2 = O_gamma2 + O_nu_rel2;
+        O_M2 = O_b2 + O_cdm2 + O_nu2;
 
-        double T_CMB2 = params["T_CMB"];
-        double H_02 = params["hubble"];
-        double h2 = H_02 / 100.0;
-        double O_b2 = params["ombh2"] / pow(h2,2);
-        double O_cdm2 = params["omch2"] / pow(h2,2);
-        double O_nu2 = params["omnuh2"] / pow(h2,2);
-        double O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
-                          (15.0*8.098*pow(10,-11)*pow(h2,2));
-        double O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
-        double O_R2 = O_gamma2 + O_nu_rel2;
-        double O_k2 = params["omk"];
-        double O_M2 = O_b2 + O_cdm2 + O_nu2;
-        double O_tot2 = 1.0 - O_k2;
-        double O_V2 = O_tot2 - O_M2 - O_R2;
+        if (!use_non_physical){
+            O_k2 = params["omk"];
+            O_tot2 = 1.0 - O_k2;
+            O_Lambda = O_tot2 - O_M2 - O_R2;
+        }
+        else {
+            O_Lambda = params["omega_lambda"];
+            O_k2 = 1 - O_Lambda - O_R2 - O_M2;
+        }
+
         double D_H2 = c / (1000.0 * H_02);
         double w2 = params["w_DE"];
 
@@ -713,11 +772,11 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
 
             auto integrand = [&](double zp)
             {
-                return 1/sqrt(O_V2 * pow(1+zp,3*(1+w2)) + O_R2 * pow(1+zp,4) +\
+                return 1/sqrt(O_Lambda * pow(1+zp,3*(1+w2)) + O_R2 * pow(1+zp,4) +\
                         O_M2 * pow(1+zp,3) + O_k2 * pow(1+zp,2));
             };
             double Z = integrate(integrand, 0.0, z, 1000, simpson());
-            
+
             if (limber) {
                 double dc1 = integrate(integrand, 0.0, z+2*h, 1000, simpson());
                 double dc2 = integrate(integrand, 0.0, z+h, 1000, simpson());
@@ -729,7 +788,7 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
                 qps[n] = (double)n;
 
             ys[n] = D_H2 * Z;
-            hs[n] = H_02 * sqrt(O_V2 * pow(1+z,3*(1+w2)) + O_R2 * pow(1+z,4) +\
+            hs[n] = H_02 * sqrt(O_Lambda * pow(1+z,3*(1+w2)) + O_R2 * pow(1+z,4) +\
                     O_M2 * pow(1+z,3) + O_k2 * pow(1+z,2));
         }
         spline1dinterpolant interpolator, interpolator_Hf, interpolator_qp;
@@ -762,8 +821,8 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
 
 Model_Santos2006::Model_Santos2006(map<string, double> params,\
         int *Pk_index, int *Tb_index, int *q_index)
-    :
-        ModelParent(params)
+:
+    ModelParent(params)
 {
     //Changing fiducial values to the ones they have used.
     map<string, double> new_params = give_fiducial_params();
@@ -779,9 +838,9 @@ Model_Santos2006::Model_Santos2006(map<string, double> params,\
     zsteps_Ml = fiducial_params["zsteps"];
     stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
     CAMB = new CAMB_CALLER;
-    
+
     modelID = "Santos2006";
-    
+
     cout << "... precalculating q ..." << endl;
     update_q(fiducial_params, q_index);
     cout << "... q done ..." << endl;
@@ -793,7 +852,7 @@ Model_Santos2006::Model_Santos2006(map<string, double> params,\
     cout << "... precalculating 21cm interface ..." << endl;
     cout << "...  -> Santos Model for 21cm signal ..." << endl;
     update_T21(fiducial_params, Tb_index);
-    
+
     cout << "... 21cm interface built ..." << endl;
     cout << "... Model_Santos2006 built ..." << endl;
 
@@ -815,7 +874,8 @@ void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
                 params["w_DE"] == Pkz_interpolators[i].w_DE &&\
                 params["n_s"] == Pkz_interpolators[i].n_s &&\
                 params["A_s"] == Pkz_interpolators[i].A_s &&\
-                params["tau_reio"] == Pkz_interpolators[i].tau){
+                params["tau_reio"] == Pkz_interpolators[i].tau &&\
+                params["omega_lambda"] == Pkz_interpolators[i].omega_lambda){
 
             cout << "Found precalculated Pkz" << endl;
             do_calc = false;
@@ -837,7 +897,10 @@ void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
         interp.n_s = params["n_s"];
         interp.A_s = params["A_s"];
         interp.tau = params["tau_reio"];
-
+        if (params.find("omega_lambda") == params.end())
+            interp.omega_lambda = -1;
+        else
+            interp.omega_lambda = params["omega_lambda"];
 
         CAMB->call(params);    
         vector<double> vk = CAMB->get_k_values();
@@ -887,8 +950,9 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
                 params["alpha"] == Tb_interpolators[i].alpha &&\
                 params["beta"] == Tb_interpolators[i].beta &&\
                 params["gamma"] == Tb_interpolators[i].gamma &&\             
-                params["RLy"] == Tb_interpolators[i].RLy
-                )
+                params["RLy"] == Tb_interpolators[i].RLy &&\
+                params["omega_lambda"] == Tb_interpolators[i].omega_lambda
+           )
         {
             cout << "found precalculated Analytic 21cm Signal" << endl;
             do_calc = false;
@@ -897,8 +961,8 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
         }
     }
     if (do_calc) {
-        
-       
+
+
         cout << "Calculating T21 from scratch" << endl;
         ofstream file;
         Tb_interpolator_Santos interp;
@@ -912,8 +976,12 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
         interp.beta = params["beta"];
         interp.gamma = params["gamma"];
         interp.RLy = params["RLy"];
+        if (params.find("omega_lambda") == params.end())
+            interp.omega_lambda = -1;
+        else
+            interp.omega_lambda = params["omega_lambda"];
         file.open("output/t21_analytic.dat");
-        
+
         int q_index = 0;
 
         vector<double> vz, vTb, vfz;
@@ -948,22 +1016,35 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
             t21_fz[i] = vfz[i];
         }
         file.close();
-                
+
         spline1dinterpolant interpolator;
-        spline1dbuildcubic(t21_z, t21_Tb, interpolator);
+        try {
+            spline1dbuildcubic(t21_z, t21_Tb, interpolator);
+        }
+        catch(alglib::ap_error e){
+            cout << "---- Error in Tb: " << e.msg.c_str() << endl;
+        }
         interp.interpolator = interpolator;
 
         spline1dinterpolant fz_interpolator;
-        spline1dbuildcubic(t21_z, t21_fz, fz_interpolator);
+
+        try {
+            spline1dbuildcubic(t21_z, t21_fz, fz_interpolator);
+        }
+        catch(alglib::ap_error e){
+            cout << "---- Error in fz: " << e.msg.c_str() << endl;
+            //for (unsigned int i = 0; i < vz.size(); i++){
+            //    cout << t21_z[i] << " " << t21_fz[i] << endl;
+            //}
+        }
+
         interp.fz_interpolator = fz_interpolator;
 
         Tb_interpolators.push_back(interp);
         *Tb_index = Tb_interpolators.size() - 1;
-
-
-
     }
 }
+
 void Model_Santos2006::update_q(map<string,double> params, int *q_index)
 {
     bool limber = false;
@@ -979,8 +1060,9 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
                 params["omk"] == q_interpolators[i].omk &&\
                 params["hubble"] == q_interpolators[i].hubble &&\
                 params["T_CMB"] == q_interpolators[i].t_cmb &&\
-                params["w_DE"] == q_interpolators[i].w_DE) {
-            
+                params["w_DE"] == q_interpolators[i].w_DE &&\
+                params["omega_lambda"] == q_interpolators[i].omega_lambda ){
+
             cout << "Found precalculated q" << endl;
             do_calc = false;
             *q_index = i;
@@ -995,27 +1077,48 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
         interp.omch2 = params["omch2"];
-        interp.omk = params["omk"];
         interp.hubble = params["hubble"];
         interp.t_cmb = params["T_CMB"];
         interp.w_DE = params["w_DE"];
+        bool use_non_physical;
+        if (params.find("omega_lambda") == params.end()) {
+            use_non_physical = false;
+            interp.omk = params["omk"];
+            interp.omega_lambda = -1;
+        }
+        else
+        {
+            use_non_physical = true;
+            interp.omk = -1;
+            interp.omega_lambda = params["omega_lambda"];
+        }
+
         // TODO: Do this in a way that works with parallelism....
         // UPDATE D_C to use the above parameters.
+        double T_CMB2, H_02, h2, O_b2, O_cdm2, O_nu2, O_nu_rel2;
+        double O_gamma2, O_R2, O_k2, O_M2, O_Lambda, O_tot2;
+        T_CMB2 = params["T_CMB"];
+        H_02 = params["hubble"];
+        h2 = H_02 / 100.0;
+        O_b2 = params["ombh2"] / pow(h2,2);
+        O_cdm2 = params["omch2"] / pow(h2,2);
+        O_nu2 = params["omnuh2"] / pow(h2,2);
+        O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
+                   (15.0*8.098*pow(10,-11)*pow(h2,2));
+        O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+        O_R2 = O_gamma2 + O_nu_rel2;
+        O_M2 = O_b2 + O_cdm2 + O_nu2;
 
-        double T_CMB2 = params["T_CMB"];
-        double H_02 = params["hubble"];
-        double h2 = H_02 / 100.0;
-        double O_b2 = params["ombh2"] / pow(h2,2);
-        double O_cdm2 = params["omch2"] / pow(h2,2);
-        double O_nu2 = params["omnuh2"] / pow(h2,2);
-        double O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
-                          (15.0*8.098*pow(10,-11)*pow(h2,2));
-        double O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
-        double O_R2 = O_gamma2 + O_nu_rel2;
-        double O_k2 = params["omk"];
-        double O_M2 = O_b2 + O_cdm2 + O_nu2;
-        double O_tot2 = 1.0 - O_k2;
-        double O_V2 = O_tot2 - O_M2 - O_R2;
+        if (!use_non_physical){
+            O_k2 = params["omk"];
+            O_tot2 = 1.0 - O_k2;
+            O_Lambda = O_tot2 - O_M2 - O_R2;
+        }
+        else {
+            O_Lambda = params["omega_lambda"];
+            O_k2 = 1 - O_Lambda - O_R2 - O_M2;
+        }
+
         double D_H2 = c / (1000.0 * H_02);
         double w2 = params["w_DE"];
 
@@ -1032,11 +1135,11 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
 
             auto integrand = [&](double zp)
             {
-                return 1/sqrt(O_V2 * pow(1+zp,3*(1+w2)) + O_R2 * pow(1+zp,4) +\
+                return 1/sqrt(O_Lambda * pow(1+zp,3*(1+w2)) + O_R2 * pow(1+zp,4) +\
                         O_M2 * pow(1+zp,3) + O_k2 * pow(1+zp,2));
             };
             double Z = integrate(integrand, 0.0, z, 1000, simpson());
-            
+
             if (limber) {
                 double dc1 = integrate(integrand, 0.0, z+2*h, 1000, simpson());
                 double dc2 = integrate(integrand, 0.0, z+h, 1000, simpson());
@@ -1048,7 +1151,7 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
                 qps[n] = (double)n;
 
             ys[n] = D_H2 * Z;
-            hs[n] = H_02 * sqrt(O_V2 * pow(1+z,3*(1+w2)) + O_R2 * pow(1+z,4) +\
+            hs[n] = H_02 * sqrt(O_Lambda * pow(1+z,3*(1+w2)) + O_R2 * pow(1+z,4) +\
                     O_M2 * pow(1+z,3) + O_k2 * pow(1+z,2));
         }
         spline1dinterpolant interpolator, interpolator_Hf, interpolator_qp;
@@ -1069,7 +1172,7 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
 }
 
 void Model_Santos2006::set_Santos_params(double *alpha, double *beta,\
-                double *gamma, double *RLy, int Tb_index)
+        double *gamma, double *RLy, int Tb_index)
 {
     *alpha = Tb_interpolators[Tb_index].alpha; 
     *beta = Tb_interpolators[Tb_index].beta; 
@@ -1089,7 +1192,7 @@ double Model_Santos2006::t21(double z, map<string,double> params)
 {
     //double z = z_from_nu(nu);
     double tc = Tc(z, params);
-    
+
     return tc;
 }
 
@@ -1097,25 +1200,39 @@ double Model_Santos2006::fz(double z, map<string,double> params)
 {
     // This is taken from Ned Wright's cosmology tutorial section 3.5 Growth of linear perturbations
     // Lahav et al 1991;
-    double T_CMB2 = params["T_CMB"];
-    double H_02 = params["hubble"];
-    double h2 = H_02 / 100.0;
-    double O_b2 = params["ombh2"] / pow(h2,2);
-    double O_cdm2 = params["omch2"] / pow(h2,2);
-    double O_nu2 = params["omnuh2"] / pow(h2,2);
-    double O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
-                 (15.0*8.098*pow(10,-11)*pow(h2,2));
-    double O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
-    double O_R2 = O_gamma2 + O_nu_rel2;
-    double O_k2 = params["omk"];
-    double O_M2 = O_b2 + O_cdm2 + O_nu2;
-    double O_tot2 = 1.0 - O_k2;
-    double O_Lambda = O_tot2 - O_M2 - O_R2;
-  
-    double num = O_M2 * pow(1+z,3);
-    double denom = O_M2 * (1+z) - (O_M2 + O_Lambda - 1) * pow(1+z,2) + O_Lambda;
-    double res = pow(num/denom,4.0/7.0);
+    // It is just f(z) = O_M(z)^(4/7)
+    
+    double T_CMB2, H_02, h2, O_b2, O_cdm2, O_nu2, O_nu_rel2;
+    double O_gamma2, O_R2, O_k2, O_M2, O_Lambda, O_tot2;
+    T_CMB2 = params["T_CMB"];
+    H_02 = params["hubble"];
+    h2 = H_02 / 100.0;
+    O_b2 = params["ombh2"] / pow(h2,2);
+    O_cdm2 = params["omch2"] / pow(h2,2);
+    O_nu2 = params["omnuh2"] / pow(h2,2);
+    O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
+        (15.0*8.098*pow(10,-11)*pow(h2,2));
+    O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+    O_R2 = O_gamma2 + O_nu_rel2;
+    O_M2 = O_b2 + O_cdm2 + O_nu2;
+    
+    if (params.find("omega_lambda") == params.end()){
+        O_k2 = params["omk"];
+        O_tot2 = 1.0 - O_k2;
+        O_Lambda = O_tot2 - O_M2 - O_R2;
+    }
+    else {
+        O_Lambda = params["omega_lambda"];
+        O_k2 = 1 - O_Lambda - O_R2 - O_M2;
+    }
 
+    double w_DE = params["w_DE"];
+    double Ez_sq = O_Lambda * pow(1+z, 3*(1+w_DE)) + O_R2 * pow(1+z,4) +\
+                   O_M2 * pow(1+z,3) + O_k2 * pow(1+z,2);
+    double num = O_M2 * pow(1+z,3);
+    double frac = num/Ez_sq;
+    double exponent = 4.0/7.0;
+    double res = pow(frac,exponent);
     return res;
 }
 
@@ -1133,8 +1250,15 @@ double Model_Santos2006::Tc(double z, map<string,double> params)
     double xHI = 1.0;
     double ombh2 = params["ombh2"];
     double omch2 = params["omch2"];
-    double h_local = params["hubble"]/100.0;
-    
+    double h_local;
+    if (params.find("omega_lambda") == params.end()){
+        h_local = params["hubble"]/100.0; 
+    }
+    else
+    {
+        h_local = sqrt((params["ombh2"] + params["omch2"] + params["omnuh2"])/\
+                (1.0-params["omega_lambda"]-params["omk"]));
+    }
     return 23 * xHI * (0.7/h_local) * (ombh2/0.02) * sqrt((0.15/omch2)*((1+z)/10.0));
 }
 

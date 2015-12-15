@@ -1,5 +1,5 @@
 #include "Fisher.hpp"
-#define TESTMATRIX true
+#define TESTMATRIX false
 
 // Public Destructor.
 

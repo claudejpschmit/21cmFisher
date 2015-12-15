@@ -170,6 +170,7 @@ void CAMB_CALLER::update_params_ini(map<string, double> params)
     }
     else
     {
+        cout << "CAMB uses non-Physical params with Om_Lambda." << endl;
         use_non_physical = true;
     }
 

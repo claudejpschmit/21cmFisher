@@ -7,6 +7,8 @@
 #include "interpolation.h"
 #include "Analyser.hpp"
 
+#define SANTOS true
+
 using namespace std;
 using namespace arma;
 using namespace alglib;
@@ -31,7 +33,11 @@ int main(int argc, char* argv[])
         prefix << run_number;
 
     Analyser analyse;
-    Fisher_return_pair finv = analyse.build_Fisher_inverse(keys, prefix.str(), "output/Fisher/");
+    Fisher_return_pair finv;
+    if (SANTOS)
+        finv = analyse.build_Fisher_inverse_Santos(keys, prefix.str(), "output/Fisher_Santos/");
+    else    
+        finv = analyse.build_Fisher_inverse(keys, prefix.str(), "output/Fisher/");
     analyse.draw_error_ellipses(finv, keys, run_number, "output/Fisher/");
 
     return 0;

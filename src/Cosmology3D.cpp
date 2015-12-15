@@ -16,6 +16,9 @@ Cosmology3D::Cosmology3D(ModelInterface* model)
     zsteps_Ml = model->give_fiducial_params("zsteps");
     stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
     k_stepsize = model->give_fiducial_params("k_stepsize");
+    cout << "... 3DCosmology built ..." << endl;
+
+
 }
 
 double Cosmology3D::Cl(int l, double k1, double k2,\
@@ -343,5 +346,17 @@ double Cosmology3D::N_bar(int l, double k1, double k2, int Pk_index, int Tb_inde
     double integral = integrate_simps(integrand, this->zmin_Ml, this->zmax_Ml, zstep);
 
     return integral * this->prefactor_Ml;
+}
+
+void Cosmology3D::writeT21(string name)
+{
+    ofstream file(name);
+
+    for (int i= 0; i < 1000; i++)
+    {
+        double z = 10 + i*0.1;
+        file << z << " " << model->T21_interp(z,0) << endl; 
+    }
+    file.close();
 }
 

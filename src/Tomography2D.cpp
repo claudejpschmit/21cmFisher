@@ -11,6 +11,8 @@ Tomography2D::Tomography2D(ModelInterface* model)
     // in MHz
     interval_size = 20;
 
+    set_FG_params();
+
     analysisID = "Tomography2D";
 }
 
@@ -45,7 +47,7 @@ double Tomography2D::Cl(int l, double nu1, double nu2,\
     //TODO: get the right limits.
     double klow = 0.0001;
     double khigh = 1;
-    int steps = 1000;
+    int steps = 10000;
     double integral = integrate_simps(integrand, klow, khigh, steps);
 
     return 2/model->pi * dTb1 *dTb2 * integral;
@@ -69,8 +71,75 @@ double Tomography2D::Cl_noise(int l, double nu1, double nu2)
 }
 double Tomography2D::Cl_foreground(int l, double nu1, double nu2)
 {
-    return 0;
+    double CL = 0;
+    for (int i = 0; i < num_FG_sources; i++){
+        double I = I_FG(i,nu1, nu2);
+        double Cl_nu1 = Cl_FG(i, l, nu1);
+        double Cl_nu2 = Cl_FG(i, l, nu2);
+        double CL_ii = I * sqrt(Cl_nu1 * Cl_nu2);
+        
+        CL += CL_ii;
+    }
+   
+    return CL;
 }
+
+void Tomography2D::writeT21(string name)
+{
+    ofstream file(name);
+    double alpha, beta, gamma, RLy;
+    model->set_Santos_params(&alpha, &beta, &gamma, &RLy, 0);
+
+    for (int i= 0; i < 1000; i++)
+    {
+        double z = 10 + i*0.1;
+        file << z << " " << gamma*model->T21_interp(z,0) << endl; 
+    }
+    file.close();
+}
+
+double Tomography2D::I_FG(int i, double nu1, double nu2)
+{
+    return 1-pow(log(nu1/nu2),2)/(2.0*chi_FG[i]*chi_FG[i]);
+}
+
+void Tomography2D::set_FG_params()
+{
+    num_FG_sources = 4;
+    A_FG.resize(num_FG_sources);
+    beta_FG.resize(num_FG_sources);
+    alpha_FG.resize(num_FG_sources);
+    chi_FG.resize(num_FG_sources);
+    // extragalactic point sources
+    A_FG[0] = 10.0;
+    beta_FG[0] = 1.1;
+    alpha_FG[0] = 2.07;
+    chi_FG[0] = 1.0;
+    // extragalactic free-free
+    A_FG[1] = 0.014;
+    beta_FG[1] = 1.0;
+    alpha_FG[1] = 2.1;
+    chi_FG[1] = 35.0;
+    // galactic synchrotron
+    A_FG[2] = 700.0;
+    beta_FG[2] = 2.4;
+    alpha_FG[2] = 2.8;
+    chi_FG[2] = 4.0;
+    // galactic free-free
+    A_FG[3] = 0.088;
+    beta_FG[3] = 3.0;
+    alpha_FG[3] = 2.15;
+    chi_FG[3] = 35.0;
+}
+
+double Tomography2D::Cl_FG(int i, int l, double nu)
+{
+    double nu_f = 130;
+    double res = A_FG[i]*pow(1000.0/(double)l, beta_FG[i]) *\
+                 pow(nu_f/nu, 2*alpha_FG[i]);
+    return res;
+}
+
 double Tomography2D::z_from_nu(double nu)
 {
     return (1420.0/nu - 1.0);

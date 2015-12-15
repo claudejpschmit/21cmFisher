@@ -156,6 +156,157 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
     return RESULT;
 }
 
+Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_keys,\
+        string run_prefix, string path)
+{
+    Fisher_return_pair RESULT;
+    struct F_values 
+    {
+        string key1, key2;
+        double value;
+    };
+    vector<F_values> F_ab;
+
+    int num_params = param_keys.size();
+    for (int i = 0; i < num_params; i++)
+    {
+        for (int j = i; j < num_params; j++)
+        {
+            //generate the relevant filenames
+            string filename = path + param_keys[i] +\
+                              "_" + param_keys[j] + ".dat";
+            ifstream f(filename);
+            if (!f.is_open())
+                filename = path + param_keys[j] +\
+                           "_" + param_keys[i] + ".dat";
+
+            //First order file
+            stringstream command_buff;
+            cout << "Ordering file: " << filename << endl;
+            command_buff << "python OrderFile.py " << filename;
+            char* command = new char[command_buff.str().length() + 1];
+            strcpy(command, command_buff.str().c_str());
+            int r = system(command);
+            (void)r;
+            delete command;
+
+            //Read in the data
+            ifstream file;
+            file.open(filename);
+            string line;
+            vector<int> l;
+            vector<double> F_l;
+            while (getline(file,line))
+            {
+                int col1;
+                double col2;
+                istringstream ss(line);
+                // Makes sure that the condition number in col3 is NOT read!
+                ss >> col1 >> col2;
+                l.push_back(col1);
+                F_l.push_back(col2);
+            }
+            file.close();
+
+            //Then, construct the Fisher element F_key1_key2
+            F_values F_ab_value;
+            F_ab_value.key1 = param_keys[i];
+            F_ab_value.key2 = param_keys[j];
+            double v = 0;
+            // set to true for single mode analysis
+            bool DEBUG_single_mode = false;
+
+            if (DEBUG_single_mode)
+                v = (2*l[0]+1) * F_l[0];
+            else {
+                real_1d_array ls, fs;
+                ls.setlength(l.size());
+                fs.setlength(F_l.size());
+                for (unsigned int n = 0; n < l.size(); n++) {
+                    ls[n] = l[n];
+                    fs[n] = F_l[n];
+                }
+                spline1dinterpolant Fl_interp;
+                try {
+                    spline1dbuildcubic(ls,fs,Fl_interp);
+                }
+                catch(alglib::ap_error e)
+                {
+                    
+                    printf("error msg: %s\n", e.msg.c_str());
+                    for (unsigned int n = 0; n < l.size(); n++) {
+                        cout << ls[n] << " " << fs[n] << endl;
+                    }
+                }
+                for (int k = l[0]; k <= l[l.size()-1]; k++)
+                {
+                    double fk = spline1dcalc(Fl_interp, k);
+                    v += (2*k + 1) * fk; 
+                }
+            }
+
+            F_ab_value.value = v;
+            F_ab.push_back(F_ab_value);
+        }
+    }
+    //now we have all the necessary information in the F_ab vector
+    //the only thing left is to put it in matrix form.
+    vector<vector<vector<string>>> indecies;
+    //size of the matrix is
+    //int n = (-1+sqrt(1+8*         ofstream filenames_Fl.size()))/2;
+    mat F = randu<mat>(num_params,num_params);
+    //fill the F matrix.
+    for (int i = 0; i < num_params; i++)
+    {
+        vector<vector<string>> row;
+        for (int j = 0; j < num_params; j++)
+        {
+            string key1, key2;
+            vector<string> row_element;
+            key1 = param_keys[i];
+            key2 = param_keys[j];
+            for (unsigned int k = 0; k < F_ab.size(); k++)
+            {
+                if ((F_ab[k].key1 == key1 && F_ab[k].key2 == key2) ||\
+                        (F_ab[k].key1 == key2 && F_ab[k].key2 == key1)){
+                    F(i,j) = F_ab[k].value;
+                   
+                    row_element.push_back(key1);
+                    row_element.push_back(key2);
+                
+                }
+            }
+
+            row.push_back(row_element);
+        }
+        indecies.push_back(row);
+    }
+    /*
+       cout << F << endl;
+       vec eigenval;
+       mat eigenvec;
+       eig_sym(eigenval, eigenvec, F.i());
+       cout << "e-values" << endl;
+       for (int k = 0; k < 5; k++)
+       cout << eigenval(k) << endl;
+       */
+    bool ERROR = false;
+    RESULT.matrix = pinv(F);
+    for (int i = 0; i < num_params; i++)
+        if (RESULT.matrix(i,i) < 0)
+            ERROR = true;
+    if (ERROR) {
+        cout << "    ERROR: inverse Fisher has negative diagonal elements." <<\
+            endl;
+        cout << "           The Fisher matrix found is:" << endl;
+        cout << F << endl;
+        cout << "           The inverse Fisher matrix found is:" << endl;
+        cout << RESULT.matrix << endl;
+    }
+    RESULT.matrix_indecies = indecies;
+    return RESULT;
+}
+
 Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
         string param2, int run_number, string path)
 {

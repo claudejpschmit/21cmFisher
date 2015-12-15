@@ -27,6 +27,17 @@ AresInterface::~AresInterface()
 
 void AresInterface::updateAres(map<string,double> params)
 {
+    bool use_non_physical;
+    if (params.find("omega_lambda") == params.end())
+    {
+        use_non_physical = false;
+    }
+    else
+    {
+        cout << "ARES uses non-Physical params with Om_Lambda." << endl;
+        use_non_physical = true;
+    }
+
     // This is hubble_0
     hubble_0 = params["hubble"] / 100.0;
 
@@ -49,7 +60,10 @@ void AresInterface::updateAres(map<string,double> params)
     // This is omega_m_0
     omega_m_0 = omega_b_0 + O_cdm + O_nu;
     // This is omega_lambda_0
-    omega_l_0 = O_tot - omega_m_0 - O_R;
+    if (!use_non_physical)
+        omega_l_0 = O_tot - omega_m_0 - O_R;
+    else
+        omega_l_0 = params["omega_lambda"];
     // This is primordial_index
     primordial_index = params["n_s"];
     // This is sigma_8

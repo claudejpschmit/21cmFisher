@@ -15,7 +15,7 @@ using namespace arma;
  * parameter values.
  */
 struct Pk_interpolator {
-    double ombh2, omnuh2, omch2, omk, hubble, tcmb, w_DE, n_s, A_s, tau;
+    double ombh2, omnuh2, omch2, omk, hubble, tcmb, w_DE, n_s, A_s, tau, omega_lambda;
     spline2dinterpolant interpolator;
 };
 
@@ -41,7 +41,7 @@ struct Tb_interpolator {
  */
 struct Tb_interpolator_ares {
     double ombh2, omnuh2, omch2, omk, hubble, s8, T_CMB, n_s, w_DE,\
-        fstar, fesc, nion, fX, Tmin, Nlw, cX, HeByMass;
+        fstar, fesc, nion, fX, Tmin, Nlw, cX, HeByMass, omega_lambda;
     spline1dinterpolant interpolator;
     //Not used here
     spline1dinterpolant fz_interpolator;
@@ -53,7 +53,7 @@ struct Tb_interpolator_ares {
  * parameter values for both the distance as well as the Hubble function.
  */
 struct q_interpolator {
-    double ombh2, omnuh2, omch2, omk, hubble, t_cmb, w_DE;
+    double ombh2, omnuh2, omch2, omk, hubble, t_cmb, w_DE, omega_lambda;
     double h;
     spline1dinterpolant interpolator;
     spline1dinterpolant interpolator_Hf;
@@ -67,7 +67,7 @@ struct q_interpolator {
  * determination of Tb(z).
  */
 struct Tb_interpolator_Santos {
-    double ombh2, omnuh2, omch2, hubble, t_cmb, omk;
+    double ombh2, omnuh2, omch2, hubble, t_cmb, omk, omega_lambda;
     double alpha, beta, gamma, RLy;
     spline1dinterpolant interpolator;
     spline1dinterpolant fz_interpolator;

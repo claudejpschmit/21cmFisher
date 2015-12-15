@@ -14,7 +14,12 @@ Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
         else
             var_params.insert(pair<string,double>(key,abs(fiducial_params[key])/100));
     }
-    
+    noise = false;
+    foreground = false;
+    if (fiducial_params["noise"] == 1.0)
+        noise = true;
+    if (fiducial_params["foreground"] == 1.0)
+        foreground = true;
     Fl_file.open(Fl_filename);
     set_range_stepsize();
 
