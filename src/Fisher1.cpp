@@ -280,8 +280,16 @@ string Fisher1::update_runinfo(int lmin, int lmax,\
     buffss << " omnuh2         = " << fiducial_params["omnuh2"];
     run_info.push_back(buffss.str());
     buffss.str("");
-    buffss << " omk            = " << fiducial_params["omk"];
-    run_info.push_back(buffss.str());
+    if (fiducial_params.find("omega_lambda") == fiducial_params.end()) { 
+        buffss << " omk            = " << fiducial_params["omk"];
+        run_info.push_back(buffss.str());
+    }
+    else {
+        buffss << " omega_lambda   = " << fiducial_params["omega_lambda"];
+        run_info.push_back(buffss.str());
+
+    }
+
     buffss.str("");
     buffss << " hubble         = " << fiducial_params["hubble"];
     run_info.push_back(buffss.str());

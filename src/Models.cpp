@@ -246,7 +246,7 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
         interp.A_s = params["A_s"];
         interp.tau = params["tau_reio"];
         if (params.find("omega_lambda") == params.end())
-            interp.omega_lambda = -1;
+            interp.omega_lambda = 0;
         else
             interp.omega_lambda = params["omega_lambda"];
 
@@ -335,7 +335,7 @@ void Model_CAMB_ARES::update_T21(map<string,double> params, int *Tb_index)
         interp.nion = params["nion"];
         interp.fX = params["fx"];
         if (params.find("omega_lambda") == params.end())
-            interp.omega_lambda = -1;
+            interp.omega_lambda = 0;
         else
             interp.omega_lambda = params["omega_lambda"];
 
@@ -413,12 +413,12 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
         if (params.find("omega_lambda") == params.end()) {
             use_non_physical = false;
             interp.omk = params["omk"];
-            interp.omega_lambda = -1;
+            interp.omega_lambda = 0;
         }
         else
         {
             use_non_physical = true;
-            interp.omk = -1;
+            interp.omk = 0;
             interp.omega_lambda = params["omega_lambda"];
         }
 
@@ -482,9 +482,24 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
                     O_M2 * pow(1+z,3) + O_k2 * pow(1+z,2));
         }
         spline1dinterpolant interpolator, interpolator_Hf, interpolator_qp;
-        spline1dbuildlinear(xs,ys,interpolator);
-        spline1dbuildlinear(xs,hs,interpolator_Hf);
-        spline1dbuildlinear(xs,qps,interpolator_qp);
+        try {
+            spline1dbuildlinear(xs,ys,interpolator);
+        }
+        catch(alglib::ap_error e){
+            cout << "---- Error in q(z): " << e.msg.c_str() << endl;
+        }
+        try {
+            spline1dbuildlinear(xs,hs,interpolator_Hf);
+        }
+        catch(alglib::ap_error e){
+            cout << "---- Error in H(z): " << e.msg.c_str() << endl;
+        }
+        try {
+            spline1dbuildlinear(xs,qps,interpolator_qp);
+        }
+        catch(alglib::ap_error e){
+            cout << "---- Error in q_prime(z): " << e.msg.c_str() << endl;
+        }
 
         // If limber == false, the qp_interpolator will just be empty but that
         // is fine because it won't be used in that case.
@@ -495,6 +510,7 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
 
         q_interpolators.push_back(interp);
         *q_index = q_interpolators.size() - 1;
+        cout << " -- Calculating q is done --"<< endl;
     }    
 }
 
@@ -576,7 +592,7 @@ void Model_CAMB_G21::update_Pkz(map<string,double> params, int *Pk_index)
         interp.A_s = params["A_s"];
         interp.tau = params["tau_reio"];
         if (params.find("omega_lambda") == params.end())
-            interp.omega_lambda = -1;
+            interp.omega_lambda = 0;
         else
             interp.omega_lambda = params["omega_lambda"];
 
@@ -721,12 +737,12 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
         if (params.find("omega_lambda") == params.end()) {
             use_non_physical = false;
             interp.omk = params["omk"];
-            interp.omega_lambda = -1;
+            interp.omega_lambda = 0;
         }
         else
         {
             use_non_physical = true;
-            interp.omk = -1;
+            interp.omk = 0;
             interp.omega_lambda = params["omega_lambda"];
         }
 
@@ -898,7 +914,7 @@ void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
         interp.A_s = params["A_s"];
         interp.tau = params["tau_reio"];
         if (params.find("omega_lambda") == params.end())
-            interp.omega_lambda = -1;
+            interp.omega_lambda = 0;
         else
             interp.omega_lambda = params["omega_lambda"];
 
@@ -977,7 +993,7 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
         interp.gamma = params["gamma"];
         interp.RLy = params["RLy"];
         if (params.find("omega_lambda") == params.end())
-            interp.omega_lambda = -1;
+            interp.omega_lambda = 0;
         else
             interp.omega_lambda = params["omega_lambda"];
         file.open("output/t21_analytic.dat");
@@ -1084,12 +1100,12 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
         if (params.find("omega_lambda") == params.end()) {
             use_non_physical = false;
             interp.omk = params["omk"];
-            interp.omega_lambda = -1;
+            interp.omega_lambda = 0;
         }
         else
         {
             use_non_physical = true;
-            interp.omk = -1;
+            interp.omk = 0;
             interp.omega_lambda = params["omega_lambda"];
         }
 

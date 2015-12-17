@@ -32,6 +32,11 @@ class Cosmology3D : public AnalysisInterface {
         void writeT21(string name);
 
     private:
+        double Cl_FG_nunu(int l, double nu1, double nu2);
+        void set_FG_params();
+        double I_FG(int i, double nu1, double nu2);
+        double Cl_FG(int i, int l, double nu);
+
         double corr_Tb(int l, double k1, double k2, double k_low,\
                 double k_high, int Pk_index, int Tb_index, int q_index);
         double corr_Tb_rsd(int l, double k1, double k2, double k_low,\
@@ -48,6 +53,9 @@ class Cosmology3D : public AnalysisInterface {
         double pi, prefactor_Ml, zmin_Ml, zmax_Ml;
         int zsteps_Ml;
         double stepsize_Ml, k_stepsize;
+        int num_FG_sources;
+        vector<double> A_FG, beta_FG, alpha_FG, chi_FG;
+
 
 };
 

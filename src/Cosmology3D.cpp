@@ -16,6 +16,7 @@ Cosmology3D::Cosmology3D(ModelInterface* model)
     zsteps_Ml = model->give_fiducial_params("zsteps");
     stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
     k_stepsize = model->give_fiducial_params("k_stepsize");
+    set_FG_params();
     cout << "... 3DCosmology built ..." << endl;
 
 
@@ -56,11 +57,10 @@ double Cosmology3D::Cl_noise(int l, double k1, double k2)
     //TODO: integrand needs to be corrected.
     auto integrand = [&](double z)
     {
-        double r;
-        r = model->r_interp(z);
+        double r = model->r_interp(z);
         double jl = model->sph_bessel_camb(l,k1*r);
         double hub = model->Hf_interp(z)*1000.0;
-        return r*r*jl/hub; 
+        return r*r*r*r*jl*jl/hub; 
     };
 
     if (k1==k2) {
@@ -70,11 +70,11 @@ double Cosmology3D::Cl_noise(int l, double k1, double k2)
         double lmax = model->give_fiducial_params("lmax_noise");
         // in seconds
         double tau = model->give_fiducial_params("tau_noise");
-        double prefactor = 2.0 *pi*model->c*model->c * Tsys*Tsys/(fcover*fcover *\
-                model->give_fiducial_params("df") * lmax * lmax * tau);
+        double prefactor = 2.0*pow(2.0 * pi,3)*model->c * Tsys*Tsys/(pi*fcover*fcover *\
+                lmax * lmax * tau);
         double integral = integrate_simps(integrand, this->zmin_Ml, this->zmax_Ml,\
                 this->zsteps_Ml);
-        return prefactor * integral * integral;
+        return prefactor * integral;
     } else {
         return 0.0;
     }
@@ -82,8 +82,89 @@ double Cosmology3D::Cl_noise(int l, double k1, double k2)
 
 double Cosmology3D::Cl_foreground(int l, double k1, double k2)
 {
-    return 0;
+    auto integrand = [&](double z)
+    {
+        auto integrand2 = [&](double zp)
+        {
+            double rp = model->r_interp(zp);
+            double jl = model->sph_bessel_camb(l,k2*rp);
+            double hub = model->Hf_interp(z)*1000.0;
+            double nu1 = 1420.0/(1.0+z);
+            double nu2 = 1420.0/(1.0+zp);
+            double cl = Cl_FG_nunu(l, nu1, nu2);
+            return rp*rp*cl*jl/hub; 
+        };
+        double r = model->r_interp(z);
+        double jl = model->sph_bessel_camb(l,k1*r);
+        double hub = model->Hf_interp(z)*1000.0;
+        double integral = integrate_simps(integrand2, this->zmin_Ml, this->zmax_Ml,\
+                this->zsteps_Ml);
+        return r*r*integral*jl/hub; 
+    };
+
+    double pre = 2.0*pow(model->c,2);
+    double integral = integrate_simps(integrand, this->zmin_Ml, this->zmax_Ml,\
+        this->zsteps_Ml);
+
+    return pre * integral;
 }
+double Cosmology3D::Cl_FG_nunu(int l, double nu1, double nu2)
+{
+    double CL = 0;
+    for (int i = 0; i < num_FG_sources; i++){
+        double I = I_FG(i,nu1, nu2);
+        double Cl_nu1 = Cl_FG(i, l, nu1);
+        double Cl_nu2 = Cl_FG(i, l, nu2);
+        double CL_ii = I * sqrt(Cl_nu1 * Cl_nu2);
+        
+        CL += CL_ii;
+    }
+   
+    return CL;
+
+}
+double Cosmology3D::I_FG(int i, double nu1, double nu2)
+{
+    return 1-pow(log(nu1/nu2),2)/(2.0*chi_FG[i]*chi_FG[i]);
+}
+
+void Cosmology3D::set_FG_params()
+{
+    num_FG_sources = 4;
+    A_FG.resize(num_FG_sources);
+    beta_FG.resize(num_FG_sources);
+    alpha_FG.resize(num_FG_sources);
+    chi_FG.resize(num_FG_sources);
+    // extragalactic point sources
+    A_FG[0] = 10.0;
+    beta_FG[0] = 1.1;
+    alpha_FG[0] = 2.07;
+    chi_FG[0] = 1.0;
+    // extragalactic free-free
+    A_FG[1] = 0.014;
+    beta_FG[1] = 1.0;
+    alpha_FG[1] = 2.1;
+    chi_FG[1] = 35.0;
+    // galactic synchrotron
+    A_FG[2] = 700.0;
+    beta_FG[2] = 2.4;
+    alpha_FG[2] = 2.8;
+    chi_FG[2] = 4.0;
+    // galactic free-free
+    A_FG[3] = 0.088;
+    beta_FG[3] = 3.0;
+    alpha_FG[3] = 2.15;
+    chi_FG[3] = 35.0;
+}
+
+double Cosmology3D::Cl_FG(int i, int l, double nu)
+{
+    double nu_f = 130;
+    double res = A_FG[i]*pow(1000.0/(double)l, beta_FG[i]) *\
+                 pow(nu_f/nu, 2*alpha_FG[i]);
+    return res;
+}
+
 
 double Cosmology3D::corr_Tb(int l, double k1, double k2, double k_low,\
         double k_high, int Pk_index, int Tb_index, int q_index)

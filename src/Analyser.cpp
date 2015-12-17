@@ -467,6 +467,11 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv,\
     else {
         cout << "    ERROR: some ellipses are ill-defined " <<\
             "with a^2 < 0 or b^2 < 0." << endl;
+        for (unsigned int i = 0; i<error_ellipses.size(); i++)
+        {
+            cout << "i = " << i  << ", a^2 = " << error_ellipses[i].a2 <<\
+                ", b^2 = " << error_ellipses[i].b2 << endl;
+        }
         cout << "      check for linearly dependent rows or columns." <<\
             " These can be due to degeneracies between parameters." << endl;
     }

@@ -21,21 +21,38 @@ double Tomography2D::Cl(int l, double nu1, double nu2,\
 {
     double z1 = 1420.0/nu1 - 1.0;
     double z2 = 1420.0/nu2 - 1.0;
-    double alpha, beta, gamma, RLy;
-    model->set_Santos_params(&alpha, &beta, &gamma, &RLy, Tb_index);
-    double dTb1 = gamma*model->T21_interp(z1, Tb_index);
-    double dTb2 = gamma*model->T21_interp(z2, Tb_index);
+        
+    double alpha1 = alpha_fiducial(z1);
+    double alpha2 = alpha_fiducial(z2);
+    double beta1 = beta_fiducial(z1);
+    double beta2 = beta_fiducial(z2);
+    double gamma1 = gamma_fiducial(z1);
+    double gamma2 = gamma_fiducial(z2);
+    //double alpha, beta, gamma, RLy
     
+    //model->set_Santos_params(&alpha, &beta, &gamma, &RLy, Tb_index);
+    //double dTb1 = gamma*model->T21_interp(z1, Tb_index);
+    //double dTb2 = gamma*model->T21_interp(z2, Tb_index);
+    
+    double dTb1 = gamma1*model->T21_interp(z1, Tb_index);
+    double dTb2 = gamma2*model->T21_interp(z2, Tb_index);
+    double RLy = 100; 
     auto integrand = [&](double k)
     {
-        double F1 = F(k,z1, alpha, beta, RLy);
-        double F2 = F(k,z2, alpha, beta, RLy);
+        //double F1 = F(k,z1, alpha, beta, RLy);
+        //double F2 = F(k,z2, alpha, beta, RLy);
+
+        
+        double F1 = F(k,z1, alpha1, beta1, RLy);
+        double F2 = F(k,z2, alpha2, beta2, RLy);
+        
+
         // nu_0 = 70MHz
-        double I1 = I(l,k,70);
-        double I2 = I1;
+        double I1 = I(l,k,nu1);
+        double I2 = I(l,k,nu2);
         //double I2 = I(l,k,70);
-        double J1 = J(l,k,70);
-        double J2 = J1;
+        double J1 = J(l,k,nu1);
+        double J2 = J(l,k,nu2);
         //double J2 = J(l,k,70);
         double f1 = model->fz_interp(z1, Tb_index);
         double f2 = model->fz_interp(z2, Tb_index);
@@ -155,9 +172,9 @@ double Tomography2D::F(double k, double z, double alpha, double beta, double RLy
 double Tomography2D::I(int l, double k, double nu_0)
 {
     //TODO: Find out what the right boundaries are for the integral.
-    double nu_low = nu_0-interval_size/2.0;
-    double nu_high = nu_0+interval_size/2.0;
-    double nu_stepsize = 0.1;
+    double nu_low = nu_0-0.1/2.0;
+    double nu_high = nu_0+0.1/2.0;
+    double nu_stepsize = 0.01;
     int nu_steps = interval_size/nu_stepsize;
 
     auto integrand = [&](double nu)
@@ -176,9 +193,9 @@ double Tomography2D::I(int l, double k, double nu_0)
 double Tomography2D::J(int l, double k, double nu_0)
 {
     //TODO: Find out what the right boundaries are for the integral.
-    double nu_low = nu_0-interval_size/2.0;
-    double nu_high = nu_0+interval_size/2.0;
-    double nu_stepsize = 0.1;
+    double nu_low = nu_0-0.1/2.0;
+    double nu_high = nu_0+0.1/2.0;
+    double nu_stepsize = 0.01;
     int nu_steps = interval_size/nu_stepsize;
 
     auto integrand = [&](double nu)
@@ -197,7 +214,6 @@ double Tomography2D::J(int l, double k, double nu_0)
     double integral = integrate_simps(integrand, nu_low, nu_high, nu_steps);
     return 1420 * integral;
 }
-
 double Tomography2D::P(double k, double z1, double z2, double Pk_index)
 {
     return sqrt(model->Pkz_interp(k,z1,Pk_index)*model->Pkz_interp(k,z2,Pk_index));

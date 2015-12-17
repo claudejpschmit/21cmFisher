@@ -7,7 +7,7 @@
 #include "interpolation.h"
 #include "Analyser.hpp"
 
-#define SANTOS true
+#define SANTOS false
 
 using namespace std;
 using namespace arma;
@@ -38,6 +38,7 @@ int main(int argc, char* argv[])
         finv = analyse.build_Fisher_inverse_Santos(keys, prefix.str(), "output/Fisher_Santos/");
     else    
         finv = analyse.build_Fisher_inverse(keys, prefix.str(), "output/Fisher/");
+    //cout << finv.matrix.i() << endl;
     analyse.draw_error_ellipses(finv, keys, run_number, "output/Fisher/");
 
     return 0;
