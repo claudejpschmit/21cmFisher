@@ -283,6 +283,11 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
 
         Pkz_interpolators.push_back(interp);
         *Pk_index = Pkz_interpolators.size() - 1;
+        
+        cout << interp.ombh2 << " " <<  interp.omnuh2 << " " <<\
+            interp.omch2 << " " <<  interp.omk << " " <<  interp.hubble <<\
+            interp.tcmb << " " <<  interp.w_DE << " " <<  interp.n_s <<\
+            interp.A_s << " " << interp.tau << endl;
     }
 }
 

@@ -173,7 +173,10 @@ void CAMB_CALLER::update_params_ini(map<string, double> params)
         cout << "CAMB uses non-Physical params with Om_Lambda." << endl;
         use_non_physical = true;
     }
-
+    // Set parameters_found to contain all false, so that each update also 
+    // actually updates the contents of the params.ini file, not just the first.
+    for (int i = 0; i < num_params; i++)
+        parameters_found[i] = false;
     int n_redshifts = params["Pk_steps"];
     double zmin = params["zmin"];
     double zmax = params["zmax"];

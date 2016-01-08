@@ -207,7 +207,7 @@ double Tomography2D::J(int l, double k, double nu_0)
         double jl_2 = model->sph_bessel_camb(l-2,kr);
         double jl_1 = model->sph_bessel_camb(l-1, kr);
         double jl = model->sph_bessel_camb(l, kr);
-        double num = jl_2 - (2*l+1)/kr * jl_1 + (l+1) * jl * (1/(kr*kr) - 1/kr);
+        double num = jl_2 - (2*l+1)/kr * jl_1 + (l*l + 3*l + 2)/(kr*kr) * jl;
         return num/denom;
     };
 

@@ -92,6 +92,12 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     stringstream matrix_filename;
     string suffix = generate_matrix_file_suffix();
     string prefix;
+
+    ////////
+    // format is Cla_param-a_l_krange[min]_krange[max]_krange-steps_zmin_zmax_suffix.bin 
+    ////////
+
+
     if (TESTMATRIX){
         prefix = "output/matrices_test/Cla_";
     }
@@ -100,9 +106,9 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     }
     matrix_filename << prefix << param_key << "_"<< l << "_" <<\
         range[0] << "_" << range[range.size()-1] << "_"<< range.size() << "_"<<\
-        67.5 << "_"<< 72.5 << "_" << suffix << ".bin";
-    cout << " here " << endl;
-    if (check_file(matrix_filename.str()))
+        fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
+    bool debug = true;
+    if (check_file(matrix_filename.str()) && !debug)
     {
         cout << "///reading matrix from file///" << endl;
         res = read_matrix(matrix_filename.str(),range.size(),range.size());
@@ -195,6 +201,10 @@ mat FisherInterface::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, 
     string suffix = generate_matrix_file_suffix();
     string prefix;
     
+    ////////
+    // format is Cl_l_krange[min]_krange[max]_krange-steps_zmin_zmax_suffix.bin 
+    ////////
+
     if (TESTMATRIX){
         prefix = "output/matrices_test/Cl_";
     }
