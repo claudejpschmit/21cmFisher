@@ -107,7 +107,7 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     matrix_filename << prefix << param_key << "_"<< l << "_" <<\
         range[0] << "_" << range[range.size()-1] << "_"<< range.size() << "_"<<\
         fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
-    bool debug = true;
+    bool debug = false;
     if (check_file(matrix_filename.str()) && !debug)
     {
         cout << "///reading matrix from file///" << endl;
@@ -253,7 +253,9 @@ mat FisherInterface::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, 
             double x1 = range[i];
             for (unsigned int j = i; j < range.size(); ++j) {
                 double x2 = range[j];
-                double res = analysis->Cl_foreground(l, x1, x2);
+                double res = 0;
+                //if (i == j)
+                res = analysis->Cl_foreground(l, x1, x2);
                 Cl(i,j) += res;
                 Cl(j,i) += res;
             }

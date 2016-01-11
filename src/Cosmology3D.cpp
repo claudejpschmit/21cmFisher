@@ -102,7 +102,7 @@ double Cosmology3D::Cl_foreground(int l, double k1, double k2)
         return r*r*integral*jl/hub; 
     };
 
-    double pre = 2.0*pow(model->c,2);
+    double pre = 2.0*pow(model->c,2)/this->pi;
     double integral = integrate_simps(integrand, this->zmin_Ml, this->zmax_Ml,\
         this->zsteps_Ml);
 

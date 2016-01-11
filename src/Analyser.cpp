@@ -41,9 +41,8 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
             strcpy(command, command_buff.str().c_str());
             int r = system(command);
             (void)r;
-            cout << command << endl;
             delete command;
-            
+
             //Read in the data
             ifstream file;
             file.open(filename);

@@ -11,9 +11,9 @@ using namespace std;
 int main ()
 {
     map<string,double> params;    
-    params.insert(pair<string,double>("kmax",0.2));//1
+    params.insert(pair<string,double>("kmax",1));//1
     params.insert(pair<string,double>("zmax",25));
-    params.insert(pair<string,double>("zsteps",5));//100
+    params.insert(pair<string,double>("zsteps",100));//100
     params.insert(pair<string,double>("noise",0.0));
     params.insert(pair<string,double>("foreground",0.0));
     params.insert(pair<string,double>("rsd",0.0));
@@ -24,9 +24,9 @@ int main ()
     params.insert(pair<string,double>("df",0.1));
     params.insert(pair<string,double>("fcover",0.38));
 
-    params.insert(pair<string,double>("n_points_per_thread", 2));//
-    params.insert(pair<string,double>("n_threads", 1));//7
-    params.insert(pair<string,double>("zmin", 24));//15
+    params.insert(pair<string,double>("n_points_per_thread", 5));//10
+    params.insert(pair<string,double>("n_threads", 7));//7
+    params.insert(pair<string,double>("zmin", 15));//15
     params.insert(pair<string,double>("lmin",1000));
     params.insert(pair<string,double>("lmax",2000));
 
@@ -48,7 +48,7 @@ int main ()
         
     //vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
     //    "ombh2", "omch2", "omega_lambda"};//, "n_s"};
-    vector<string>keys = {"omega_lambda"};//"ombh2", "omch2", "omega_lambda", "hubble", "n_s"};
+    vector<string>keys = {"ombh2", "omch2", "omega_lambda", "n_s"};
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0;
