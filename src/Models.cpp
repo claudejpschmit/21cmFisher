@@ -876,8 +876,6 @@ Model_Santos2006::Model_Santos2006(map<string, double> params,\
 
     cout << "... 21cm interface built ..." << endl;
     cout << "... Model_Santos2006 built ..." << endl;
-
-
 }
 Model_Santos2006::~Model_Santos2006()
 {}

@@ -70,6 +70,8 @@ class Tomography2D : public AnalysisInterface {
         double Cl_foreground(int l, double nu1, double nu2);
 
         void writeT21(string name);
+        void writeCl_integrand(int l, double nu1, double nu2, double kmin,\
+            double kmax, double stepsize, string name, int Pk_index, int Tb_index, int q_index);
 
         void write_gamma();
         

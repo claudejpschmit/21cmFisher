@@ -62,7 +62,7 @@ class Fisher1 : public FisherInterface {
 
         /* Functions specific to this Method */
         /* First the functions that do the heavy lifting */
-        double F_fixed_stepsize(int lmin, int lmax, int n_points_per_thread,\
+        double F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread,\
                 int n_threads);
         
         /* Then the support functions */
@@ -90,7 +90,7 @@ class Fisher_Santos : public FisherInterface {
         
         /* Functions specific to this Method */
         /* First the functions that do the heavy lifting */
-        void run(int lmin, int lmax, int n_points_per_thread, int n_threads);
+        void run(int lmin, int lstepsize, int n_points_per_thread, int n_threads);
         /* Then the support functions */
         //string update_runinfo(int lmin, int lmax,\
         //        int lstepsize, double kstepsize);

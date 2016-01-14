@@ -197,7 +197,7 @@ void CosmoBasis::check_params()
     this->fiducial_params.insert(pair<string,double>("kmax",2));
     this->fiducial_params.insert(pair<string,double>("zmax_interp",10));
     this->fiducial_params.insert(pair<string,double>("w_DE",-1));
-   
+
 
     this->fiducial_params.insert(pair<string,double>("100*theta_s",1.04));
     this->fiducial_params.insert(pair<string,double>("A_s",2.42e-9));
@@ -219,6 +219,7 @@ void CosmoBasis::check_params()
 
     this->fiducial_params.insert(pair<string,double>("lmin",1000));
     this->fiducial_params.insert(pair<string,double>("lmax",2000));
+    this->fiducial_params.insert(pair<string,double>("lstepsize",70));
 
     //System Parameters
     //Ae = effective area per antenna
@@ -240,6 +241,15 @@ void CosmoBasis::check_params()
     this->fiducial_params.insert(pair<string,double>("limber",0.0)); 
     this->fiducial_params.insert(pair<string,double>("n_threads",7));
     this->fiducial_params.insert(pair<string,double>("n_points_per_thread",100));
+    // This determines whether alpha, beta and gamma are supposed to be taken 
+    // to be constant in the calculation.
+    // set to 1 if trying to get table IV.
+    this->fiducial_params.insert(pair<string,double>("Santos_const_abg",0.0));
+    this->fiducial_params.insert(pair<string,double>("alpha",0.48));
+    this->fiducial_params.insert(pair<string,double>("beta",0.223));
+    this->fiducial_params.insert(pair<string,double>("gamma",-3.13));
+    this->fiducial_params.insert(pair<string,double>("RLy",100));
+    this->fiducial_params.insert(pair<string,double>("Santos_interval_size", 5));
 }
 
 double CosmoBasis::E(double z)

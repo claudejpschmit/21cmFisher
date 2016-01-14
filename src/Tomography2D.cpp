@@ -9,7 +9,7 @@ Tomography2D::Tomography2D(ModelInterface* model)
     determine_beta();
 
     // in MHz
-    interval_size = 20;
+    interval_size = model->give_fiducial_params("Santos_interval_size");
 
     set_FG_params();
 
@@ -19,24 +19,57 @@ Tomography2D::Tomography2D(ModelInterface* model)
 double Tomography2D::Cl(int l, double nu1, double nu2,\
         int Pk_index, int Tb_index, int q_index)
 {
+    //This determines the lower bound of the kappa integral
+    double k_low = model->give_fiducial_params("kmin");
+    double k_high = model->give_fiducial_params("kmax");
+    double low;
+    if (l < 50){
+        low = k_low;
+    } else if (l < 1000){
+        low = (double)l/(1.2*10000);
+    } else {
+        low = (double)l/(10000);
+    }
+    double lower_kappa_bound;// = k_low;
+    if (low > k_low)
+        lower_kappa_bound = low;
+    else
+        lower_kappa_bound = k_low;
+    
+    //This determines the upper bound of the kappa integral
+    // set the interval size to constant 0.8 after inspection.
+    // This is good for l about 10000.
+    double higher_kappa_bound = lower_kappa_bound + 0.8;
+    // The stepsize needs to be at least 0.0001 for good coverage. 
+    int steps = (int)(abs(higher_kappa_bound - lower_kappa_bound)/0.0001);
+    if (steps % 2 == 1)
+        ++steps;
+    
     double z1 = 1420.0/nu1 - 1.0;
     double z2 = 1420.0/nu2 - 1.0;
-        
-    double alpha1 = alpha_fiducial(z1);
-    double alpha2 = alpha_fiducial(z2);
-    double beta1 = beta_fiducial(z1);
-    double beta2 = beta_fiducial(z2);
-    double gamma1 = gamma_fiducial(z1);
-    double gamma2 = gamma_fiducial(z2);
-    //double alpha, beta, gamma, RLy
-    
+    double alpha1, alpha2, beta1, beta2, gamma1, gamma2;
+    double RLy = 100; 
+    if (model->give_fiducial_params("Santos_const_abg") == 1.0){
+        model->set_Santos_params(&alpha1, &beta1, &gamma1, &RLy, Tb_index);
+        alpha2 = alpha1;
+        beta2 = beta1;
+        gamma2 = gamma1;
+    }
+    else {
+        alpha1 = alpha_fiducial(z1);
+        alpha2 = alpha_fiducial(z2);
+        beta1 = beta_fiducial(z1);
+        beta2 = beta_fiducial(z2);
+        gamma1 = gamma_fiducial(z1);
+        gamma2 = gamma_fiducial(z2);
+        //double alpha, beta, gamma, RLy
+    }
     //model->set_Santos_params(&alpha, &beta, &gamma, &RLy, Tb_index);
     //double dTb1 = gamma*model->T21_interp(z1, Tb_index);
     //double dTb2 = gamma*model->T21_interp(z2, Tb_index);
     
     double dTb1 = gamma1*model->T21_interp(z1, Tb_index);
     double dTb2 = gamma2*model->T21_interp(z2, Tb_index);
-    double RLy = 100; 
     auto integrand = [&](double k)
     {
         //double F1 = F(k,z1, alpha, beta, RLy);
@@ -62,10 +95,7 @@ double Tomography2D::Cl(int l, double nu1, double nu2,\
                 F1*f2*I1*J2 - F2*f1*I2*J1); 
     };
     //TODO: get the right limits.
-    double klow = 0.0001;
-    double khigh = 1;
-    int steps = 10000;
-    double integral = integrate_simps(integrand, klow, khigh, steps);
+    double integral = integrate_simps(integrand, lower_kappa_bound, higher_kappa_bound, steps);
 
     return 2/model->pi * dTb1 *dTb2 * integral;
 }
@@ -113,6 +143,57 @@ void Tomography2D::writeT21(string name)
         file << z << " " << gamma*model->T21_interp(z,0) << endl; 
     }
     file.close();
+}
+
+void Tomography2D::writeCl_integrand(int l, double nu1, double nu2, double kmin,\
+        double kmax, double stepsize, string name, int Pk_index, int Tb_index, int q_index)
+{
+    double z1 = 1420.0/nu1 - 1.0;
+    double z2 = 1420.0/nu2 - 1.0;
+    double alpha1, alpha2, beta1, beta2, gamma1, gamma2;
+    double RLy = 100; 
+    if (model->give_fiducial_params("Santos_const_abg") == 1.0){
+        model->set_Santos_params(&alpha1, &beta1, &gamma1, &RLy, Tb_index);
+        alpha2 = alpha1;
+        beta2 = beta1;
+        gamma2 = gamma1;
+    }
+    else {
+        alpha1 = alpha_fiducial(z1);
+        alpha2 = alpha_fiducial(z2);
+        beta1 = beta_fiducial(z1);
+        beta2 = beta_fiducial(z2);
+        gamma1 = gamma_fiducial(z1);
+        gamma2 = gamma_fiducial(z2);
+        //double alpha, beta, gamma, RLy
+    }
+
+    ofstream file(name);
+    int steps = (kmax-kmin)/stepsize;
+    for (int i = 0; i < steps; i++)
+    {
+        double k = kmin + i*stepsize;
+        double F1 = F(k,z1, alpha1, beta1, RLy);
+        double F2 = F(k,z2, alpha2, beta2, RLy);
+      
+
+        // nu_0 = 70MHz
+        double I1 = I(l,k,nu1);
+        double I2 = I(l,k,nu2);
+        //double I2 = I(l,k,70);
+        double J1 = J(l,k,nu1);
+        double J2 = J(l,k,nu2);
+        //double J2 = J(l,k,70);
+        double f1 = model->fz_interp(z1, Tb_index);
+        double f2 = model->fz_interp(z2, Tb_index);
+        double Pdd = P(k,z1,z2, Pk_index);
+        
+        double res =  k*k*Pdd*(F1*F2*I1*I2 + f1*f2*J1*J2 -\
+                F1*f2*I1*J2 - F2*f1*I2*J1); 
+        file << k << " " << res << endl;
+    }
+    file.close();
+
 }
 
 double Tomography2D::I_FG(int i, double nu1, double nu2)
@@ -175,7 +256,7 @@ double Tomography2D::I(int l, double k, double nu_0)
     double nu_low = nu_0-0.1/2.0;
     double nu_high = nu_0+0.1/2.0;
     double nu_stepsize = 0.01;
-    int nu_steps = interval_size/nu_stepsize;
+    int nu_steps = 0.1/nu_stepsize;
 
     auto integrand = [&](double nu)
     {
@@ -196,7 +277,7 @@ double Tomography2D::J(int l, double k, double nu_0)
     double nu_low = nu_0-0.1/2.0;
     double nu_high = nu_0+0.1/2.0;
     double nu_stepsize = 0.01;
-    int nu_steps = interval_size/nu_stepsize;
+    int nu_steps = 0.1/nu_stepsize;
 
     auto integrand = [&](double nu)
     {

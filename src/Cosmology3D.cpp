@@ -26,7 +26,7 @@ double Cosmology3D::Cl(int l, double k1, double k2,\
         int Pk_index, int Tb_index, int q_index)
 {
     double k_low = model->give_fiducial_params("kmin");
-    double k_high = model->give_fiducial_params("kmax");;
+    double k_high = model->give_fiducial_params("kmax");
     bool rsd = false;
     if (model->give_fiducial_params("rsd") == 1.0)
         rsd = true;

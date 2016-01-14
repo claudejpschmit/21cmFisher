@@ -43,15 +43,16 @@ Fisher1::Fisher1(AnalysisInterface* analysis, string Fl_filename, vector<string>
 
 void Fisher1::calc_Fls()
 {
-    int lmin, lmax, n_points_per_thread, n_threads;
+    int lmin, lstepsize, n_points_per_thread, n_threads;
     lmin = fiducial_params["lmin"];
-    lmax = fiducial_params["lmax"];
+    lstepsize = fiducial_params["lstepsize"];
+
     n_points_per_thread = fiducial_params["n_points_per_thread"];
     n_threads = fiducial_params["n_threads"];
     // TODO: Find a way to best pass these parameters to the class
     //      -- could just have these as constructor parameters 
     //          those can be different for the different Fisher modes.
-    F_fixed_stepsize(lmin, lmax, n_points_per_thread, n_threads);
+    F_fixed_stepsize(lmin, lstepsize, n_points_per_thread, n_threads);
 }
 
 // private
@@ -98,10 +99,10 @@ vector<double> Fisher1::set_range(int l, double xmin, double xmax)
 //  Defining other members  //
 //////////////////////////////
 
-double Fisher1::F_fixed_stepsize(int lmin, int lmax, int n_points_per_thread, int n_threads)
+double Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread, int n_threads)
 {
     int lsteps = n_points_per_thread * n_threads;
-    int lstepsize = ((double)(lmax-lmin))/(double)lsteps;
+    int lmax = fiducial_params["lmax"];
     string filename_prefix = update_runinfo(lmin, lmax, lstepsize, xstepsize);
     stringstream filename;
     filename << filename_prefix;
@@ -405,7 +406,3 @@ string Fisher1::update_runinfo(int lmin, int lmax,\
 
     return filename.str();
 }
-
-
-
-

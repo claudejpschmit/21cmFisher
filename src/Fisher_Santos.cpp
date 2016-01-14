@@ -34,12 +34,12 @@ Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
 
 void Fisher_Santos::calc_Fls()
 {
-    int lmin, lmax, n_points_per_thread, n_threads;
+    int lmin, lstepsize, n_points_per_thread, n_threads;
     lmin = fiducial_params["lmin"];
-    lmax = fiducial_params["lmax"];
+    lstepsize = fiducial_params["lstepsize"];
     n_points_per_thread = fiducial_params["n_points_per_thread"];
     n_threads = fiducial_params["n_threads"];
-    run(lmin, lmax, n_points_per_thread, n_threads);
+    run(lmin, lstepsize, n_points_per_thread, n_threads);
 }
 
 // private
@@ -67,7 +67,7 @@ vector<double> Fisher_Santos::set_range(int l, double xmin, double xmax)
         range.push_back(nu); 
     }
     stringstream ss;
-    ss << "The range is [" << xmin << "," << nu << "] in " << steps <<\
+    ss << "The range in MHz is [" << xmin << "," << nu << "] in " << steps <<\
         " steps for l = " << l << ".\n";
     cout << ss.str();
     return range;
@@ -77,10 +77,11 @@ vector<double> Fisher_Santos::set_range(int l, double xmin, double xmax)
 //  Defining other members  //
 //////////////////////////////
 
-void Fisher_Santos::run(int lmin, int lmax, int n_points_per_thread, int n_threads)
+void Fisher_Santos::run(int lmin, int lstepsize, int n_points_per_thread, int n_threads)
 {
     int lsteps = n_points_per_thread * n_threads;
-    int lstepsize = ((double)(lmax-lmin))/(double)lsteps;
+    //int lstepsize = ((double)(lmax-lmin))/(double)lsteps;
+
     //TODO: Figure out how to update Runinfo
     //string filename_prefix = update_runinfo(lmin, lmax, lstepsize, kstepsize);
     stringstream filename;
@@ -88,7 +89,7 @@ void Fisher_Santos::run(int lmin, int lmax, int n_points_per_thread, int n_threa
     filename << filename_prefix;
     
     // frequency range in MHz
-    double interval_size = 5;
+    double interval_size = fiducial_params["Santos_interval_size"];
     //double freq_min = 60;
     //double freq_max = 80;
     double freq_min = 70-interval_size/2.0;
@@ -96,8 +97,7 @@ void Fisher_Santos::run(int lmin, int lmax, int n_points_per_thread, int n_threa
   
     // now compute F_ab's (symmetric hence = F_ba's)
     for (int i = 0; i < model_param_keys.size(); i++) {
-        for (int j = i; j < model_param_keys.size(); j++) {
-            
+        for (int j = i; j < model_param_keys.size(); j++) {  
 
             filename.str("");
             string param_key1 = model_param_keys[i];
