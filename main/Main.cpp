@@ -14,22 +14,22 @@ int main ()
     params.insert(pair<string,double>("kmax",1));//1
     params.insert(pair<string,double>("zmax",25));
     params.insert(pair<string,double>("zsteps",10));//100
-    params.insert(pair<string,double>("noise",0.0));
+    params.insert(pair<string,double>("noise",1.0));
     params.insert(pair<string,double>("foreground",0.0));
     params.insert(pair<string,double>("rsd",0.0));
     params.insert(pair<string,double>("limber",0.0));
-    params.insert(pair<string,double>("tau_noise",3600000));//2000hours
+    params.insert(pair<string,double>("tau_noise",5400000));//2000hours
     params.insert(pair<string,double>("Tsys",1500));
-    params.insert(pair<string,double>("lmax_noise",2000));
+    params.insert(pair<string,double>("lmax_noise",10000));
     params.insert(pair<string,double>("df",0.1));
     params.insert(pair<string,double>("fcover",0.38));
 
-    params.insert(pair<string,double>("n_points_per_thread", 10));//10
+    params.insert(pair<string,double>("n_points_per_thread", 72));//10
     params.insert(pair<string,double>("n_threads", 7));//7
     params.insert(pair<string,double>("zmin", 15));//15
-    params.insert(pair<string,double>("lmin",100));
-    params.insert(pair<string,double>("lmax",7100));
-    params.insert(pair<string,double>("lstepsize",100));
+    params.insert(pair<string,double>("lmin",20));
+    params.insert(pair<string,double>("lmax",10100));
+    params.insert(pair<string,double>("lstepsize",20));
     //!!!careful lmax needs to be chosen st. lmax = lmin + lstepsize * n_points_per_thread * n_threads
 
     params.insert(pair<string,double>("ombh2",0.0223));
@@ -47,7 +47,7 @@ int main ()
     params.insert(pair<string,double>("alpha", 0.48));
     params.insert(pair<string,double>("RLy", 100));
     params.insert(pair<string,double>("omega_lambda", 0.76));
-    params.insert(pair<string,double>("Santos_const_abg",0.0));
+    params.insert(pair<string,double>("Santos_const_abg",1.0));
 
         
     vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
@@ -67,7 +67,7 @@ int main ()
     Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
     Tomography2D analysis2(&model2);
     Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
-    //fisher_santos.calc_Fls();
+    fisher_santos.calc_Fls();
 
     //analysis2.writeT21("T21_Santos.dat");
    /* 
@@ -96,7 +96,7 @@ int main ()
     }
     outfile2.close();
     */
-    
+    /*
     ofstream outfile3("Cls_l5_nu65.dat");
     double cl_ref = analysis2.Cl(5, 65, 65, 0,0,0);
     for (int i = 0; i < 300; i++) {
@@ -108,7 +108,7 @@ int main ()
      
     }
     outfile3.close();
-    
+    */
     /*
     string filename = "Cls_l5_nu65.dat";
     ifstream file(filename);

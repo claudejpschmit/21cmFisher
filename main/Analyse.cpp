@@ -7,7 +7,7 @@
 #include "interpolation.h"
 #include "Analyser.hpp"
 
-#define SANTOS false
+#define SANTOS true
 
 using namespace std;
 using namespace arma;
