@@ -1,4 +1,5 @@
-#pragma once
+#ifndef _LOG_H
+#define _LOG_H
 
 #include <sstream>
 #include <boost/format.hpp>
@@ -13,8 +14,11 @@ enum log_level_t {
     LOG_VERBOSE,
     LOG_DEBUG
 };
-//Global variable.
-log_level_t GLOBAL_LEVEL;
+
+// Global variable.
+// This is like a forward declaration for functions
+// The actual declaration is in Main.cpp
+extern log_level_t GLOBAL_VERBOSITY_LEVEL;
 
 namespace log_impl {
     class formatted_log_t {
@@ -28,7 +32,7 @@ namespace log_impl {
             {
                 // GLOBAL_LEVEL is a global variable and could be changed at runtime
                 // customization could be here.
-                if (level <= GLOBAL_LEVEL) wcout << fmt << endl;
+                if (level <= GLOBAL_VERBOSITY_LEVEL) wcout << fmt << endl;
             }
             template <typename T>
             formatted_log_t& operator %(T value) {
@@ -47,3 +51,5 @@ template <log_level_t level>
 log_impl::formatted_log_t log(const wchar_t* msg) {
     return log_impl::formatted_log_t(level, msg);
 }
+
+#endif

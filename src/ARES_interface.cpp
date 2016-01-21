@@ -1,6 +1,7 @@
 #include "ARES_interface.hpp"
 #include <iostream>
 #include <fstream>
+#include "Log.hpp"
 
 // What to do about Dark Energy w???
 

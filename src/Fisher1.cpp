@@ -1,4 +1,5 @@
 #include "Fisher.hpp"
+#include "Log.hpp"
 
 
 // Constructor //

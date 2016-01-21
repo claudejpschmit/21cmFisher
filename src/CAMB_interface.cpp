@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <time.h>
+#include "Log.hpp"
 
 //Whenever a new parameter is added, you need to add it to
 // - parameter_names in CAMB_CALLER()

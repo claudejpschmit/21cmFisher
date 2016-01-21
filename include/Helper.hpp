@@ -5,7 +5,6 @@
 #include <vector>
 #include <armadillo>
 #include <string>
-#include "Log.hpp"
 
 using namespace std;
 using namespace alglib;

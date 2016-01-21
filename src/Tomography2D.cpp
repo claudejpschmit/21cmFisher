@@ -1,5 +1,6 @@
 #include "Analysis.hpp"
 #include "Integrator.hpp"
+#include "Log.hpp"
 
 Tomography2D::Tomography2D(ModelInterface* model)
 {

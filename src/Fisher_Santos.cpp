@@ -1,4 +1,5 @@
 #include "Fisher.hpp"
+#include "Log.hpp"
 
 Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
                 vector<string> param_keys_considered)

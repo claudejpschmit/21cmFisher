@@ -1,9 +1,10 @@
 #include "CosmoBasis.hpp"
 #include "Integrator.hpp"
+#include "Log.hpp"
 
 CosmoBasis::CosmoBasis(map<string, double> params)
 {
-    cout << "... Beginning to build CosmoBasis ..." << endl;
+    log<LOG_BASIC>(L"... Beginning to build CosmoBasis ...");
     // Initializing parameters
     fiducial_params = params;
     this->check_params();
@@ -13,7 +14,7 @@ CosmoBasis::CosmoBasis(map<string, double> params)
     b_bias = pow(O_M,0.6) / beta;
     k_eq = 0.073 * O_M * pow(h,2);
 
-    cout << "... CosmoBasis built ..." << endl;
+    log<LOG_BASIC>(L"... CosmoBasis built ...");
 }
 CosmoBasis::~CosmoBasis()
 {}
@@ -360,7 +361,7 @@ double CosmoBasis::angular_diam_dist(double z, double z2)
                  ( dm2 * sqrt(1 + Ok * pow(dm,2) / pow(this->D_H, 2)) -\
                    dm * sqrt(1 + Ok * pow(dm2,2) / pow(this->D_H,2)) );
     } else {
-        cout << "Error: D_A12 formula invalid for O_tot > 1.0" << endl;
+        log<LOG_ERROR>(L"Error: D_A12 formula invalid for O_tot > 1.0");
         result = 1.0;
     }
     return result;

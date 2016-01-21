@@ -1,5 +1,6 @@
 #include "Analysis.hpp"
 #include "Integrator.hpp"
+#include "Log.hpp"
 
 Cosmology3D::Cosmology3D(ModelInterface* model)
 {

@@ -6,6 +6,7 @@
 #include "stdafx.h"
 #include "interpolation.h"
 #include "Analyser.hpp"
+#include "Log.hpp"
 
 #define SANTOS true
 

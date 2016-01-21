@@ -2,6 +2,7 @@
 #include "Helper.hpp"
 #include "Integrator.hpp"
 #include <fstream>
+#include "Log.hpp"
 
 ModelInterface::ModelInterface(map<string,double> params)
     :

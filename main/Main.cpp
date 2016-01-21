@@ -1,18 +1,24 @@
 #include <iostream>
 #include <map>
 
-#include "Helper.hpp"
+#include "Log.hpp"
 #include "Model.hpp"
 #include "Analysis.hpp"
 #include "Fisher.hpp"
 
 using namespace std;
 
+// Set level of verbosity
+// Levels:
+// 0 LOG_NOTHING
+// 1 LOG_ERROR
+// 2 LOG_BASIC
+// 3 LOG_VERBOSE
+// 4 LOG_DEBUG
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_DEBUG;
+
 int main ()
 {
-    // Set level of verbosity
-    GLOBAL_LEVEL = LOG_DEBUG;
-
     map<string,double> params;    
     params.insert(pair<string,double>("kmax",1));//1
     params.insert(pair<string,double>("zmax",25));
