@@ -116,18 +116,43 @@ double Tomography2D::Cl_noise(int l, double nu1, double nu2)
         return 0.0;
     }
 }
-double Tomography2D::Cl_foreground(int l, double nu1, double nu2)
+
+double Tomography2D::Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values)
 {
-    double CL = 0;
-    for (int i = 0; i < num_FG_sources; i++){
-        double I = I_FG(i,nu1, nu2);
-        double Cl_nu1 = Cl_FG(i, l, nu1);
-        double Cl_nu2 = Cl_FG(i, l, nu2);
-        double CL_ii = I * sqrt(Cl_nu1 * Cl_nu2);
-        
-        CL += CL_ii;
-    }
-   
+    double I1 = 1-pow(log(nu1/nu2),2)/(2.0*pow(FG_param_values["extragal_ps_xi"],2));
+    double I2 = 1-pow(log(nu1/nu2),2)/(2.0*pow(FG_param_values["extragal_ff_xi"],2));
+    double I3 = 1-pow(log(nu1/nu2),2)/(2.0*pow(FG_param_values["gal_synch_xi"],2));
+    double I4 = 1-pow(log(nu1/nu2),2)/(2.0*pow(FG_param_values["gal_ff_xi"],2));
+    
+    double nu_f = 130.0;
+    double Cl_nu1_1 = FG_param_values["extragal_ps_A"] *\
+                        pow(1000.0/(double)l, FG_param_values["extragal_ps_beta"]) *\
+                        pow(nu_f/nu1, 2*FG_param_values["extragal_ps_alpha"]);
+    double Cl_nu1_2 = FG_param_values["extragal_ff_A"] *\
+                        pow(1000.0/(double)l, FG_param_values["extragal_ff_beta"]) *\
+                        pow(nu_f/nu1, 2*FG_param_values["extragal_ff_alpha"]);
+    double Cl_nu1_3 = FG_param_values["gal_synch_A"] *\
+                        pow(1000.0/(double)l, FG_param_values["gal_synch_beta"]) *\
+                        pow(nu_f/nu1, 2*FG_param_values["gal_synch_alpha"]);
+    double Cl_nu1_4 = FG_param_values["gal_ff_A"] *\
+                        pow(1000.0/(double)l, FG_param_values["gal_ff_beta"]) *\
+                        pow(nu_f/nu1, 2*FG_param_values["gal_ff_alpha"]);
+
+    double Cl_nu2_1 = FG_param_values["extragal_ps_A"] *\
+                        pow(1000.0/(double)l, FG_param_values["extragal_ps_beta"]) *\
+                        pow(nu_f/nu2, 2*FG_param_values["extragal_ps_alpha"]);
+    double Cl_nu2_2 = FG_param_values["extragal_ff_A"] *\
+                        pow(1000.0/(double)l, FG_param_values["extragal_ff_beta"]) *\
+                        pow(nu_f/nu2, 2*FG_param_values["extragal_ff_alpha"]);
+    double Cl_nu2_3 = FG_param_values["gal_synch_A"] *\
+                        pow(1000.0/(double)l, FG_param_values["gal_synch_beta"]) *\
+                        pow(nu_f/nu2, 2*FG_param_values["gal_synch_alpha"]);
+    double Cl_nu2_4 = FG_param_values["gal_ff_A"] *\
+                        pow(1000.0/(double)l, FG_param_values["gal_ff_beta"]) *\
+                        pow(nu_f/nu2, 2*FG_param_values["gal_ff_alpha"]);
+
+    double CL = I1 * sqrt(Cl_nu1_1*Cl_nu2_1) + I2 * sqrt(Cl_nu1_2*Cl_nu2_2) +\
+                I3 * sqrt(Cl_nu1_3*Cl_nu2_3) + I4 * sqrt(Cl_nu1_4*Cl_nu2_4); 
     return CL;
 }
 
@@ -196,46 +221,46 @@ void Tomography2D::writeCl_integrand(int l, double nu1, double nu2, double kmin,
 
 }
 
-double Tomography2D::I_FG(int i, double nu1, double nu2)
-{
-    return 1-pow(log(nu1/nu2),2)/(2.0*chi_FG[i]*chi_FG[i]);
-}
-
 void Tomography2D::set_FG_params()
 {
-    num_FG_sources = 4;
-    A_FG.resize(num_FG_sources);
-    beta_FG.resize(num_FG_sources);
-    alpha_FG.resize(num_FG_sources);
-    chi_FG.resize(num_FG_sources);
+    FG_params.push_back("extragal_ps_A");
+    FG_params.push_back("extragal_ps_beta");
+    FG_params.push_back("extragal_ps_alpha");
+    FG_params.push_back("extragal_ps_xi");
+    FG_params.push_back("extragal_ff_A");
+    FG_params.push_back("extragal_ff_beta");
+    FG_params.push_back("extragal_ff_alpha");
+    FG_params.push_back("extragal_ff_xi");
+    FG_params.push_back("gal_synch_A");
+    FG_params.push_back("gal_synch_beta");
+    FG_params.push_back("gal_synch_alpha");
+    FG_params.push_back("gal_synch_xi");
+    FG_params.push_back("gal_ff_A");
+    FG_params.push_back("gal_ff_beta");
+    FG_params.push_back("gal_ff_alpha");
+    FG_params.push_back("gal_ff_xi");
+    
     // extragalactic point sources
-    A_FG[0] = 10.0;
-    beta_FG[0] = 1.1;
-    alpha_FG[0] = 2.07;
-    chi_FG[0] = 1.0;
+    FG_param_base_values.insert(pair<string,double>("extragal_ps_A",10));
+    FG_param_base_values.insert(pair<string,double>("extragal_ps_beta",1.1));
+    FG_param_base_values.insert(pair<string,double>("extragal_ps_alpha",2.07));
+    FG_param_base_values.insert(pair<string,double>("extragal_ps_xi",1.0));
     // extragalactic free-free
-    A_FG[1] = 0.014;
-    beta_FG[1] = 1.0;
-    alpha_FG[1] = 2.1;
-    chi_FG[1] = 35.0;
+    FG_param_base_values.insert(pair<string,double>("extragal_ff_A",0.014));
+    FG_param_base_values.insert(pair<string,double>("extragal_ff_beta",1.0));
+    FG_param_base_values.insert(pair<string,double>("extragal_ff_alpha",2.1));
+    FG_param_base_values.insert(pair<string,double>("extragal_ff_xi",35));
     // galactic synchrotron
-    A_FG[2] = 700.0;
-    beta_FG[2] = 2.4;
-    alpha_FG[2] = 2.8;
-    chi_FG[2] = 4.0;
+    FG_param_base_values.insert(pair<string,double>("gal_synch_A",700));
+    FG_param_base_values.insert(pair<string,double>("gal_synch_beta",2.4));
+    FG_param_base_values.insert(pair<string,double>("gal_synch_alpha",2.8));
+    FG_param_base_values.insert(pair<string,double>("gal_synch_xi",4));
     // galactic free-free
-    A_FG[3] = 0.088;
-    beta_FG[3] = 3.0;
-    alpha_FG[3] = 2.15;
-    chi_FG[3] = 35.0;
-}
-
-double Tomography2D::Cl_FG(int i, int l, double nu)
-{
-    double nu_f = 130;
-    double res = A_FG[i]*pow(1000.0/(double)l, beta_FG[i]) *\
-                 pow(nu_f/nu, 2*alpha_FG[i]);
-    return res;
+    FG_param_base_values.insert(pair<string,double>("gal_ff_A",0.088));
+    FG_param_base_values.insert(pair<string,double>("gal_ff_beta",3));
+    FG_param_base_values.insert(pair<string,double>("gal_ff_alpha",2.15));
+    FG_param_base_values.insert(pair<string,double>("gal_ff_xi",35));
+    
 }
 
 double Tomography2D::z_from_nu(double nu)

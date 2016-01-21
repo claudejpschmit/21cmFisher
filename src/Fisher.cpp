@@ -1,4 +1,5 @@
 #include "Fisher.hpp"
+#include <assert.h>
 #define TESTMATRIX true
 
 // Public Destructor.
@@ -57,7 +58,7 @@ mat FisherInterface::read_matrix(string filename, int n_rows, int n_cols)
 
 void FisherInterface::write_matrix(mat matrix, string filename)
 {
-	//Writing matrix to binary file.
+    //Writing matrix to binary file.
     ofstream outfile;
     outfile.open(filename, ios::binary | ios::out);
     for (int i = 0; i < matrix.n_rows; i++)
@@ -96,7 +97,14 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     ////////
     // format is Cla_param-a_l_krange[min]_krange[max]_krange-steps_zmin_zmax_suffix.bin 
     ////////
-
+    bool FG = false;
+    for (int i = 0; i < 16; i++) 
+    {
+        if (param_key == analysis->FG_params[i]){
+            assert(fiducial_params["foreground"] == 1.0);
+            FG = true;
+        }
+    }
 
     if (TESTMATRIX){
         prefix = "output/matrices_test/Cla_";
@@ -107,7 +115,9 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     matrix_filename << prefix << param_key << "_"<< l << "_" <<\
         range[0] << "_" << range[range.size()-1] << "_"<< range.size() << "_"<<\
         fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
+
     bool debug = false;
+    
     if (check_file(matrix_filename.str()) && !debug)
     {
         cout << "///reading matrix from file///" << endl;
@@ -116,65 +126,124 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     else
     {
         cout << "///calculating matrix///" << endl;
-
-        map<string,double> working_params = fiducial_params;
-        double h = this->var_params[param_key];
-        double x = working_params[param_key];
         mat f1matrix = randu<mat>(range.size(),range.size());
         mat f2matrix = randu<mat>(range.size(),range.size());
         mat f3matrix = randu<mat>(range.size(),range.size());
         mat f4matrix = randu<mat>(range.size(),range.size());
-        working_params[param_key] = x + 2 * h;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        for (unsigned int i = 0; i < range.size(); ++i) {
-            double x1 = range[i];
-            for (unsigned int j = i; j < range.size(); ++j) {
-                double k2 = range[j];
-                double res = analysis->Cl(l, x1, k2, *Pk_index, *Tb_index, *q_index);
-                f1matrix(i,j) = res;
-                f1matrix(j,i) = res;
+        
+        double h;
+
+        if (FG) {
+            map<string,double> working_params = analysis->get_base_FG_params();
+            h = working_params[param_key]/100.0;
+            double x = working_params[param_key];
+            working_params[param_key] = x + 2 * h;
+            
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                double x1 = range[i];
+                for (unsigned int j = i; j < range.size(); ++j) {
+                    double k2 = range[j];
+                    double res = analysis->Cl_foreground(l, x1, k2, working_params);
+                    f1matrix(i,j) = res;
+                    f1matrix(j,i) = res;
+                }
             }
-        }
 
-        working_params[param_key] = x + h;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        for (unsigned int i = 0; i < range.size(); ++i) {
-            double x1 = range[i];
-            for (unsigned int j = i; j < range.size(); ++j) {
-                double x2 = range[j];
-                double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
-                f2matrix(i,j) = res;
-                f2matrix(j,i) = res;
+            working_params[param_key] = x + h;
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                double x1 = range[i];
+                for (unsigned int j = i; j < range.size(); ++j) {
+                    double x2 = range[j];
+                    double res = analysis->Cl_foreground(l, x1, x2, working_params);
+                    f2matrix(i,j) = res;
+                    f2matrix(j,i) = res;
+                }
             }
-        }
 
-        working_params[param_key] = x - h;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        for (unsigned int i = 0; i < range.size(); ++i) {
-            double x1 = range[i];
-            for (unsigned int j = i; j < range.size(); ++j) {
-                double x2 = range[j];
-                double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
-                f3matrix(i,j) = res;
-                f3matrix(j,i) = res;
+            working_params[param_key] = x - h;
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                double x1 = range[i];
+                for (unsigned int j = i; j < range.size(); ++j) {
+                    double x2 = range[j];
+                    double res = analysis->Cl_foreground(l, x1, x2, working_params);
+                    f3matrix(i,j) = res;
+                    f3matrix(j,i) = res;
+                }
             }
-        }
 
-        working_params[param_key] = x - 2 * h;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        for (unsigned int i = 0; i < range.size(); ++i) {
-            double x1 = range[i];
-            for (unsigned int j = i; j < range.size(); ++j) {
-                double x2 = range[j];
-                double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
-                f4matrix(i,j) = res;
-                f4matrix(j,i) = res;
+            working_params[param_key] = x - 2 * h;
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                double x1 = range[i];
+                for (unsigned int j = i; j < range.size(); ++j) {
+                    double x2 = range[j];
+                    double res = analysis->Cl_foreground(l, x1, x2, working_params);
+                    f4matrix(i,j) = res;
+                    f4matrix(j,i) = res;
+                }
             }
+            working_params[param_key] = x;
         }
+        else {
+            map<string,double> working_params = fiducial_params;
+            h = this->var_params[param_key];
+            double x = working_params[param_key];
+            mat f1matrix = randu<mat>(range.size(),range.size());
+            mat f2matrix = randu<mat>(range.size(),range.size());
+            mat f3matrix = randu<mat>(range.size(),range.size());
+            mat f4matrix = randu<mat>(range.size(),range.size());
+            working_params[param_key] = x + 2 * h;
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                double x1 = range[i];
+                for (unsigned int j = i; j < range.size(); ++j) {
+                    double k2 = range[j];
+                    double res = analysis->Cl(l, x1, k2, *Pk_index, *Tb_index, *q_index);
+                    f1matrix(i,j) = res;
+                    f1matrix(j,i) = res;
+                }
+            }
 
-        working_params[param_key] = x;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            working_params[param_key] = x + h;
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                double x1 = range[i];
+                for (unsigned int j = i; j < range.size(); ++j) {
+                    double x2 = range[j];
+                    double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
+                    f2matrix(i,j) = res;
+                    f2matrix(j,i) = res;
+                }
+            }
 
+            working_params[param_key] = x - h;
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                double x1 = range[i];
+                for (unsigned int j = i; j < range.size(); ++j) {
+                    double x2 = range[j];
+                    double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
+                    f3matrix(i,j) = res;
+                    f3matrix(j,i) = res;
+                }
+            }
+
+            working_params[param_key] = x - 2 * h;
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                double x1 = range[i];
+                for (unsigned int j = i; j < range.size(); ++j) {
+                    double x2 = range[j];
+                    double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
+                    f4matrix(i,j) = res;
+                    f4matrix(j,i) = res;
+                }
+            }
+
+            working_params[param_key] = x;
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+
+        }
+        
         double num;
         for (unsigned int i = 0; i < range.size(); ++i) {
             for (unsigned int j = 0; j < range.size(); ++j) {
@@ -185,8 +254,9 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
             }
         }
 
-
         //!!!!!!!!!!! this line also needs to be removed if not writing.
+        // It is fine to just do this here because the name of the matrix will already
+        // state that it is a FG parameter that has been differentiated wrt.
         write_matrix(res, matrix_filename.str());
     }
     return res;
@@ -195,12 +265,12 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
 mat FisherInterface::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, vector<double> range)
 {
     mat Cl = randu<mat>(range.size(),range.size());
-    
+
     // Remove the lines below and the if/else statement when not reading/writing matrix
     stringstream matrix_filename;
     string suffix = generate_matrix_file_suffix();
     string prefix;
-    
+
     ////////
     // format is Cl_l_krange[min]_krange[max]_krange-steps_zmin_zmax_suffix.bin 
     ////////
@@ -232,7 +302,7 @@ mat FisherInterface::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, 
                 Cl(j,i) = res;
             }
         }
-        
+
         //!!!!!!!!!!! this line also needs to be removed if not writing.
         write_matrix(Cl, matrix_filename.str());
     }
@@ -255,7 +325,7 @@ mat FisherInterface::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, 
                 double x2 = range[j];
                 double res = 0;
                 //if (i == j)
-                res = analysis->Cl_foreground(l, x1, x2);
+                res = analysis->Cl_foreground(l, x1, x2, analysis->get_base_FG_params());
                 Cl(i,j) += res;
                 Cl(j,i) += res;
             }
@@ -270,13 +340,12 @@ double FisherInterface::compute_Fl(int l, string param_key1, string param_key2,\
         int *Pk_index, int *Tb_index, int *q_index)
 {
     vector<double> range = set_range(l, xmin, xmax); 
-    
+
     mat Cl = randu<mat>(range.size(),range.size());
     mat Cl_inv = Cl;
 
     cout << "... derivative matrix calulation started" << endl;
     mat Cl_a = this->Cl_derivative_matrix(l, param_key1, Pk_index, Tb_index, q_index, range);
-    cout << " here " << endl;
     mat Cl_b = randu<mat>(range.size(),range.size());
     if (param_key1 == param_key2)
         Cl_b = Cl_a;
@@ -332,13 +401,13 @@ void FisherInterface::initializer(string param_key, int *Pk_index, int *Tb_index
 }
 
 /*
-int FisherInterface::check_Cl_file(params)
-{
-    //returns the value of the run where the same information was used.
-    //returns 0 if new calculation is necessary.
-    ifstream InfoFile("output/Fisher/RUN_INFO.dat");
-    int run_number = 0;
+   int FisherInterface::check_Cl_file(params)
+   {
+//returns the value of the run where the same information was used.
+//returns 0 if new calculation is necessary.
+ifstream InfoFile("output/Fisher/RUN_INFO.dat");
+int run_number = 0;
 
-    return run_number;
+return run_number;
 }
 */

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <map>
 
-
+#include "Helper.hpp"
 #include "Model.hpp"
 #include "Analysis.hpp"
 #include "Fisher.hpp"
@@ -10,6 +10,9 @@ using namespace std;
 
 int main ()
 {
+    // Set level of verbosity
+    GLOBAL_LEVEL = LOG_DEBUG;
+
     map<string,double> params;    
     params.insert(pair<string,double>("kmax",1));//1
     params.insert(pair<string,double>("zmax",25));
@@ -50,8 +53,15 @@ int main ()
     params.insert(pair<string,double>("Santos_const_abg",1.0));
 
         
+    log<LOG_BASIC>(L"test");
     vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
-        "ombh2", "omch2", "omega_lambda", "n_s"};
+        "ombh2", "omch2", "omega_lambda", "n_s"}; 
+        //, "extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
+        //"extragal_ps_xi", "extragal_ff_A", "extragal_ff_beta",\
+        //"extragal_ff_alpha" ,"extragal_ff_xi", "gal_synch_A",\
+        //"gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi",\
+        //"gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
+
     //vector<string>keys = {"ombh2", "omch2", "omega_lambda", "n_s"};
     int Pk_index = 0;
     int Tb_index = 0;
@@ -62,12 +72,12 @@ int main ()
     //Fisher1 fisher(&analysis, "test_output.dat", keys);
     //fisher.calc_Fls();
     
-
+    
     // Santos
-    Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
-    Tomography2D analysis2(&model2);
-    Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
-    fisher_santos.calc_Fls();
+    //Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
+    //Tomography2D analysis2(&model2);
+    //Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
+    //fisher_santos.calc_Fls();
 
     //analysis2.writeT21("T21_Santos.dat");
    /* 
