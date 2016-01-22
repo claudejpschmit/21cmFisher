@@ -24,7 +24,7 @@ Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
     Fl_file.open(Fl_filename);
     set_range_stepsize();
 
-    cout << "... Santos Fisher built ..." << endl;
+    log<LOG_BASIC>(L"... Santos Fisher built ...");
 }
 
 //////////////////////////////
@@ -70,7 +70,7 @@ vector<double> Fisher_Santos::set_range(int l, double xmin, double xmax)
     stringstream ss;
     ss << "The range in MHz is [" << xmin << "," << nu << "] in " << steps <<\
         " steps for l = " << l << ".\n";
-    cout << ss.str();
+    log<LOG_VERBOSE>(L"%1%") % ss.str().c_str();
     return range;
  
 }
@@ -103,7 +103,7 @@ void Fisher_Santos::run(int lmin, int lstepsize, int n_points_per_thread, int n_
             filename.str("");
             string param_key1 = model_param_keys[i];
             string param_key2 = model_param_keys[j];
-            cout <<  "STARTING with " << param_key1 << " and " << param_key2 << endl;
+            log<LOG_BASIC>(L"STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
             filename << filename_prefix << param_key1 << "_" << param_key2 << ".dat";
             ofstream outfile;
             outfile.open(filename.str());
@@ -123,7 +123,7 @@ void Fisher_Santos::run(int lmin, int lstepsize, int n_points_per_thread, int n_
             // use #pragma omp parallel num_threads(4) private(Pk_index, Tb_index, q_index) 
             // to define how many threads should be used.
             
-            cout << "Entering Parallel regime" << endl;
+            log<LOG_VERBOSE>(L"Entering Parallel regime");
             #pragma omp parallel num_threads(n_threads) private(Pk_index, Tb_index, q_index) 
             {
                 #pragma omp for reduction (+:sum)
@@ -138,18 +138,18 @@ void Fisher_Santos::run(int lmin, int lstepsize, int n_points_per_thread, int n_
                     stringstream ss, ss2, res;
                     double cond_num = 0;
                     ss << "Computation of Fl starts for l = " << l << "\n";
-                    cout << ss.str();
+                    log<LOG_VERBOSE>(L"%1%") % ss.str().c_str();
                     double fl = this->compute_Fl(l, param_key1, param_key2, freq_min,\
                             freq_max, &cond_num, &Pk_index, &Tb_index, &q_index);
                     ss2 << "fl with l = " << l << " is: " << fl << "\n";
-                    cout << ss2.str();
+                    log<LOG_VERBOSE>(L"%1%") % ss2.str().c_str();
                     res << l << " " << fl << " " << cond_num << "\n";
                     outfile << res.str() << endl;
                     sum += (2*l + 1) * fl;
                 }
             }
             outfile.close();
-            cout << "Calculations done for " << param_key1 << " and " << param_key2 << endl;
+            log<LOG_BASIC>(L"Calculations done for %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
         }
     }
 

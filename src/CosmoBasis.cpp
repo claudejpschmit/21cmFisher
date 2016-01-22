@@ -49,18 +49,18 @@ void CosmoBasis::set_fiducial_params(map<string, double> params)
 
 void CosmoBasis::show_params(map<string, double> params)
 {
-    cout << c << endl;
-    cout << k_b << endl;
-    cout << m_b << endl;
-    cout << m_e << endl;
-    cout << h_planck << endl;
-    cout << e << endl;
-    cout << G << endl;
-    cout << T_star << endl;
+    wcout << c << endl;
+    wcout << k_b << endl;
+    wcout << m_b << endl;
+    wcout << m_e << endl;
+    wcout << h_planck << endl;
+    wcout << e << endl;
+    wcout << G << endl;
+    wcout << T_star << endl;
     
-    cout << "ombh2 = "<< fiducial_params["ombh2"] << endl;
-    cout << "hubble = "<< fiducial_params["hubble"] << endl;
-    cout << T_CMB << endl;
+    wcout << "ombh2 = "<< fiducial_params["ombh2"] << endl;
+    wcout << "hubble = "<< fiducial_params["hubble"] << endl;
+    wcout << T_CMB << endl;
 }
 
 double CosmoBasis::sph_bessel_camb(int l, double x)
@@ -298,11 +298,11 @@ double CosmoBasis::m_to_mpc(double x)
 
 void CosmoBasis::show_cosmo_calcs()
 {
-    cout << hubble_time() << endl;
-    cout << hubble_dist() << endl;
-    cout << comoving_radial_dist(10) << endl;
-    cout << "O_m = " << O_M << ", O_V = " << O_V << "." << endl;
-    cout << "Age in Gigayears "<< age_of_universe(0) * pow(10,10) *\
+    wcout << hubble_time() << endl;
+    wcout << hubble_dist() << endl;
+    wcout << comoving_radial_dist(10) << endl;
+    wcout << "O_m = " << O_M << ", O_V = " << O_V << "." << endl;
+    wcout << "Age in Gigayears "<< age_of_universe(0) * pow(10,10) *\
         3.08568 / (365.25 * 24 * 3600) << endl;
 }
 

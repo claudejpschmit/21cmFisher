@@ -14,6 +14,8 @@ using namespace std;
 using namespace arma;
 using namespace alglib;
 
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_VERBOSE;
+
 int main(int argc, char* argv[])
 {
     int run_number;

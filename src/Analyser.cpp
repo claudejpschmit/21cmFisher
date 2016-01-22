@@ -1,7 +1,7 @@
 #include "Analyser.hpp"
 #include "stdafx.h"
 #include "interpolation.h"
-
+#include "Log.hpp"
 using namespace alglib;
 
 Analyser::Analyser()
@@ -145,11 +145,10 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
         if (RESULT.matrix(i,i) < 0)
             ERROR = true;
     if (ERROR) {
-        cout << "    ERROR: inverse Fisher has negative diagonal elements." <<\
-            endl;
-        cout << "           The Fisher matrix found is:" << endl;
+        log<LOG_ERROR>(L"    ERROR: inverse Fisher has negative diagonal elements.");
+        log<LOG_ERROR>(L"           The Fisher matrix found is:");
         cout << F << endl;
-        cout << "           The inverse Fisher matrix found is:" << endl;
+        log<LOG_ERROR>(L"           The inverse Fisher matrix found is:");
         cout << RESULT.matrix << endl;
     }
     RESULT.matrix_indecies = indecies;
