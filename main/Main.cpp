@@ -1,5 +1,8 @@
 #include <iostream>
 #include <map>
+#include <sstream>
+#include <string>
+
 
 #include "Log.hpp"
 #include "Model.hpp"
@@ -15,7 +18,9 @@ using namespace std;
 // 2 LOG_BASIC
 // 3 LOG_VERBOSE
 // 4 LOG_DEBUG
-log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_DEBUG;
+
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_VERBOSE;
+
 
 int main ()
 {
@@ -24,7 +29,7 @@ int main ()
     params.insert(pair<string,double>("zmax",25));
     params.insert(pair<string,double>("zsteps",10));//100
     params.insert(pair<string,double>("noise",1.0));
-    params.insert(pair<string,double>("foreground",0.0));
+    params.insert(pair<string,double>("foreground",1.0));
     params.insert(pair<string,double>("rsd",0.0));
     params.insert(pair<string,double>("limber",0.0));
     params.insert(pair<string,double>("tau_noise",5400000));//2000hours
@@ -58,21 +63,25 @@ int main ()
     params.insert(pair<string,double>("omega_lambda", 0.76));
     params.insert(pair<string,double>("Santos_const_abg",1.0));
 
-        
+    wstringstream msg2;
+    msg2 << L"bla" << 2 << endl;
+    string msgg = "aa";
+    log<LOG_ERROR>(L"---- Error: %1%") % msgg.c_str();
+
     log<LOG_BASIC>(L"test");
     vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
-        "ombh2", "omch2", "omega_lambda", "n_s"}; 
-        //, "extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
-        //"extragal_ps_xi", "extragal_ff_A", "extragal_ff_beta",\
-        //"extragal_ff_alpha" ,"extragal_ff_xi", "gal_synch_A",\
-        //"gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi",\
-        //"gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
+        "ombh2", "omch2", "omega_lambda", "n_s",\
+        "extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
+        "extragal_ps_xi", "extragal_ff_A", "extragal_ff_beta",\
+        "extragal_ff_alpha" ,"extragal_ff_xi", "gal_synch_A",\
+        "gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi",\
+        "gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
 
     //vector<string>keys = {"ombh2", "omch2", "omega_lambda", "n_s"};
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0; 
-    //Model_CAMB_ARES model(params, &Pk_index, &Tb_index, &q_index);
+    Model_CAMB_ARES model(params, &Pk_index, &Tb_index, &q_index);
     //Cosmology3D analysis(&model);
     //analysis.writeT21("T21_Ares.dat"); 
     //Fisher1 fisher(&analysis, "test_output.dat", keys);

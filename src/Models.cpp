@@ -3,6 +3,7 @@
 #include "Integrator.hpp"
 #include <fstream>
 #include "Log.hpp"
+#include <sstream>
 
 ModelInterface::ModelInterface(map<string,double> params)
     :
@@ -140,7 +141,7 @@ void ModelParent<T21>::update(map<string, double> params, int *Pk_index, int *Tb
     }
     catch(alglib::ap_error e)
     {
-        cout << "---- Error: " << e.msg.c_str() << endl;
+        log<LOG_ERROR>(L"---- Error: %1%") % e.msg.c_str();
     }
 }
     template<typename T21>
@@ -185,21 +186,21 @@ Model_CAMB_ARES::Model_CAMB_ARES(map<string,double> params, int *Pk_index, int *
     stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
     CAMB = new CAMB_CALLER;
 
-    cout << "... precalculating q ..." << endl;
+    log<LOG_BASIC>(L"... precalculating q ...");
     update_q(fiducial_params, q_index);
-    cout << "... q done ..." << endl;
+    log<LOG_BASIC>(L"... q done ...");
 
-    cout << "... precalculating Pkz ..." << endl;
+    log<LOG_BASIC>(L"... precalculating Pkz ...");
     update_Pkz(fiducial_params, Pk_index);
-    cout << "... Pkz done ..." << endl;
+    log<LOG_BASIC>(L"... Pkz done ...");
 
-    cout << "... precalculating 21cm interface ..." << endl;
-    cout << "...  -> ARES for 21cm signal ..." << endl;
+    log<LOG_BASIC>(L"... precalculating 21cm interface ...");
+    log<LOG_BASIC>(L"...  -> ARES for 21cm signal ...");
     ARES = new AresInterface();
     update_T21(fiducial_params, Tb_index);
 
-    cout << "... 21cm interface built ..." << endl;
-    cout << "... Model_CAMB_ARES built ..." << endl;
+    log<LOG_BASIC>(L"... 21cm interface built ...");
+    log<LOG_BASIC>(L"... Model_CAMB_ARES built ...");
 
 }
 
@@ -225,7 +226,7 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
                 params["tau_reio"] == Pkz_interpolators[i].tau &&\
                 params["omega_lambda"] == Pkz_interpolators[i].omega_lambda ){
 
-            cout << "Found precalculated Pkz" << endl;
+            log<LOG_VERBOSE>(L"Found precalculated Pkz");
             do_calc = false;
             *Pk_index = i;
             break;
@@ -234,7 +235,7 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
 
 
     if (do_calc) {
-        cout << "Calculating Pkz from scratch"<< endl;
+        log<LOG_VERBOSE>(L"Calculating Pkz from scratch");
         Pk_interpolator interp;
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
@@ -284,11 +285,14 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
 
         Pkz_interpolators.push_back(interp);
         *Pk_index = Pkz_interpolators.size() - 1;
-        
-        cout << interp.ombh2 << " " <<  interp.omnuh2 << " " <<\
-            interp.omch2 << " " <<  interp.omk << " " <<  interp.hubble <<\
-            interp.tcmb << " " <<  interp.w_DE << " " <<  interp.n_s <<\
-            interp.A_s << " " << interp.tau << endl;
+        log<LOG_VERBOSE>(L"Pkz update done");
+        log<LOG_DEBUG>(L"Model_CAMB_ARES::update_Pkz: Pkz has been updated using the following parameters:");
+        log<LOG_DEBUG>(L"ombh2 = %1%, omnuh2 = %2%, omch2 = %3%,\n \
+                        omk = %4%, hubble = %5%, tcmb = %6%,\n \
+                        w_DE = %7%, n_s = %8%, A_s = %9%, tau = %10%.")\
+                        % interp.ombh2 %  interp.omnuh2 % interp.omch2 %\
+                        interp.omk % interp.hubble % interp.tcmb % interp.w_DE %\
+                        interp.n_s % interp.A_s % interp.tau;
     }
 }
 
@@ -318,14 +322,14 @@ void Model_CAMB_ARES::update_T21(map<string,double> params, int *Tb_index)
              params["cX"] == Tb_interpolators[i].cX &&\
              params["HeByMass"] == Tb_interpolators[i].HeByMass
              */
-            cout << "found precalculated Ares" << endl;
+            log<LOG_VERBOSE>(L"found precalculated Ares");
             do_calc = false;
             *Tb_index = i;
             break;
         }
     }
     if (do_calc) {
-        cout << "Calculating T21 from scratch"<< endl;
+        log<LOG_VERBOSE>(L"Calculating T21 from scratch");
 
         Tb_interpolator_ares interp;
         interp.ombh2 = params["ombh2"];
@@ -353,7 +357,7 @@ void Model_CAMB_ARES::update_T21(map<string,double> params, int *Tb_index)
         interp.HeByMass = -1; //params["HeByMass"];
 
 
-        cout << "Ares is being updated" << endl;
+        log<LOG_VERBOSE>(L"Ares is being updated");
         ARES->updateAres(params);
         vector<double> vz, vTb;
         ARES->getTb(&vz, &vTb);
@@ -376,7 +380,7 @@ void Model_CAMB_ARES::update_T21(map<string,double> params, int *Tb_index)
         Tb_interpolators.push_back(interp);
         *Tb_index = Tb_interpolators.size() - 1;
 
-        cout << "Ares dTb update done" << endl;
+        log<LOG_VERBOSE>(L"Ares dTb update done");
     }
 }
 
@@ -398,7 +402,7 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
                 params["w_DE"] == q_interpolators[i].w_DE &&\
                 params["omega_lambda"] == q_interpolators[i].omega_lambda) {
 
-            cout << "Found precalculated q" << endl;
+            log<LOG_VERBOSE>(L"Found precalculated q");
             do_calc = false;
             *q_index = i;
             break;
@@ -406,7 +410,7 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
     }
 
     if (do_calc) {
-        cout << "Calculating q from scratch"<< endl;
+        log<LOG_VERBOSE>(L"Calculating q from scratch");
 
         q_interpolator interp;
         interp.ombh2 = params["ombh2"];
@@ -492,19 +496,19 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
             spline1dbuildlinear(xs,ys,interpolator);
         }
         catch(alglib::ap_error e){
-            cout << "---- Error in q(z): " << e.msg.c_str() << endl;
+            log<LOG_ERROR>(L"---- Error in q(z): %1%") % e.msg.c_str();
         }
         try {
             spline1dbuildlinear(xs,hs,interpolator_Hf);
         }
         catch(alglib::ap_error e){
-            cout << "---- Error in H(z): " << e.msg.c_str() << endl;
+            log<LOG_ERROR>(L"---- Error in H(z): %1%") % e.msg.c_str();
         }
         try {
             spline1dbuildlinear(xs,qps,interpolator_qp);
         }
         catch(alglib::ap_error e){
-            cout << "---- Error in q_prime(z): " << e.msg.c_str() << endl;
+            log<LOG_ERROR>(L"---- Error in q_prime(z): %1%") % e.msg.c_str();
         }
 
         // If limber == false, the qp_interpolator will just be empty but that
@@ -516,7 +520,7 @@ void Model_CAMB_ARES::update_q(map<string,double> params, int *q_index)
 
         q_interpolators.push_back(interp);
         *q_index = q_interpolators.size() - 1;
-        cout << " -- Calculating q is done --"<< endl;
+        log<LOG_VERBOSE>(L" -- Calculating q is done --");
     }    
 }
 
@@ -536,21 +540,21 @@ Model_CAMB_G21::Model_CAMB_G21(map<string,double> params,\
     modelID = "CAMB_G21";
     CAMB = new CAMB_CALLER;
 
-    cout << "... precalculating q ..." << endl;
+    log<LOG_BASIC>(L"... precalculating q ...");
     update_q(fiducial_params, q_index);
-    cout << "... q done ..." << endl;
+    log<LOG_BASIC>(L"... q done ...");
 
-    cout << "... precalculating Pkz ..." << endl;
+    log<LOG_BASIC>(L"... precalculating Pkz ...");
     update_Pkz(fiducial_params, Pk_index);
-    cout << "... Pkz done ..." << endl;
+    log<LOG_BASIC>(L"... Pkz done ...");
 
-    cout << "... precalculating 21cm interface ..." << endl;
-    cout << "...  -> G21 for 21cm signal ..." << endl;
+    log<LOG_BASIC>(L"... precalculating 21cm interface ...");
+    log<LOG_BASIC>(L"...  -> G21 for 21cm signal ...");
     G21 = new Global21cmInterface();
     update_T21(fiducial_params, Tb_index);
 
-    cout << "... 21cm interface built ..." << endl;
-    cout << "... Model_CAMB_ARES built ..." << endl;
+    log<LOG_BASIC>(L"... 21cm interface built ...");
+    log<LOG_BASIC>(L"... Model_CAMB_ARES built ...");
 
 }
 
@@ -576,7 +580,7 @@ void Model_CAMB_G21::update_Pkz(map<string,double> params, int *Pk_index)
                 params["tau_reio"] == Pkz_interpolators[i].tau &&\
                 params["omega_lambda"] == Pkz_interpolators[i].omega_lambda ){
 
-            cout << "Found precalculated Pkz" << endl;
+            log<LOG_VERBOSE>(L"Found precalculated Pkz");
             do_calc = false;
             *Pk_index = i;
             break;
@@ -585,7 +589,7 @@ void Model_CAMB_G21::update_Pkz(map<string,double> params, int *Pk_index)
 
 
     if (do_calc) {
-        cout << "Calculating Pkz from scratch"<< endl;
+        log<LOG_VERBOSE>(L"Calculating Pkz from scratch");
         Pk_interpolator interp;
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
@@ -635,6 +639,7 @@ void Model_CAMB_G21::update_Pkz(map<string,double> params, int *Pk_index)
 
         Pkz_interpolators.push_back(interp);
         *Pk_index = Pkz_interpolators.size() - 1;
+        log<LOG_VERBOSE>(L"Pkz update done");
     }
 }
 
@@ -656,14 +661,14 @@ void Model_CAMB_G21::update_T21(map<string,double> params, int *Tb_index)
                 params["fx"] == Tb_interpolators[i].fx &&\
                 params["flya"] == Tb_interpolators[i].flya &&\
                 params["w_DE"] == Tb_interpolators[i].w_DE) {
-            cout << "found precalculated G21" << endl;
+            log<LOG_VERBOSE>(L"found precalculated G21");
             do_calc = false;
             *Tb_index = i;
             break;
         }
     }
     if (do_calc) {
-        cout << "Calculating T21 from scratch" << endl;
+        log<LOG_VERBOSE>(L"Calculating T21 from scratch");
         Tb_interpolator interp;
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
@@ -701,6 +706,7 @@ void Model_CAMB_G21::update_T21(map<string,double> params, int *Tb_index)
 
         Tb_interpolators.push_back(interp);
         *Tb_index = Tb_interpolators.size() - 1;
+        log<LOG_VERBOSE>(L"T21 update done");
     }
 }
 
@@ -722,7 +728,7 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
                 params["w_DE"] == q_interpolators[i].w_DE &&\
                 params["omega_lambda"] == q_interpolators[i].omega_lambda) {
 
-            cout << "Found precalculated q" << endl;
+            log<LOG_VERBOSE>(L"Found precalculated q");
             do_calc = false;
             *q_index = i;
             break;
@@ -730,7 +736,7 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
     }
 
     if (do_calc) {
-        cout << "Calculating q from scratch"<< endl;
+        log<LOG_VERBOSE>(L"Calculating q from scratch");
 
         q_interpolator interp;
         interp.ombh2 = params["ombh2"];
@@ -827,6 +833,7 @@ void Model_CAMB_G21::update_q(map<string,double> params, int *q_index)
 
         q_interpolators.push_back(interp);
         *q_index = q_interpolators.size() - 1;
+        log<LOG_VERBOSE>(L"q update done");
     }    
 }
 
@@ -863,20 +870,20 @@ Model_Santos2006::Model_Santos2006(map<string, double> params,\
 
     modelID = "Santos2006";
 
-    cout << "... precalculating q ..." << endl;
+    log<LOG_BASIC>(L"... precalculating q ...");
     update_q(fiducial_params, q_index);
-    cout << "... q done ..." << endl;
+    log<LOG_BASIC>(L"... q done ...");
 
-    cout << "... precalculating Pkz ..." << endl;
+    log<LOG_BASIC>(L"... precalculating Pkz ...");
     update_Pkz(fiducial_params, Pk_index);
-    cout << "... Pkz done ..." << endl;
+    log<LOG_BASIC>(L"... Pkz done ...");
 
-    cout << "... precalculating 21cm interface ..." << endl;
-    cout << "...  -> Santos Model for 21cm signal ..." << endl;
+    log<LOG_BASIC>(L"... precalculating 21cm interface ...");
+    log<LOG_BASIC>(L"...  -> Santos Model for 21cm signal ...");
     update_T21(fiducial_params, Tb_index);
 
-    cout << "... 21cm interface built ..." << endl;
-    cout << "... Model_Santos2006 built ..." << endl;
+    log<LOG_BASIC>(L"... 21cm interface built ...");
+    log<LOG_BASIC>(L"... Model_Santos2006 built ...");
 }
 Model_Santos2006::~Model_Santos2006()
 {}
@@ -897,7 +904,7 @@ void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
                 params["tau_reio"] == Pkz_interpolators[i].tau &&\
                 params["omega_lambda"] == Pkz_interpolators[i].omega_lambda){
 
-            cout << "Found precalculated Pkz" << endl;
+            log<LOG_VERBOSE>(L"Found precalculated Pkz");
             do_calc = false;
             *Pk_index = i;
             break;
@@ -905,7 +912,7 @@ void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
     }
 
     if (do_calc) {
-        cout << "Calculating Pkz from scratch"<< endl;
+        log<LOG_VERBOSE>(L"Calculating Pkz from scratch");
         Pk_interpolator interp;
         interp.ombh2 = params["ombh2"];
         interp.omnuh2 = params["omnuh2"];
@@ -954,6 +961,8 @@ void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
 
         Pkz_interpolators.push_back(interp);
         *Pk_index = Pkz_interpolators.size() - 1;
+        
+        log<LOG_VERBOSE>(L"Pkz update done");
     }
 }
 
@@ -971,10 +980,9 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
                 params["beta"] == Tb_interpolators[i].beta &&\
                 params["gamma"] == Tb_interpolators[i].gamma &&\             
                 params["RLy"] == Tb_interpolators[i].RLy &&\
-                params["omega_lambda"] == Tb_interpolators[i].omega_lambda
-           )
+                params["omega_lambda"] == Tb_interpolators[i].omega_lambda)
         {
-            cout << "found precalculated Analytic 21cm Signal" << endl;
+            log<LOG_VERBOSE>(L"found precalculated Analytic 21cm Signal");
             do_calc = false;
             *Tb_index = i;
             break;
@@ -983,7 +991,7 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
     if (do_calc) {
 
 
-        cout << "Calculating T21 from scratch" << endl;
+        log<LOG_VERBOSE>(L"Calculating T21 from scratch");
         ofstream file;
         Tb_interpolator_Santos interp;
         interp.ombh2 = params["ombh2"];
@@ -1042,7 +1050,7 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
             spline1dbuildcubic(t21_z, t21_Tb, interpolator);
         }
         catch(alglib::ap_error e){
-            cout << "---- Error in Tb: " << e.msg.c_str() << endl;
+            log<LOG_ERROR>(L"---- Error in Tb: %1%.") % e.msg.c_str();
         }
         interp.interpolator = interpolator;
 
@@ -1052,16 +1060,14 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
             spline1dbuildcubic(t21_z, t21_fz, fz_interpolator);
         }
         catch(alglib::ap_error e){
-            cout << "---- Error in fz: " << e.msg.c_str() << endl;
-            //for (unsigned int i = 0; i < vz.size(); i++){
-            //    cout << t21_z[i] << " " << t21_fz[i] << endl;
-            //}
+            log<LOG_ERROR>(L"---- Error in fz: %1%") % e.msg.c_str();
         }
 
         interp.fz_interpolator = fz_interpolator;
 
         Tb_interpolators.push_back(interp);
         *Tb_index = Tb_interpolators.size() - 1;
+        log<LOG_VERBOSE>(L"T21 update done");
     }
 }
 
@@ -1083,7 +1089,7 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
                 params["w_DE"] == q_interpolators[i].w_DE &&\
                 params["omega_lambda"] == q_interpolators[i].omega_lambda ){
 
-            cout << "Found precalculated q" << endl;
+            log<LOG_VERBOSE>(L"Found precalculated q");
             do_calc = false;
             *q_index = i;
             break;
@@ -1091,7 +1097,7 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
     }
 
     if (do_calc) {
-        cout << "Calculating q from scratch"<< endl;
+        log<LOG_VERBOSE>(L"Calculating q from scratch");
 
         q_interpolator interp;
         interp.ombh2 = params["ombh2"];
@@ -1188,6 +1194,7 @@ void Model_Santos2006::update_q(map<string,double> params, int *q_index)
 
         q_interpolators.push_back(interp);
         *q_index = q_interpolators.size() - 1;
+        log<LOG_VERBOSE>(L"q update done");
     }    
 }
 

@@ -189,7 +189,6 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
             int r = system(command);
             (void)r;
             delete command;
-
             //Read in the data
             ifstream file;
             file.open(filename);
@@ -233,10 +232,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 catch(alglib::ap_error e)
                 {
                     
-                    printf("error msg: %s\n", e.msg.c_str());
-                    for (unsigned int n = 0; n < l.size(); n++) {
-                        cout << ls[n] << " " << fs[n] << endl;
-                    }
+                    printf("error msg: %s\n", e.msg.c_str());    
                 }
                 for (int k = l[0]; k <= l[l.size()-1]; k++)
                 {

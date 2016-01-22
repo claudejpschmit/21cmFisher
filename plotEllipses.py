@@ -18,7 +18,8 @@ latex_params = {'ombh2':'\Omega_b h^2', 'omch2':'\Omega_{CDM} h^2', 'omk':'\Omeg
                 'hubble':'H_0', 'fesc':'f_{esc}', 'fstar':'f_*', 'w_DE':'w',\
                 'omnuh2':'\Omega_\\nu h^2', 'T_CMB': 't_{CMB}', 'sigma8': '\sigma_8',\
                 'n_s':'n_s', 'A_s':'A_s','100*theta_s':'100 \\theta_s','nion':'N_{ion}',\
-                'omega_lambda':'\Omega_\Lambda'}
+                'omega_lambda':'\Omega_\Lambda', 'alpha':'\\alpha', 'beta':'\\beta',\
+                'gamma':'\gamma', 'RLy':'R_{Ly}'}
 
 ellipse_number = 0
 for i in range(0,num_params - 1):

@@ -36,12 +36,17 @@ int main(int argc, char* argv[])
     Analyser analyse;
     Fisher_return_pair finv;
     if (SANTOS)
+    {
         finv = analyse.build_Fisher_inverse_Santos(keys, prefix.str(), "output/Fisher_Santos/");
-    else    
+        analyse.draw_error_ellipses(finv, keys, run_number, "output/Fisher_Santos/");
+    }
+    else 
+    {
         finv = analyse.build_Fisher_inverse(keys, prefix.str(), "output/Fisher/");
+        analyse.draw_error_ellipses(finv, keys, run_number, "output/Fisher/");
+    }
     //cout << finv.matrix.i() << endl;
-    analyse.draw_error_ellipses(finv, keys, run_number, "output/Fisher/");
-
+    
     return 0;
 }
 
