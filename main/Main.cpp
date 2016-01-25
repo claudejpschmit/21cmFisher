@@ -62,12 +62,6 @@ int main ()
     params.insert(pair<string,double>("RLy", 100));
     params.insert(pair<string,double>("omega_lambda", 0.76));
     params.insert(pair<string,double>("Santos_const_abg",1.0));
-    wstringstream msg2;
-    msg2 << L"bla" << 2 << endl;
-    string msgg = "aa";
-    log<LOG_ERROR>(L"---- Error: %1%") % msgg.c_str();
-
-    log<LOG_BASIC>(L"test");
     vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
         "ombh2", "omch2", "omega_lambda", "n_s",\
         "extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
