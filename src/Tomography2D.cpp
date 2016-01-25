@@ -219,7 +219,6 @@ void Tomography2D::writeCl_integrand(int l, double nu1, double nu2, double kmin,
         file << k << " " << res << endl;
     }
     file.close();
-
 }
 
 void Tomography2D::set_FG_params()
@@ -261,13 +260,13 @@ void Tomography2D::set_FG_params()
     FG_param_base_values.insert(pair<string,double>("gal_ff_beta",3));
     FG_param_base_values.insert(pair<string,double>("gal_ff_alpha",2.15));
     FG_param_base_values.insert(pair<string,double>("gal_ff_xi",35));
-    
 }
 
 double Tomography2D::z_from_nu(double nu)
 {
     return (1420.0/nu - 1.0);
 }
+
 double Tomography2D::F(double k, double z, double alpha, double beta, double RLy)
 {
     double beta_xhi = 0;
@@ -276,6 +275,7 @@ double Tomography2D::F(double k, double z, double alpha, double beta, double RLy
                  exp(-k*k*R_xhi*R_xhi/2.0);
     return res;
 }
+
 double Tomography2D::I(int l, double k, double nu_0)
 {
     //TODO: Find out what the right boundaries are for the integral.
@@ -297,6 +297,7 @@ double Tomography2D::I(int l, double k, double nu_0)
     double integral = integrate_simps(integrand, nu_low, nu_high, nu_steps);
     return 1420 * integral;
 }
+
 double Tomography2D::J(int l, double k, double nu_0)
 {
     //TODO: Find out what the right boundaries are for the integral.
@@ -321,6 +322,7 @@ double Tomography2D::J(int l, double k, double nu_0)
     double integral = integrate_simps(integrand, nu_low, nu_high, nu_steps);
     return 1420 * integral;
 }
+
 double Tomography2D::P(double k, double z1, double z2, double Pk_index)
 {
     return sqrt(model->Pkz_interp(k,z1,Pk_index)*model->Pkz_interp(k,z2,Pk_index));
@@ -330,6 +332,7 @@ double Tomography2D::alpha_fiducial(double z)
 {
     return a_alpha * sin(b_alpha *z + c_alpha) + d_alpha;
 }
+
 void Tomography2D::determine_alpha()
 {
     a_alpha = 0.41;
@@ -370,6 +373,7 @@ double Tomography2D::gamma_fiducial(double z)
 {
     return a_gamma * z*z + b_gamma * z + c_gamma;
 }
+
 void Tomography2D::determine_gamma()
 {
     mat A = randu<mat>(3,3);

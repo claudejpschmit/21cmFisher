@@ -242,7 +242,6 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
 
             working_params[param_key] = x;
             analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-
         }
         
         double num;
@@ -360,7 +359,7 @@ double FisherInterface::compute_Fl(int l, string param_key1, string param_key2,\
     *cond_num = cond(Cl);
     //Cl_inv = Cl.i();
     Cl_inv = pinv(Cl);
-    log<LOG_BASIC>(L"-> Cl & Cl_inv are done for l = ") % l;
+    log<LOG_BASIC>(L"-> Cl & Cl_inv are done for l = %1%.") % l;
 
     mat product = Cl_a * Cl_inv;
     product = product * Cl_b;

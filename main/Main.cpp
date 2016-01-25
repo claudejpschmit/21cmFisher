@@ -19,7 +19,7 @@ using namespace std;
 // 3 LOG_VERBOSE
 // 4 LOG_DEBUG
 
-log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_VERBOSE;
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
 
 int main ()
@@ -74,7 +74,7 @@ int main ()
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0; 
-    Model_CAMB_ARES model(params, &Pk_index, &Tb_index, &q_index);
+    //Model_CAMB_ARES model(params, &Pk_index, &Tb_index, &q_index);
     //model.show_params(params);
     //Cosmology3D analysis(&model);
     //analysis.writeT21("T21_Ares.dat"); 
@@ -83,10 +83,10 @@ int main ()
     
     
     // Santos
-    //Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
-    //Tomography2D analysis2(&model2);
-    //Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
-    //fisher_santos.calc_Fls();
+    Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
+    Tomography2D analysis2(&model2);
+    Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
+    fisher_santos.calc_Fls();
 
     //analysis2.writeT21("T21_Santos.dat");
    /* 
