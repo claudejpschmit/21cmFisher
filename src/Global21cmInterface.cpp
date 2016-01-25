@@ -54,56 +54,54 @@ void Global21cmInterface::updateGlobal21cm(map<string,double> params)
     //om0 = 0.3;
     //lam0 = 0.7;
     c = new Cosmology(om0,lam0,omb,h,s8,n,omNu);
-    cout << c->getOmega0() << endl;
-    cout << c->getOmegam() << endl;
-    cout << c->getOmegab() << endl;
-    cout << c->getOmbhh() << endl;
-    cout << c->getOm0hh() << endl;
-    cout << c->getLambda0() << endl;
-    cout << c->getH() << endl;
-    cout << c->getnSpec() << endl;
-    cout << c->getScale() << endl;
-    cout << c->getShape() << endl;
+    log<LOG_DEBUG>(L"Omega_0 = %1%.") % c->getOmega0();
+    log<LOG_DEBUG>(L"Omegam = %1%.") % c->getOmegam();
+    log<LOG_DEBUG>(L"Omegab = %1%.") % c->getOmegab();
+    log<LOG_DEBUG>(L"Ombhh = %1%.") % c->getOmbhh();
+    log<LOG_DEBUG>(L"Om0hh = %1%.") % c->getOm0hh();
+    log<LOG_DEBUG>(L"Lambda0 = %1%.") % c->getLambda0();
+    log<LOG_DEBUG>(L"H = %1%.") % c->getH();
+    log<LOG_DEBUG>(L"nSpec = %1%.") % c->getnSpec();
+    log<LOG_DEBUG>(L"Scale = %1%.") % c->getScale();
+    log<LOG_DEBUG>(L"Shape = %1%.") % c->getShape();
     int popflag_in = 0;
     int xin = 1;
     int lyaxray_in = 0;
-    cout << " ******************** " << endl;
-    cout << s8 << " " << h << " " << omb << " " << T_CMB << " " << O_cdm << " " <<\
-        " " << O_k << " " << w << " " << n << " " << fstar << " " << fesc << " " << nion <<\
-        " " << fx << " " << popflag << " " << lyaxrayflag << " " << params["zmin"] <<\
-        " " << params["zmax"] <<  endl;
-    cout << " ******************** " << endl;
-    cout << om0 << " " << lam0 << " " << omb << " " << h << " " << s8 << " " <<\
-        " " << n << " " << omNu << " " << popflag_in << " " << xin << " " << lyaxray_in << " " << fstar<<\
-        " " << fesc << " " << flya << " " << params["zmin"] <<\
-        " " << params["zmax"] <<  endl;
+    log<LOG_DEBUG>(L" ******************** ");
+    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15% %16%.") %\
+        s8  % h % omb % T_CMB % O_cdm % O_k % w % n % fstar % fesc % nion % fx %\
+        popflag % lyaxrayflag % params["zmin"] % params["zmax"];
+    log<LOG_DEBUG>(L" ******************** ");
+    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15%.") %\
+        om0 % lam0 % omb % h % s8 % n % omNu % popflag_in % xin % lyaxray_in % fstar % fesc %\
+        flya % params["zmin"] % params["zmax"];
 
 
     a = new Astrophysics(c,popflag_in,xin,lyaxray_in,1.0);
-    cout << a->getFSTAR() << endl;
-    cout << a->getFESC() << endl;
-    cout << a->getNION() << endl;
-    cout << a->getNLYA() << endl;
-    cout << a->getFLYA() << endl;
-    cout << a->getZeta() << endl;
-    cout << a->getPopflag() << endl;
-    cout << a->getLyaXray() << endl;
-    cout << a->getZReion() << endl;
+    log<LOG_DEBUG>(L"FSTAR = %1%.") % a->getFSTAR();
+    log<LOG_DEBUG>(L"FESC = %1%.") % a->getFESC();
+    log<LOG_DEBUG>(L"NION = %1%.") % a->getNION();
+    log<LOG_DEBUG>(L"NLYA = %1%.") % a->getNLYA();
+    log<LOG_DEBUG>(L"FLYA = %1%.") % a->getFLYA();
+    log<LOG_DEBUG>(L"Zeta = %1%.") % a->getZeta();
+    log<LOG_DEBUG>(L"Popflag = %1%.") % a->getPopflag();
+    log<LOG_DEBUG>(L"LyaXray = %1%.") % a->getLyaXray();
+    log<LOG_DEBUG>(L"ZReion = %1%.") % a->getZReion();
     tocm = new TwentyOneCM(c,a);
 
-    cout << fstar << " " << fesc << " " << nion << " " << fx << " " << flya <<\
-        " " << popflag << " " << xrayflag << " " << lyaxrayflag << endl;
+    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8%.") % fstar %\
+        fesc % nion % fx % flya % popflag % xrayflag % lyaxrayflag;
     //Astrophysics a(&c,popflag_in,xin,lyaxray_in,1.0);
     a->initAstrophysics(fstar,fesc,nion,fx,flya,popflag,xrayflag,lyaxrayflag, true);
-    cout << a->getFSTAR() << endl;
-    cout << a->getFESC() << endl;
-    cout << a->getNION() << endl;
-    cout << a->getNLYA() << endl;
-    cout << a->getFLYA() << endl;
-    cout << a->getZeta() << endl;
-    cout << a->getPopflag() << endl;
-    cout << a->getLyaXray() << endl;
-    cout << a->getZReion() << endl;
+    log<LOG_DEBUG>(L"FSTAR = %1%.") % a->getFSTAR();
+    log<LOG_DEBUG>(L"FESC = %1%.") % a->getFESC();
+    log<LOG_DEBUG>(L"NION = %1%.") % a->getNION();
+    log<LOG_DEBUG>(L"NLYA = %1%.") % a->getNLYA();
+    log<LOG_DEBUG>(L"FLYA = %1%.") % a->getFLYA();
+    log<LOG_DEBUG>(L"Zeta = %1%.") % a->getZeta();
+    log<LOG_DEBUG>(L"Popflag = %1%.") % a->getPopflag();
+    log<LOG_DEBUG>(L"LyaXray = %1%.") % a->getLyaXray();
+    log<LOG_DEBUG>(L"ZReion = %1%.") % a->getZReion();
 
     double *result;
     result=dvector(1,3);
@@ -111,21 +109,17 @@ void Global21cmInterface::updateGlobal21cm(map<string,double> params)
     double tk=result[1];
     double xi=result[2];
     double xe=result[3];
-    cout << tk << " " << xi << " " << xe << endl;
-    cout << " ******************** " << endl;
+    log<LOG_VERBOSE>(L"tk = %1%, xi = %2%, xe = %3%.") % tk % xi % xe;
+    log<LOG_DEBUG>(L" ******************** ");
     calc_Tb(params["zmin"]-1, params["zmax"]+1, 20);
-    cout << " ******************** " << endl;
-    cout << s8 << " " << h << " " << omb << " " << T_CMB << " " << O_cdm << " " <<\
-        " " << O_k << " " << w << " " << n << " " << fstar << " " << fesc << " " << nion <<\
-        " " << fx << " " << popflag << " " << lyaxrayflag << " " << params["zmin"] <<\
-        " " << params["zmax"] <<  endl;
-    cout << " ******************** " << endl;
-    cout << om0 << " " << lam0 << " " << omb << " " << h << " " << s8 << " " <<\
-        " " << n << " " << omNu << " " << popflag_in << " " << xin << " " << lyaxray_in << " " << fstar<<\
-        " " << fesc << " " << flya << " " << params["zmin"] <<\
-        " " << params["zmax"] <<  endl;
-
-
+    log<LOG_DEBUG>(L" ******************** ");
+    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15% %16%.") %\
+        s8  % h % omb % T_CMB % O_cdm % O_k % w % n % fstar % fesc % nion % fx %\
+        popflag % lyaxrayflag % params["zmin"] % params["zmax"];
+    log<LOG_DEBUG>(L" ******************** ");
+    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15%.") %\
+        om0 % lam0 % omb % h % s8 % n % omNu % popflag_in % xin % lyaxray_in % fstar % fesc %\
+        flya % params["zmin"] % params["zmax"];
 }
 
 void Global21cmInterface::updateGlobal21cm_full(map<string,double> params)
@@ -228,7 +222,7 @@ void Global21cmInterface::calc_Tb(double zmin, double zmax, int zsteps)
         tk=result[1];
         xi=result[2];
         xe=result[3];
-        cout << tk << " " << xi << " " << xe << endl;
+        log<LOG_VERBOSE>(L"tk = %1%, xi = %2%, xe = %3%.") % tk % xi % xe;
         lyaflux=a->lyaFlux(z);
         tb=(1.0-xi)*tocm->tBrightGen(z,tk,xe,lyaflux);
         fout << z << " " << tb << endl;

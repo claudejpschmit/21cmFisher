@@ -81,7 +81,7 @@ int main ()
     int Tb_index = 0;
     int q_index = 0; 
     Model_CAMB_ARES model(params, &Pk_index, &Tb_index, &q_index);
-    model.show_params(params);
+    //model.show_params(params);
     //Cosmology3D analysis(&model);
     //analysis.writeT21("T21_Ares.dat"); 
     //Fisher1 fisher(&analysis, "test_output.dat", keys);

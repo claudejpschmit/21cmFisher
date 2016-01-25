@@ -4,7 +4,7 @@ int Base_interp::locate(const double x)
 {
     int ju, jm, jl;
     if (n < 2 || mm < 2 || mm > n) {
-        cout << "locate size error" << endl;
+        wcout << "locate size error" << endl;
         throw("locate size error");
     }
     bool ascnd = (xx[n-1] >= xx[0]);
@@ -27,7 +27,7 @@ int Base_interp::hunt(const double x)
 {
     int jl=jsav, jm, ju, inc=1; 
     if (n<2||mm<2||mm>n) {
-        cout << "hunt size error" << endl;
+        wcout << "hunt size error" << endl;
         throw("hunt size error");
     }
     bool ascnd=(xx[n-1] >= xx[0]);
@@ -94,7 +94,7 @@ double Poly_interp::rawinterp(int jl, double x)
             hp=xa[i+m]-x; 
             w=c[i+1]-d[i]; 
             if ((den=ho-hp) == 0.0) {
-                cout << "Poly_interp error" << endl;
+                wcout << "Poly_interp error" << endl;
                 throw("Poly_interp error"); 
             }
             den=w/den;

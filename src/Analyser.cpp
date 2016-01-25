@@ -181,7 +181,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
 
             //First order file
             stringstream command_buff;
-            cout << "Ordering file: " << filename << endl;
+            log<LOG_VERBOSE>(L"Ordering file: %1%.") % filename.c_str();
             command_buff << "python OrderFile.py " << filename;
             char* command = new char[command_buff.str().length() + 1];
             strcpy(command, command_buff.str().c_str());
@@ -291,11 +291,10 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         if (RESULT.matrix(i,i) < 0)
             ERROR = true;
     if (ERROR) {
-        cout << "    ERROR: inverse Fisher has negative diagonal elements." <<\
-            endl;
-        cout << "           The Fisher matrix found is:" << endl;
+        log<LOG_ERROR>(L"    ERROR: inverse Fisher has negative diagonal elements.");
+        log<LOG_ERROR>(L"           The Fisher matrix found is:");
         cout << F << endl;
-        cout << "           The inverse Fisher matrix found is:" << endl;
+        log<LOG_ERROR>(L"           The inverse Fisher matrix found is:");
         cout << RESULT.matrix << endl;
     }
     RESULT.matrix_indecies = indecies;
@@ -316,18 +315,20 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
             index2 = i;
     }
    
-    cout << index1 << " " <<index2 << endl;
+    log<LOG_BASIC>(L"%1% %2%") % index1 % index2;
     double sig_xx, sig_xy, sig_yy;
     sig_xx = finv.matrix(index1, index1);
-    cout << "Marginalized error on " << finv.matrix_indecies[index1][index1][0] \
-        << " is " << sqrt(sig_xx) << endl;
+    log<LOG_BASIC>(L"Marginalized error on %1% is %2%.") %\
+        finv.matrix_indecies[index1][index1][0].c_str() %\
+        sqrt(sig_xx);
     sig_xy = finv.matrix(index1, index2);
     sig_yy = finv.matrix(index2, index2);
-    cout << "Marginalized error on " << finv.matrix_indecies[index2][index2][1] \
-        << " is " << sqrt(sig_yy) << endl;
+    log<LOG_BASIC>(L"Marginalized error on %1% is %2%.") %\
+        finv.matrix_indecies[index2][index2][1].c_str() %\
+        sqrt(sig_yy);
 
-    cout << sig_xx << " " << sig_xy << endl;
-    cout << sig_xy << " " << sig_yy << endl;
+    log<LOG_BASIC>(L"%1% %2%") % sig_xx % sig_xy;
+    log<LOG_BASIC>(L"%1% %2%") % sig_xy % sig_yy;
     Ellipse ellipse;
     ellipse.a2 = (sig_xx + sig_yy)/2.0 + sqrt(pow(sig_xx - sig_yy,2)/4.0 +\
             pow(sig_xy,2));
@@ -460,15 +461,14 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv,\
         //(void)r;
     }
     else {
-        cout << "    ERROR: some ellipses are ill-defined " <<\
-            "with a^2 < 0 or b^2 < 0." << endl;
+        log<LOG_ERROR>(L"    ERROR: some ellipses are ill-defined with a^2 < 0 or b^2 < 0.");
         for (unsigned int i = 0; i<error_ellipses.size(); i++)
         {
-            cout << "i = " << i  << ", a^2 = " << error_ellipses[i].a2 <<\
-                ", b^2 = " << error_ellipses[i].b2 << endl;
+            log<LOG_ERROR>(L"i = %1%, a^2 = %2%, b^2 = %3%.") % i % error_ellipses[i].a2 %\
+                error_ellipses[i].b2;
         }
-        cout << "      check for linearly dependent rows or columns." <<\
-            " These can be due to degeneracies between parameters." << endl;
+        log<LOG_ERROR>(L"      check for linearly dependent rows or columns.");
+        log<LOG_ERROR>(L"      These can be due to degeneracies between parameters.");
     }
     //int r = system("rm ellipse_info.tmp.dat");
     //(void)r;
