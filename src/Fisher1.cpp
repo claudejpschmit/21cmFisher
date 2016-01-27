@@ -100,7 +100,7 @@ vector<double> Fisher1::set_range(int l, double xmin, double xmax)
 //  Defining other members  //
 //////////////////////////////
 
-double Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread, int n_threads)
+void Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread, int n_threads)
 {
     int lsteps = n_points_per_thread * n_threads;
     int lmax = fiducial_params["lmax"];
@@ -118,8 +118,6 @@ double Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_threa
             string param_key2 = model_param_keys[j];
             log<LOG_BASIC>(L"STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
             filename << filename_prefix << param_key1 << "_" << param_key2 << ".dat";
-            ofstream outfile;
-            outfile.open(filename.str());
             int Pk_index = 0;
             int Tb_index = 0;
             int q_index = 0;
@@ -129,7 +127,12 @@ double Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_threa
                 initializer(param_key1, &Pk_index, &Tb_index, &q_index);
                 initializer(param_key2, &Pk_index, &Tb_index, &q_index);
             }
+            
             double sum = 0;
+            
+            // This matrix contains the results.
+            mat output(lsteps, 3);
+
             // IMPORTANT! l has to start at 1 since Nl_bar has j_(l-1) in it!
 
             // The following line parallelizes the code
@@ -139,16 +142,6 @@ double Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_threa
             log<LOG_VERBOSE>(L"Entering Parallel regime");
             #pragma omp parallel num_threads(n_threads) private(Pk_index, Tb_index, q_index) 
             {
-                //somehow this is necessary to fix a memory bug, that I don't know why it 
-                //occurs between before and after parallelization
-                /*
-                if (param_key1 == param_key2) {
-                    initializer(param_key1, &Pk_index, &Tb_index, &q_index);
-                } else {
-                    initializer(param_key1, &Pk_index, &Tb_index, &q_index);
-                    initializer(param_key2, &Pk_index, &Tb_index, &q_index);
-                }
-                */
                 #pragma omp for reduction (+:sum)
                 for (int k = 1; k <= lsteps; ++k) {
                     // note: k has nothing to do with scale here, just an index!
@@ -158,25 +151,38 @@ double Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_threa
                     else
                         m = ((k-1)*n_threads) % (lsteps - 1) + 1;
                     int l = lmin + m * lstepsize;
-                    stringstream ss, ss2, res;
+                    stringstream ss, ss2;
                     double cond_num = 0;
                     ss << "Computation of Fl starts for l = " << l << "\n";
                     log<LOG_VERBOSE>(L"%1%") % ss.str().c_str();
                     double fl = this->compute_Fl(l, param_key1, param_key2, 0,\
                             fiducial_params["kmax"],\
                             &cond_num, &Pk_index, &Tb_index, &q_index);
+                    
+                    //adding results to the output matrix
+                    output(k-1, 0) = l;
+                    output(k-1, 1) = fl;
+                    output(k-1, 2) = cond_num;
+
                     ss2 << "fl with l = " << l << " is: " << fl << "\n";
                     log<LOG_VERBOSE>(L"%1%") % ss2.str().c_str();
-                    res << l << " " << fl << " " << cond_num << "\n";
-                    outfile << res.str() << endl;
                     sum += (2*l + 1) * fl;
                 }
+            } // parallel end.
+            
+            ofstream outfile;
+            outfile.open(filename.str());
+
+            for (int i = 0; i < lsteps; i++)
+            {
+                outfile << output(i,0) << " " << output(i,1) << " " << output(i,2) << endl;
             }
             outfile.close();
-            log<LOG_BASIC>(L"Calculations done for %1% and %2%.") % param_key1.c_str() % param_key2.c_str();        }
-    }
 
-    return 0;
+            log<LOG_BASIC>(L"Calculations done for %1% and %2%.") %\
+                param_key1.c_str() % param_key2.c_str();
+        }
+    }
 }
 
 string Fisher1::update_runinfo(int lmin, int lmax,\

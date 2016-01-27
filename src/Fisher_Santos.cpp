@@ -105,8 +105,6 @@ void Fisher_Santos::run(int lmin, int lstepsize, int n_points_per_thread, int n_
             string param_key2 = model_param_keys[j];
             log<LOG_BASIC>(L"STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
             filename << filename_prefix << param_key1 << "_" << param_key2 << ".dat";
-            ofstream outfile;
-            outfile.open(filename.str());
             int Pk_index = 0;
             int Tb_index = 0;
             int q_index = 0;
@@ -117,8 +115,12 @@ void Fisher_Santos::run(int lmin, int lstepsize, int n_points_per_thread, int n_
                 initializer(param_key2, &Pk_index, &Tb_index, &q_index);
             }
             double sum = 0;
-            // IMPORTANT! l has to start at 1 since Nl_bar has j_(l-1) in it!
+            
+            // This matrix contains the results.
+            mat output(lsteps, 3);
 
+            // IMPORTANT! k has to start at 1 since Nl_bar has j_(l-1) in it!
+                       
             // The following line parallelizes the code
             // use #pragma omp parallel num_threads(4) private(Pk_index, Tb_index, q_index) 
             // to define how many threads should be used.
@@ -135,24 +137,36 @@ void Fisher_Santos::run(int lmin, int lstepsize, int n_points_per_thread, int n_
                     else
                         m = ((k-1)*n_threads) % (lsteps - 1) + 1;
                     int l = lmin + m * lstepsize;
-                    stringstream ss, ss2, res;
+                    stringstream ss, ss2;
                     double cond_num = 0;
                     ss << "Computation of Fl starts for l = " << l << "\n";
                     log<LOG_VERBOSE>(L"%1%") % ss.str().c_str();
                     double fl = this->compute_Fl(l, param_key1, param_key2, freq_min,\
                             freq_max, &cond_num, &Pk_index, &Tb_index, &q_index);
+                    
+                    //adding results to the output matrix
+                    output(k-1, 0) = l;
+                    output(k-1, 1) = fl;
+                    output(k-1, 2) = cond_num;
+
                     ss2 << "fl with l = " << l << " is: " << fl << "\n";
                     log<LOG_VERBOSE>(L"%1%") % ss2.str().c_str();
-                    res << l << " " << fl << " " << cond_num << "\n";
-                    outfile << res.str() << endl;
                     sum += (2*l + 1) * fl;
                 }
+            } // parallel end.
+            
+            ofstream outfile;
+            outfile.open(filename.str());
+
+            for (int i = 0; i < lsteps; i++)
+            {
+                outfile << output(i,0) << " " << output(i,1) << " " << output(i,2) << endl;
             }
             outfile.close();
-            log<LOG_BASIC>(L"Calculations done for %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
+            log<LOG_BASIC>(L"Calculations done for %1% and %2%.") %\
+                param_key1.c_str() % param_key2.c_str();
         }
     }
-
 }
 
 
