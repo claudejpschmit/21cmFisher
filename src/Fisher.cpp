@@ -121,12 +121,12 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     
     if (check_file(matrix_filename.str()) && !debug)
     {
-       log<LOG_VERBOSE>(L"///reading matrix from file///");
+       log<LOG_VERBOSE>("///reading matrix from file///");
         res = read_matrix(matrix_filename.str(),range.size(),range.size());
     }
     else
     {
-        log<LOG_VERBOSE>(L"///calculating matrix///");
+        log<LOG_VERBOSE>("///calculating matrix///");
         mat f1matrix = randu<mat>(range.size(),range.size());
         mat f2matrix = randu<mat>(range.size(),range.size());
         mat f3matrix = randu<mat>(range.size(),range.size());
@@ -286,12 +286,12 @@ mat FisherInterface::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, 
         fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
     if (check_file(matrix_filename.str()))
     {
-        log<LOG_VERBOSE>(L"///reading matrix from file///");
+        log<LOG_VERBOSE>("///reading matrix from file///");
         Cl = read_matrix(matrix_filename.str(),range.size(),range.size());
     }
     else
     {
-        log<LOG_VERBOSE>(L"///calculating matrix///");
+        log<LOG_VERBOSE>("///calculating matrix///");
 
         for (unsigned int i = 0; i < range.size(); ++i) {
             double x1 = range[i];
@@ -344,7 +344,7 @@ double FisherInterface::compute_Fl(int l, string param_key1, string param_key2,\
     mat Cl = randu<mat>(range.size(),range.size());
     mat Cl_inv = Cl;
 
-    log<LOG_BASIC>(L"... derivative matrix calulation started");
+    log<LOG_BASIC>("... derivative matrix calulation started");
     mat Cl_a = this->Cl_derivative_matrix(l, param_key1, Pk_index, Tb_index, q_index, range);
     mat Cl_b = randu<mat>(range.size(),range.size());
     if (param_key1 == param_key2)
@@ -352,14 +352,14 @@ double FisherInterface::compute_Fl(int l, string param_key1, string param_key2,\
     else
         Cl_b = this->Cl_derivative_matrix(l, param_key2, Pk_index, Tb_index, q_index, range);
 
-    log<LOG_BASIC>(L"-> The derivative matrices are done for l = %1%.") % l;
-    log<LOG_BASIC>(L"... The Cl and Cl_inv matrices will be calculated for l = %1%.") % l;
+    log<LOG_BASIC>("-> The derivative matrices are done for l = %1%.") % l;
+    log<LOG_BASIC>("... The Cl and Cl_inv matrices will be calculated for l = %1%.") % l;
 
     Cl = compute_Cl(l, *Pk_index, *Tb_index, *q_index, range);
     *cond_num = cond(Cl);
     //Cl_inv = Cl.i();
     Cl_inv = pinv(Cl);
-    log<LOG_BASIC>(L"-> Cl & Cl_inv are done for l = %1%.") % l;
+    log<LOG_BASIC>("-> Cl & Cl_inv are done for l = %1%.") % l;
 
     mat product = Cl_a * Cl_inv;
     product = product * Cl_b;
@@ -370,44 +370,32 @@ double FisherInterface::compute_Fl(int l, string param_key1, string param_key2,\
 
 void FisherInterface::initializer(string param_key, int *Pk_index, int *Tb_index, int *q_index)
 {
-    log<LOG_VERBOSE>(L"...Initializer Run...");
+    log<LOG_VERBOSE>("...Initializer Run...");
     map<string,double> working_params = fiducial_params;
     double h = this->var_params[param_key];
     double x = working_params[param_key];
     working_params[param_key] = x + 2 * h;
-    log<LOG_VERBOSE>(L"model update for: %1% with value %2%.") %\
+    log<LOG_VERBOSE>("model update for: %1% with value %2%.") %\
         param_key.c_str() % working_params[param_key];
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x + h;
-    log<LOG_VERBOSE>(L"model update for: %1% with value %2%.") %\
+    log<LOG_VERBOSE>("model update for: %1% with value %2%.") %\
         param_key.c_str() % working_params[param_key];
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x - h;
-    log<LOG_VERBOSE>(L"model update for: %1% with value %2%.") %\
+    log<LOG_VERBOSE>("model update for: %1% with value %2%.") %\
         param_key.c_str() % working_params[param_key];
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x - 2 * h;
-    log<LOG_VERBOSE>(L"model update for: %1% with value %2%.") %\
+    log<LOG_VERBOSE>("model update for: %1% with value %2%.") %\
         param_key.c_str() % working_params[param_key];
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 
     working_params[param_key] = x;
-    log<LOG_VERBOSE>(L"model update for: %1% with value %2%.") %\
+    log<LOG_VERBOSE>("model update for: %1% with value %2%.") %\
         param_key.c_str() % working_params[param_key];
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
 }
-
-/*
-   int FisherInterface::check_Cl_file(params)
-   {
-//returns the value of the run where the same information was used.
-//returns 0 if new calculation is necessary.
-ifstream InfoFile("output/Fisher/RUN_INFO.dat");
-int run_number = 0;
-
-return run_number;
-}
-*/

@@ -5,7 +5,7 @@
 Cosmology3D::Cosmology3D(ModelInterface* model)
 {
 
-    log<LOG_BASIC>(L"... Beginning to build Analysis Class: 3DCosmology ...");
+    log<LOG_BASIC>("... Beginning to build Analysis Class: 3DCosmology ...");
     this->model = model;
     analysisID = "Cosmology3D";
     kmin = model->give_fiducial_params("kmin");
@@ -19,7 +19,7 @@ Cosmology3D::Cosmology3D(ModelInterface* model)
     stepsize_Ml = abs(this->zmax_Ml - this->zmin_Ml)/(double)this->zsteps_Ml;
     k_stepsize = model->give_fiducial_params("k_stepsize");
     set_FG_params();
-    log<LOG_BASIC>(L"... 3DCosmology built ...");
+    log<LOG_BASIC>("... 3DCosmology built ...");
 }
 
 double Cosmology3D::Cl(int l, double k1, double k2,\
@@ -34,21 +34,21 @@ double Cosmology3D::Cl(int l, double k1, double k2,\
     if (model->give_fiducial_params("limber") == 1.0)
         limber = true;
     
-    log<LOG_DEBUG>(L"Cosmology3D::Cl: k_low = %1% and k_high = %2%.") % k_low % k_high;  
+    log<LOG_DEBUG>("Cosmology3D::Cl: k_low = %1% and k_high = %2%.") % k_low % k_high;  
     if (rsd && !limber){
-        log<LOG_DEBUG>(L"Cosmology3D::Cl: Case called -> rsd & !limber.");
+        log<LOG_DEBUG>("Cosmology3D::Cl: Case called -> rsd & !limber.");
         return this->corr_Tb_rsd(l, k1, k2, k_low, k_high, Pk_index, Tb_index, q_index);
     }
     else if (!rsd && !limber) {
-        log<LOG_DEBUG>(L"Cosmology3D::Cl: Case called -> !rsd & !limber.");
+        log<LOG_DEBUG>("Cosmology3D::Cl: Case called -> !rsd & !limber.");
         return this->corr_Tb(l, k1, k2, k_low, k_high, Pk_index, Tb_index, q_index);
     }
     else if (rsd && limber){
-        log<LOG_DEBUG>(L"Cosmology3D::Cl: Case called -> rsd & limber.");
+        log<LOG_DEBUG>("Cosmology3D::Cl: Case called -> rsd & limber.");
         return this->Cl_limber_rsd(l,  k1, k2, Pk_index, Tb_index, q_index);
     }
     else{
-        log<LOG_DEBUG>(L"Cosmology3D::Cl: Case called -> !rsd & limber.");
+        log<LOG_DEBUG>("Cosmology3D::Cl: Case called -> !rsd & limber.");
         return this->Cl_limber(l, k1, k2, Pk_index, Tb_index, q_index);
     }
 }

@@ -9,7 +9,7 @@
 #include "Log.hpp"
 
 #define SANTOS true
-#define ERROR_ELLIPSES false
+#define ERROR_ELLIPSES true
 
 using namespace std;
 using namespace arma;

@@ -35,7 +35,7 @@ void AresInterface::updateAres(map<string,double> params)
     }
     else
     {
-       log<LOG_VERBOSE>(L"ARES uses non-Physical params with Om_Lambda.");
+       log<LOG_VERBOSE>("ARES uses non-Physical params with Om_Lambda.");
         use_non_physical = true;
     }
 

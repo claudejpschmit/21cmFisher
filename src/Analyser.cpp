@@ -146,10 +146,10 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
         if (RESULT.matrix(i,i) < 0)
             ERROR = true;
     if (ERROR) {
-        log<LOG_ERROR>(L"    ERROR: inverse Fisher has negative diagonal elements.");
-        log<LOG_ERROR>(L"           The Fisher matrix found is:");
+        log<LOG_ERROR>("    ERROR: inverse Fisher has negative diagonal elements.");
+        log<LOG_ERROR>("           The Fisher matrix found is:");
         cout << F << endl;
-        log<LOG_ERROR>(L"           The inverse Fisher matrix found is:");
+        log<LOG_ERROR>("           The inverse Fisher matrix found is:");
         cout << RESULT.matrix << endl;
     }
     RESULT.matrix_indecies = indecies;
@@ -182,7 +182,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
 
             //First order file
             stringstream command_buff;
-            log<LOG_VERBOSE>(L"Sorting file: %1%.") % filename.c_str();
+            log<LOG_VERBOSE>("Sorting file: %1%.") % filename.c_str();
             command_buff << "./sortFiles " << filename;
             char* command = new char[command_buff.str().length() + 1];
             strcpy(command, command_buff.str().c_str());
@@ -290,10 +290,10 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
     for (int i = 0; i < num_params; i++)
         if (RESULT.matrix(i,i) < 0)
         {
-            log<LOG_ERROR>(L"    ERROR: inverse Fisher has negative diagonal elements.");
-            log<LOG_ERROR>(L"           This error is for the parameters %1% and %2%") %\
+            log<LOG_ERROR>("    ERROR: inverse Fisher has negative diagonal elements.");
+            log<LOG_ERROR>("           This error is for the parameters %1% and %2%") %\
                 indecies[i][i][0].c_str() % indecies[i][i][1].c_str();
-            log<LOG_ERROR>(L"           The diagonal element is = %1%.") % RESULT.matrix(i,i);
+            log<LOG_ERROR>("           The diagonal element is = %1%.") % RESULT.matrix(i,i);
         }
     RESULT.matrix_indecies = indecies;
     return RESULT;
@@ -313,7 +313,7 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
             index2 = i;
     }
    
-    log<LOG_DEBUG>(L"%1% %2%") % index1 % index2;
+    log<LOG_DEBUG>("%1% %2%") % index1 % index2;
     double sig_xx, sig_xy, sig_yy;
     sig_xx = finv.matrix(index1, index1);
     bool show_marginal = true;
@@ -326,7 +326,7 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
         }
     }
     if (show_marginal) {
-        log<LOG_BASIC>(L"Marginalized error on %1% is %2%.") %\
+        log<LOG_BASIC>("Marginalized error on %1% is %2%.") %\
             finv.matrix_indecies[index1][index1][0].c_str() %\
             sqrt(sig_xx);
         params_done.push_back(finv.matrix_indecies[index1][index1][0]);
@@ -343,14 +343,14 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
         }
     }
     if (show_marginal) {
-        log<LOG_BASIC>(L"Marginalized error on %1% is %2%.") %\
+        log<LOG_BASIC>("Marginalized error on %1% is %2%.") %\
             finv.matrix_indecies[index2][index2][0].c_str() %\
             sqrt(sig_yy);
         params_done.push_back(finv.matrix_indecies[index2][index2][0]);
     }
 
-    log<LOG_DEBUG>(L"%1% %2%") % sig_xx % sig_xy;
-    log<LOG_DEBUG>(L"%1% %2%") % sig_xy % sig_yy;
+    log<LOG_DEBUG>("%1% %2%") % sig_xx % sig_xy;
+    log<LOG_DEBUG>("%1% %2%") % sig_xy % sig_yy;
     Ellipse ellipse;
     ellipse.a2 = (sig_xx + sig_yy)/2.0 + sqrt(pow(sig_xx - sig_yy,2)/4.0 +\
             pow(sig_xy,2));
@@ -483,14 +483,14 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv,\
         //(void)r;
     }
     else {
-        log<LOG_ERROR>(L"    ERROR: some ellipses are ill-defined with a^2 < 0 or b^2 < 0.");
+        log<LOG_ERROR>("    ERROR: some ellipses are ill-defined with a^2 < 0 or b^2 < 0.");
         for (unsigned int i = 0; i<error_ellipses.size(); i++)
         {
-            log<LOG_ERROR>(L"i = %1%, a^2 = %2%, b^2 = %3%.") % i % error_ellipses[i].a2 %\
+            log<LOG_ERROR>("i = %1%, a^2 = %2%, b^2 = %3%.") % i % error_ellipses[i].a2 %\
                 error_ellipses[i].b2;
         }
-        log<LOG_ERROR>(L"      check for linearly dependent rows or columns.");
-        log<LOG_ERROR>(L"      These can be due to degeneracies between parameters.");
+        log<LOG_ERROR>("      check for linearly dependent rows or columns.");
+        log<LOG_ERROR>("      These can be due to degeneracies between parameters.");
     }
     //int r = system("rm ellipse_info.tmp.dat");
     //(void)r;

@@ -33,7 +33,7 @@ Fisher1::Fisher1(AnalysisInterface* analysis, string Fl_filename, vector<string>
         foreground = true;
     
     Fl_file.open(Fl_filename);
-    log<LOG_BASIC>(L"... Fisher built ...");
+    log<LOG_BASIC>("... Fisher built ...");
 }
 
 //////////////////////////////
@@ -92,7 +92,7 @@ vector<double> Fisher1::set_range(int l, double xmin, double xmax)
     stringstream ss;
     ss << "The range is [" << k_min << "," << new_max << "] in " << steps+1 <<\
         " steps for l = " << l << ".\n";
-    log<LOG_VERBOSE>(L"%1%") % ss.str().c_str();
+    log<LOG_VERBOSE>("%1%") % ss.str().c_str();
     return range;
 }
 
@@ -116,7 +116,7 @@ void Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread,
             filename.str("");
             string param_key1 = model_param_keys[i];
             string param_key2 = model_param_keys[j];
-            log<LOG_BASIC>(L"STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
+            log<LOG_BASIC>("STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
             filename << filename_prefix << param_key1 << "_" << param_key2 << ".dat";
             int Pk_index = 0;
             int Tb_index = 0;
@@ -139,7 +139,7 @@ void Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread,
             // use #pragma omp parallel num_threads(4) private(Pk_index, Tb_index, q_index) 
             // to define how many threads should be used.
             
-            log<LOG_VERBOSE>(L"Entering Parallel regime");
+            log<LOG_VERBOSE>("Entering Parallel regime");
             #pragma omp parallel num_threads(n_threads) private(Pk_index, Tb_index, q_index) 
             {
                 #pragma omp for reduction (+:sum)
@@ -154,7 +154,7 @@ void Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread,
                     stringstream ss, ss2;
                     double cond_num = 0;
                     ss << "Computation of Fl starts for l = " << l << "\n";
-                    log<LOG_VERBOSE>(L"%1%") % ss.str().c_str();
+                    log<LOG_VERBOSE>("%1%") % ss.str().c_str();
                     double fl = this->compute_Fl(l, param_key1, param_key2, 0,\
                             fiducial_params["kmax"],\
                             &cond_num, &Pk_index, &Tb_index, &q_index);
@@ -165,7 +165,7 @@ void Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread,
                     output(k-1, 2) = cond_num;
 
                     ss2 << "fl with l = " << l << " is: " << fl << "\n";
-                    log<LOG_VERBOSE>(L"%1%") % ss2.str().c_str();
+                    log<LOG_VERBOSE>("%1%") % ss2.str().c_str();
                     sum += (2*l + 1) * fl;
                 }
             } // parallel end.
@@ -179,7 +179,7 @@ void Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread,
             }
             outfile.close();
 
-            log<LOG_BASIC>(L"Calculations done for %1% and %2%.") %\
+            log<LOG_BASIC>("Calculations done for %1% and %2%.") %\
                 param_key1.c_str() % param_key2.c_str();
         }
     }

@@ -90,7 +90,7 @@ void CAMB_CALLER::call(map<string, double> params)
 
 void CAMB_CALLER::call_full(map<string, double> params)
 {
-    log<LOG_VERBOSE>(L"CAMB is called with an ombh2 value of %1%.") % params["ombh2"];
+    log<LOG_VERBOSE>("CAMB is called with an ombh2 value of %1%.") % params["ombh2"];
     update_params_ini_full(params);
 
     //call camb with new_params.ini
@@ -171,7 +171,7 @@ void CAMB_CALLER::update_params_ini(map<string, double> params)
     }
     else
     {
-        log<LOG_VERBOSE>(L"CAMB uses non-Physical params with Om_Lambda.");
+        log<LOG_VERBOSE>("CAMB uses non-Physical params with Om_Lambda.");
         use_non_physical = true;
     }
     // Set parameters_found to contain all false, so that each update also 

@@ -54,54 +54,54 @@ void Global21cmInterface::updateGlobal21cm(map<string,double> params)
     //om0 = 0.3;
     //lam0 = 0.7;
     c = new Cosmology(om0,lam0,omb,h,s8,n,omNu);
-    log<LOG_DEBUG>(L"Omega_0 = %1%.") % c->getOmega0();
-    log<LOG_DEBUG>(L"Omegam = %1%.") % c->getOmegam();
-    log<LOG_DEBUG>(L"Omegab = %1%.") % c->getOmegab();
-    log<LOG_DEBUG>(L"Ombhh = %1%.") % c->getOmbhh();
-    log<LOG_DEBUG>(L"Om0hh = %1%.") % c->getOm0hh();
-    log<LOG_DEBUG>(L"Lambda0 = %1%.") % c->getLambda0();
-    log<LOG_DEBUG>(L"H = %1%.") % c->getH();
-    log<LOG_DEBUG>(L"nSpec = %1%.") % c->getnSpec();
-    log<LOG_DEBUG>(L"Scale = %1%.") % c->getScale();
-    log<LOG_DEBUG>(L"Shape = %1%.") % c->getShape();
+    log<LOG_DEBUG>("Omega_0 = %1%.") % c->getOmega0();
+    log<LOG_DEBUG>("Omegam = %1%.") % c->getOmegam();
+    log<LOG_DEBUG>("Omegab = %1%.") % c->getOmegab();
+    log<LOG_DEBUG>("Ombhh = %1%.") % c->getOmbhh();
+    log<LOG_DEBUG>("Om0hh = %1%.") % c->getOm0hh();
+    log<LOG_DEBUG>("Lambda0 = %1%.") % c->getLambda0();
+    log<LOG_DEBUG>("H = %1%.") % c->getH();
+    log<LOG_DEBUG>("nSpec = %1%.") % c->getnSpec();
+    log<LOG_DEBUG>("Scale = %1%.") % c->getScale();
+    log<LOG_DEBUG>("Shape = %1%.") % c->getShape();
     int popflag_in = 0;
     int xin = 1;
     int lyaxray_in = 0;
-    log<LOG_DEBUG>(L" ******************** ");
-    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15% %16%.") %\
+    log<LOG_DEBUG>(" ******************** ");
+    log<LOG_DEBUG>("%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15% %16%.") %\
         s8  % h % omb % T_CMB % O_cdm % O_k % w % n % fstar % fesc % nion % fx %\
         popflag % lyaxrayflag % params["zmin"] % params["zmax"];
-    log<LOG_DEBUG>(L" ******************** ");
-    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15%.") %\
+    log<LOG_DEBUG>(" ******************** ");
+    log<LOG_DEBUG>("%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15%.") %\
         om0 % lam0 % omb % h % s8 % n % omNu % popflag_in % xin % lyaxray_in % fstar % fesc %\
         flya % params["zmin"] % params["zmax"];
 
 
     a = new Astrophysics(c,popflag_in,xin,lyaxray_in,1.0);
-    log<LOG_DEBUG>(L"FSTAR = %1%.") % a->getFSTAR();
-    log<LOG_DEBUG>(L"FESC = %1%.") % a->getFESC();
-    log<LOG_DEBUG>(L"NION = %1%.") % a->getNION();
-    log<LOG_DEBUG>(L"NLYA = %1%.") % a->getNLYA();
-    log<LOG_DEBUG>(L"FLYA = %1%.") % a->getFLYA();
-    log<LOG_DEBUG>(L"Zeta = %1%.") % a->getZeta();
-    log<LOG_DEBUG>(L"Popflag = %1%.") % a->getPopflag();
-    log<LOG_DEBUG>(L"LyaXray = %1%.") % a->getLyaXray();
-    log<LOG_DEBUG>(L"ZReion = %1%.") % a->getZReion();
+    log<LOG_DEBUG>("FSTAR = %1%.") % a->getFSTAR();
+    log<LOG_DEBUG>("FESC = %1%.") % a->getFESC();
+    log<LOG_DEBUG>("NION = %1%.") % a->getNION();
+    log<LOG_DEBUG>("NLYA = %1%.") % a->getNLYA();
+    log<LOG_DEBUG>("FLYA = %1%.") % a->getFLYA();
+    log<LOG_DEBUG>("Zeta = %1%.") % a->getZeta();
+    log<LOG_DEBUG>("Popflag = %1%.") % a->getPopflag();
+    log<LOG_DEBUG>("LyaXray = %1%.") % a->getLyaXray();
+    log<LOG_DEBUG>("ZReion = %1%.") % a->getZReion();
     tocm = new TwentyOneCM(c,a);
 
-    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8%.") % fstar %\
+    log<LOG_DEBUG>("%1% %2% %3% %4% %5% %6% %7% %8%.") % fstar %\
         fesc % nion % fx % flya % popflag % xrayflag % lyaxrayflag;
     //Astrophysics a(&c,popflag_in,xin,lyaxray_in,1.0);
     a->initAstrophysics(fstar,fesc,nion,fx,flya,popflag,xrayflag,lyaxrayflag, true);
-    log<LOG_DEBUG>(L"FSTAR = %1%.") % a->getFSTAR();
-    log<LOG_DEBUG>(L"FESC = %1%.") % a->getFESC();
-    log<LOG_DEBUG>(L"NION = %1%.") % a->getNION();
-    log<LOG_DEBUG>(L"NLYA = %1%.") % a->getNLYA();
-    log<LOG_DEBUG>(L"FLYA = %1%.") % a->getFLYA();
-    log<LOG_DEBUG>(L"Zeta = %1%.") % a->getZeta();
-    log<LOG_DEBUG>(L"Popflag = %1%.") % a->getPopflag();
-    log<LOG_DEBUG>(L"LyaXray = %1%.") % a->getLyaXray();
-    log<LOG_DEBUG>(L"ZReion = %1%.") % a->getZReion();
+    log<LOG_DEBUG>("FSTAR = %1%.") % a->getFSTAR();
+    log<LOG_DEBUG>("FESC = %1%.") % a->getFESC();
+    log<LOG_DEBUG>("NION = %1%.") % a->getNION();
+    log<LOG_DEBUG>("NLYA = %1%.") % a->getNLYA();
+    log<LOG_DEBUG>("FLYA = %1%.") % a->getFLYA();
+    log<LOG_DEBUG>("Zeta = %1%.") % a->getZeta();
+    log<LOG_DEBUG>("Popflag = %1%.") % a->getPopflag();
+    log<LOG_DEBUG>("LyaXray = %1%.") % a->getLyaXray();
+    log<LOG_DEBUG>("ZReion = %1%.") % a->getZReion();
 
     double *result;
     result=dvector(1,3);
@@ -109,15 +109,15 @@ void Global21cmInterface::updateGlobal21cm(map<string,double> params)
     double tk=result[1];
     double xi=result[2];
     double xe=result[3];
-    log<LOG_VERBOSE>(L"tk = %1%, xi = %2%, xe = %3%.") % tk % xi % xe;
-    log<LOG_DEBUG>(L" ******************** ");
+    log<LOG_VERBOSE>("tk = %1%, xi = %2%, xe = %3%.") % tk % xi % xe;
+    log<LOG_DEBUG>(" ******************** ");
     calc_Tb(params["zmin"]-1, params["zmax"]+1, 20);
-    log<LOG_DEBUG>(L" ******************** ");
-    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15% %16%.") %\
+    log<LOG_DEBUG>(" ******************** ");
+    log<LOG_DEBUG>("%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15% %16%.") %\
         s8  % h % omb % T_CMB % O_cdm % O_k % w % n % fstar % fesc % nion % fx %\
         popflag % lyaxrayflag % params["zmin"] % params["zmax"];
-    log<LOG_DEBUG>(L" ******************** ");
-    log<LOG_DEBUG>(L"%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15%.") %\
+    log<LOG_DEBUG>(" ******************** ");
+    log<LOG_DEBUG>("%1% %2% %3% %4% %5% %6% %7% %8% %9% %10% %11% %12% %13% %14% %15%.") %\
         om0 % lam0 % omb % h % s8 % n % omNu % popflag_in % xin % lyaxray_in % fstar % fesc %\
         flya % params["zmin"] % params["zmax"];
 }
@@ -222,7 +222,7 @@ void Global21cmInterface::calc_Tb(double zmin, double zmax, int zsteps)
         tk=result[1];
         xi=result[2];
         xe=result[3];
-        log<LOG_VERBOSE>(L"tk = %1%, xi = %2%, xe = %3%.") % tk % xi % xe;
+        log<LOG_VERBOSE>("tk = %1%, xi = %2%, xe = %3%.") % tk % xi % xe;
         lyaflux=a->lyaFlux(z);
         tb=(1.0-xi)*tocm->tBrightGen(z,tk,xe,lyaflux);
         fout << z << " " << tb << endl;
