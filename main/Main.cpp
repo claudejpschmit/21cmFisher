@@ -19,7 +19,7 @@ using namespace std;
 // 3 LOG_VERBOSE
 // 4 LOG_DEBUG
 
-log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_NOTHING;
 
 
 int main ()

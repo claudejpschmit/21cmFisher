@@ -91,4 +91,6 @@ class Analyser {
          */
         Ellipse find_error_ellipse(Fisher_return_pair finv, string param1,\
                 string param2, int run_number, string path);
+
+        vector<string> params_done;
 };

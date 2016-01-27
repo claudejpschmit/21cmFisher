@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "interpolation.h"
 #include "Log.hpp"
+
 using namespace alglib;
 
 Analyser::Analyser()
@@ -36,7 +37,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
 
             //First order file
             stringstream command_buff;
-            command_buff << "python OrderFile.py " << filename;
+            command_buff << "./sortFiles " << filename;
             char* command = new char[command_buff.str().length() + 1];
             strcpy(command, command_buff.str().c_str());
             int r = system(command);
@@ -181,8 +182,8 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
 
             //First order file
             stringstream command_buff;
-            log<LOG_VERBOSE>(L"Ordering file: %1%.") % filename.c_str();
-            command_buff << "python OrderFile.py " << filename;
+            log<LOG_VERBOSE>(L"Sorting file: %1%.") % filename.c_str();
+            command_buff << "./sortFiles " << filename;
             char* command = new char[command_buff.str().length() + 1];
             strcpy(command, command_buff.str().c_str());
             int r = system(command);
@@ -285,18 +286,15 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
        for (int k = 0; k < 5; k++)
        cout << eigenval(k) << endl;
        */
-    bool ERROR = false;
     RESULT.matrix = pinv(F);
     for (int i = 0; i < num_params; i++)
         if (RESULT.matrix(i,i) < 0)
-            ERROR = true;
-    if (ERROR) {
-        log<LOG_ERROR>(L"    ERROR: inverse Fisher has negative diagonal elements.");
-        log<LOG_ERROR>(L"           The Fisher matrix found is:");
-        cout << F << endl;
-        log<LOG_ERROR>(L"           The inverse Fisher matrix found is:");
-        cout << RESULT.matrix << endl;
-    }
+        {
+            log<LOG_ERROR>(L"    ERROR: inverse Fisher has negative diagonal elements.");
+            log<LOG_ERROR>(L"           This error is for the parameters %1% and %2%") %\
+                indecies[i][i][0].c_str() % indecies[i][i][1].c_str();
+            log<LOG_ERROR>(L"           The diagonal element is = %1%.") % RESULT.matrix(i,i);
+        }
     RESULT.matrix_indecies = indecies;
     return RESULT;
 }
@@ -315,20 +313,44 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
             index2 = i;
     }
    
-    log<LOG_BASIC>(L"%1% %2%") % index1 % index2;
+    log<LOG_DEBUG>(L"%1% %2%") % index1 % index2;
     double sig_xx, sig_xy, sig_yy;
     sig_xx = finv.matrix(index1, index1);
-    log<LOG_BASIC>(L"Marginalized error on %1% is %2%.") %\
-        finv.matrix_indecies[index1][index1][0].c_str() %\
-        sqrt(sig_xx);
+    bool show_marginal = true;
+    for (int i = 0; i < params_done.size(); i++)
+    {
+        if (finv.matrix_indecies[index1][index1][0] == params_done[i])
+        {
+            show_marginal = false;
+            break;
+        }
+    }
+    if (show_marginal) {
+        log<LOG_BASIC>(L"Marginalized error on %1% is %2%.") %\
+            finv.matrix_indecies[index1][index1][0].c_str() %\
+            sqrt(sig_xx);
+        params_done.push_back(finv.matrix_indecies[index1][index1][0]);
+    }
     sig_xy = finv.matrix(index1, index2);
     sig_yy = finv.matrix(index2, index2);
-    log<LOG_BASIC>(L"Marginalized error on %1% is %2%.") %\
-        finv.matrix_indecies[index2][index2][1].c_str() %\
-        sqrt(sig_yy);
+    show_marginal = true;
+    for (int i = 0; i < params_done.size(); i++)
+    {
+        if (finv.matrix_indecies[index2][index2][0] == params_done[i])
+        {
+            show_marginal = false;
+            break;
+        }
+    }
+    if (show_marginal) {
+        log<LOG_BASIC>(L"Marginalized error on %1% is %2%.") %\
+            finv.matrix_indecies[index2][index2][0].c_str() %\
+            sqrt(sig_yy);
+        params_done.push_back(finv.matrix_indecies[index2][index2][0]);
+    }
 
-    log<LOG_BASIC>(L"%1% %2%") % sig_xx % sig_xy;
-    log<LOG_BASIC>(L"%1% %2%") % sig_xy % sig_yy;
+    log<LOG_DEBUG>(L"%1% %2%") % sig_xx % sig_xy;
+    log<LOG_DEBUG>(L"%1% %2%") % sig_xy % sig_yy;
     Ellipse ellipse;
     ellipse.a2 = (sig_xx + sig_yy)/2.0 + sqrt(pow(sig_xx - sig_yy,2)/4.0 +\
             pow(sig_xy,2));

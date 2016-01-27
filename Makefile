@@ -84,11 +84,12 @@ SRC = Integrator.o CosmoBasis.o CosmologyCalculatorClass.o CosmologyWriterClass.
 MAIN = Main.o
 ANALYSE = Analyser.o Analyse.o
 TOMOGRAPHY = calc_tomography.o Tomography.o 
+SORTING = SortFiles.o
 
 RESTRUCT = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o Fisher.o Fisher1.o Fisher_Santos.o Integrator.o CAMB_interface.o ARES_interface.o Global21cmInterface.o
 
 
-all: calc analyse 
+all: calc analyse sortFiles 
 #class_test analyse calc_tomography 
 
 analyse: $(ALGLIB) $(ANALYSE)
@@ -102,6 +103,10 @@ analyse: $(ALGLIB) $(ANALYSE)
 #	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o calc $(addprefix build/, $(#notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 calc: $(RESTRUCT) $(MAIN) $(ALGLIB) $(GLOBAL21CM)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o calc $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
+
+sortFiles: $(SORTING)
+	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o sortFiles $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
+
 
 #class_test: $(SOURCE) $(TOOLS) $(OUTPUT) $(EXTERNAL) $(CLASS) 
 #	cd $(MDIR);$(CC) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o class_test $(addprefix build#/, $(notdir $^)) -lm
