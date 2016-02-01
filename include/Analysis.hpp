@@ -67,8 +67,10 @@ class Tomography2D : public AnalysisInterface {
                 int Pk_index, int Tb_index, int q_index);
         double Cl_noise(int l, double nu1, double nu2);
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
+        double Cl_foreground_individual(int l, double nu1, double nu2, string FG_source_prefix);
 
         void writeT21(string name);
+        void writeFG(string filename_prefix);
         void writeCl_integrand(int l, double nu1, double nu2, double kmin,\
             double kmax, double stepsize, string name, int Pk_index, int Tb_index, int q_index);
 

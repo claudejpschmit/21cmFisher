@@ -157,6 +157,27 @@ double Tomography2D::Cl_foreground(int l, double nu1, double nu2, map<string,dou
     return CL;
 }
 
+double Tomography2D::Cl_foreground_individual(int l, double nu1, double nu2, string FG_source_prefix)
+{
+    stringstream A, beta, alpha, xi;
+    A << FG_source_prefix << "_A";
+    beta << FG_source_prefix << "_beta";
+    alpha << FG_source_prefix << "_alpha";
+    xi << FG_source_prefix << "_xi";
+    double I1 = 1-pow(log(nu1/nu2),2)/(2.0*pow(FG_param_base_values[xi.str()],2));
+    double nu_f = 130.0;
+    double Cl_nu1 = FG_param_base_values[A.str()] *\
+                        pow(1000.0/(double)l, FG_param_base_values[beta.str()]) *\
+                        pow(nu_f/nu1, 2*FG_param_base_values[alpha.str()]);
+    double Cl_nu2 = FG_param_base_values[A.str()] *\
+                        pow(1000.0/(double)l, FG_param_base_values[beta.str()]) *\
+                        pow(nu_f/nu2, 2*FG_param_base_values[alpha.str()]);
+
+    double CL = I1 * sqrt(Cl_nu1 * Cl_nu2); 
+    return CL;
+
+}
+
 void Tomography2D::writeT21(string name)
 {
     ofstream file(name);
@@ -416,4 +437,33 @@ void Tomography2D::write_gamma()
         file << z << " " << gamma << " " << alpha << " " << beta << endl;
     }
     file.close();
+}
+
+void Tomography2D::writeFG(string filename_prefix)
+{
+    stringstream A, B, C, D;
+    A << filename_prefix << "_extragalactic_ps.dat";
+    B << filename_prefix << "_extragalactic_ff.dat";
+    C << filename_prefix << "_gal_synch.dat";
+    D << filename_prefix << "_gal_ff.dat";
+    ofstream outfile1(A.str());
+    ofstream outfile2(B.str());
+    ofstream outfile3(C.str());
+    ofstream outfile4(D.str());
+
+
+    double nu1 = 140;
+    double nu2 = 140;
+    //FG_param_base_values["extragal_ps_A"] = 57.0;
+    for (int l = 10; l < 10000; l++)
+    {
+        outfile1 << l << " " << l*(l+1) * Cl_foreground_individual(l, nu1, nu2, "extragal_ps")/\
+            (2*model->pi) << endl;
+        outfile2 << l << " " << l*(l+1) * Cl_foreground_individual(l, nu1, nu2, "extragal_ff")/\
+            (2*model->pi) << endl;
+        outfile3 << l << " " << l*(l+1) * Cl_foreground_individual(l, nu1, nu2, "gal_synch")/\
+            (2*model->pi) << endl;
+        outfile4 << l << " " << l*(l+1) * Cl_foreground_individual(l, nu1, nu2, "gal_ff")/\
+            (2*model->pi) << endl;
+    }
 }

@@ -131,15 +131,6 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
         }
         indecies.push_back(row);
     }
-    /*
-       cout << F << endl;
-       vec eigenval;
-       mat eigenvec;
-       eig_sym(eigenval, eigenvec, F.i());
-       cout << "e-values" << endl;
-       for (int k = 0; k < 5; k++)
-       cout << eigenval(k) << endl;
-       */
     bool ERROR = false;
     RESULT.matrix = pinv(F);
     for (int i = 0; i < num_params; i++)
@@ -277,24 +268,137 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         }
         indecies.push_back(row);
     }
-    /*
-       cout << F << endl;
-       vec eigenval;
-       mat eigenvec;
-       eig_sym(eigenval, eigenvec, F.i());
-       cout << "e-values" << endl;
-       for (int k = 0; k < 5; k++)
-       cout << eigenval(k) << endl;
-       */
+ 
     RESULT.matrix = pinv(F);
+    log<LOG_DEBUG>("Condition number of Fisher matrix = %1%.") % cond(F);
+    bool error = false;
     for (int i = 0; i < num_params; i++)
         if (RESULT.matrix(i,i) < 0)
         {
             log<LOG_ERROR>("    ERROR: inverse Fisher has negative diagonal elements.");
-            log<LOG_ERROR>("           This error is for the parameters %1% and %2%") %\
+            log<LOG_ERROR>("        This error is for the parameters %1% and %2%") %\
                 indecies[i][i][0].c_str() % indecies[i][i][1].c_str();
-            log<LOG_ERROR>("           The diagonal element is = %1%.") % RESULT.matrix(i,i);
+            log<LOG_ERROR>("        The diagonal element is = %1%.") % RESULT.matrix(i,i);
+            log<LOG_ERROR>("    Determinant of the Fisher matrix is = %1%.") % det(F);
+            error = true;
         }
+    
+    if (error) {
+        log<LOG_ERROR>("Now trying to output FG part of the Fisher matrix");
+        vector<string> fg_params = {"extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
+            "extragal_ps_xi", "extragal_ff_A", "extragal_ff_beta",\
+            "extragal_ff_alpha" ,"extragal_ff_xi", "gal_synch_A",\
+            "gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi",\
+            "gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
+        vector<string> non_fg_params = {"gamma", "beta", "alpha", "RLy",\
+            "ombh2", "omch2", "omega_lambda", "n_s"};
+
+        int n = fg_params.size();
+        int m = non_fg_params.size();
+        mat FG = randu<mat>(n,n);
+        mat non_FG = randu<mat>(m,m);
+        vector<vector<vector<string>>> fg_indecies;
+        vector<vector<vector<string>>> non_fg_indecies;
+        vector<vector<double>> matrix_FG;
+        vector<vector<double>> matrix_non_FG;
+        //fill the FG matrix.
+        for (int i = 0; i < num_params; i++)
+        {
+            vector<vector<string>> row, row_n;
+            vector<double> row_values, row_values_n;
+            bool push = false;
+            bool push_non_fg = false;
+            for (int j = 0; j < num_params; j++)
+            {
+                string key1, key2;
+                key1 = indecies[i][j][0];
+                key2 = indecies[i][j][1];
+                bool k1_found = false;
+                bool k2_found = false;
+                bool k3_found = false;
+                bool k4_found = false;
+                for (int k = 0; k < n; k++)
+                {
+                    if (key1 == fg_params[k])
+                        k1_found = true;
+                    if (key2 == fg_params[k])
+                        k2_found = true;
+                }
+                for (int k = 0; k < m; k++)
+                {
+                    if (key1 == non_fg_params[k])
+                        k3_found = true;
+                    if (key2 == non_fg_params[k])
+                        k4_found = true;
+                }
+
+
+
+                if (k1_found && k2_found)
+                {
+                    row_values.push_back(F(i,j));
+
+                    vector<string> pair;
+                    pair.push_back(key1);
+                    pair.push_back(key2);
+                    row.push_back(pair);
+                    push = true;
+                }
+                
+                if (k3_found && k4_found)
+                {
+                    row_values_n.push_back(F(i,j));
+
+                    vector<string> pair;
+                    pair.push_back(key1);
+                    pair.push_back(key2);
+                    row_n.push_back(pair);
+                    push_non_fg = true;
+                }
+
+            }
+            if (push)
+            {
+                fg_indecies.push_back(row);
+                matrix_FG.push_back(row_values);
+            }
+            if (push_non_fg)
+            {
+                non_fg_indecies.push_back(row_n);
+                matrix_non_FG.push_back(row_values_n);
+            }
+
+        }
+        for (int i = 0; i < n; i++)
+        {
+            for (int j = 0; j < n; j++)
+            {
+                FG(i,j) = matrix_FG[i][j];
+            }
+        }
+        for (int i = 0; i < m; i++)
+        {
+            for (int j = 0; j < m; j++)
+            {
+                non_FG(i,j) = matrix_non_FG[i][j];
+            }
+        }
+
+        cout << FG << endl;
+        cout << pinv(FG) << endl;
+        cout << FG.i() << endl;
+        log<LOG_ERROR>("Condition number of FG sub-Fisher matrix is %1%.") % cond(FG);
+        log<LOG_ERROR>("Determinant of FG sub-Fisher matrix is %1%.") % det(FG);
+
+        cout << non_FG << endl;
+        cout << pinv(non_FG) << endl;
+        cout << non_FG.i() << endl;
+        log<LOG_ERROR>("Condition number of signal sub-Fisher matrix is %1%.") % cond(non_FG);
+        log<LOG_ERROR>("Determinant of signal sub-Fisher matrix is %1%.") % det(non_FG);
+
+    }
+
+
     RESULT.matrix_indecies = indecies;
     return RESULT;
 }
@@ -486,8 +590,12 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv,\
         log<LOG_ERROR>("    ERROR: some ellipses are ill-defined with a^2 < 0 or b^2 < 0.");
         for (unsigned int i = 0; i<error_ellipses.size(); i++)
         {
-            log<LOG_ERROR>("i = %1%, a^2 = %2%, b^2 = %3%.") % i % error_ellipses[i].a2 %\
-                error_ellipses[i].b2;
+            if (error_ellipses[i].a2 < 0 or error_ellipses[i].b2 < 0)
+            {
+                log<LOG_ERROR>("i = %1%, a^2 = %2%, b^2 = %3%.") % i %\
+                    error_ellipses[i].a2 %\
+                    error_ellipses[i].b2;
+            }
         }
         log<LOG_ERROR>("      check for linearly dependent rows or columns.");
         log<LOG_ERROR>("      These can be due to degeneracies between parameters.");
