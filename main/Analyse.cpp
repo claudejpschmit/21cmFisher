@@ -10,7 +10,7 @@
 
 #define SANTOS true
 #define ERROR_ELLIPSES true
-#define USE_PRIORS true
+#define USE_PRIORS false
 
 using namespace std;
 using namespace arma;

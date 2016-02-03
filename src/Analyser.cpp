@@ -310,7 +310,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 {
                     if (indecies[i][j][0] == fg_params[k] && indecies[i][j][1] == fg_params[k])
                     {
-                        F(i,j) += 1.0/(1*FG_param_base_values[fg_params[k]]);
+                        F(i,j) += 1.0/(2*FG_param_base_values[fg_params[k]]);
                         log<LOG_DEBUG>("Priors added to F(%1%,%2%)") % i % j;
                     }
                 }
@@ -333,6 +333,38 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         }
 
     if (error) {
+        log<LOG_ERROR>("Showing the Fisher matrix");
+        for (int i = 0; i < num_params; i++)
+        {
+            for (int j = 0; j < num_params; j++)
+                cout << indecies[i][j][0] << "_" << indecies[i][j][1] << "    ";
+            cout << endl;
+            cout << endl;
+        }
+
+        
+        mat I = F;
+        for (int i = 0; i < num_params; i++)
+            for (int j = 0; j < num_params; j++)
+                I(i,j) = F(i,j)/sqrt(F(i,i)*F(j,j));
+        ofstream outfile_Fisher("Fisher_matrix.tmp.dat");
+        for (int i = 0; i < num_params; i++)
+        {
+            for (int j = 0; j < num_params; j++)
+                outfile_Fisher << I(i,j) << " ";
+            outfile_Fisher << endl;
+        }
+        outfile_Fisher.close();
+        stringstream command_buff;
+        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat";
+        char* command = new char[command_buff.str().length() + 1];
+        strcpy(command, command_buff.str().c_str());
+        int r = system(command);
+        (void)r;
+        delete command;
+        r = system("rm Fisher_matrix.tmp.dat");
+        (void)r;
+
         log<LOG_ERROR>("Now trying to output FG part of the Fisher matrix");
         vector<string> fg_params = {"extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
             "extragal_ps_xi", "extragal_ff_A", "extragal_ff_beta",\
@@ -341,21 +373,36 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 "gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
         vector<string> non_fg_params = {"gamma", "beta", "alpha", "RLy",\
             "ombh2", "omch2", "omega_lambda", "n_s"};
+        vector<string> extragal_ps = {"extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
+            "extragal_ps_xi"};
+        vector<string> extragal_ff = {"extragal_ff_A", "extragal_ff_beta",\
+                "extragal_ff_alpha" ,"extragal_ff_xi"};
+        vector<string> gal_synch = {"gal_synch_A", "gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi"};
+        vector<string> gal_ff = {"gal_ff_A", "gal_ff_beta" ,"gal_ff_alpha", "gal_ff_xi"};
 
         int n = fg_params.size();
         int m = non_fg_params.size();
         mat FG = randu<mat>(n,n);
         mat non_FG = randu<mat>(m,m);
+        mat E_PS = randu<mat>(4,4);
+        mat E_FF = randu<mat>(4,4);
+        mat G_S = randu<mat>(4,4);
+        mat G_FF = randu<mat>(4,4);
         vector<vector<vector<string>>> fg_indecies;
         vector<vector<vector<string>>> non_fg_indecies;
-        vector<vector<double>> matrix_FG;
-        vector<vector<double>> matrix_non_FG;
+        vector<vector<double>> matrix_FG, matrix_non_FG, matrix_e_ps, matrix_e_ff, matrix_g_s, matrix_g_ff;
+
         //fill the FG matrix.
         for (int i = 0; i < num_params; i++)
         {
             vector<vector<string>> row, row_n;
-            vector<double> row_values, row_values_n;
+            vector<double> row_values, row_values_n, row1, row2, row3, row4;
             bool push = false;
+            bool push_1 = false;
+            bool push_2 = false;
+            bool push_3 = false;
+            bool push_4 = false;
+
             bool push_non_fg = false;
             for (int j = 0; j < num_params; j++)
             {
@@ -366,6 +413,16 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 bool k2_found = false;
                 bool k3_found = false;
                 bool k4_found = false;
+
+                bool E_PS_f = false;
+                bool E_FF_f = false;
+                bool G_S_f = false;
+                bool G_FF_f = false;
+                bool E_PS_f2 = false;
+                bool E_FF_f2 = false;
+                bool G_S_f2 = false;
+                bool G_FF_f2 = false;
+
                 for (int k = 0; k < n; k++)
                 {
                     if (key1 == fg_params[k])
@@ -380,7 +437,47 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                     if (key2 == non_fg_params[k])
                         k4_found = true;
                 }
+                for (int k = 0; k < 4; k++)
+                {
+                    if (key1 == extragal_ps[k])
+                        E_PS_f = true;
+                    if (key2 == extragal_ps[k])
+                        E_PS_f2 = true;
+                    if (key1 == extragal_ff[k])
+                        E_FF_f = true;
+                    if (key2 == extragal_ff[k])
+                        E_FF_f2 = true;
+                    if (key1 == gal_synch[k])
+                        G_S_f = true;
+                    if (key2 == gal_synch[k])
+                        G_S_f2 = true;
+                    if (key1 == gal_ff[k])
+                        G_FF_f = true;
+                    if (key2 == gal_ff[k])
+                        G_FF_f2 = true;
 
+                }
+                
+                if (E_PS_f && E_PS_f2)
+                {
+                    row1.push_back(F(i,j));
+                    push_1 = true;
+                }
+                if (E_FF_f && E_FF_f2)
+                {
+                    row2.push_back(F(i,j));
+                    push_2 = true;
+                }
+                if (G_S_f && G_S_f2)
+                {
+                    row3.push_back(F(i,j));
+                    push_3 = true;
+                }
+                if (G_FF_f && G_FF_f2)
+                {
+                    row4.push_back(F(i,j));
+                    push_4 = true;
+                }
 
 
                 if (k1_found && k2_found)
@@ -416,6 +513,23 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 non_fg_indecies.push_back(row_n);
                 matrix_non_FG.push_back(row_values_n);
             }
+            if (push_1)
+            {
+                matrix_e_ps.push_back(row1);
+            }
+            if (push_2)
+            {
+                matrix_e_ff.push_back(row2);
+            }
+            if (push_3)
+            {
+                matrix_g_s.push_back(row3);
+            }
+            if (push_4)
+            {
+                matrix_g_ff.push_back(row4);
+            }
+
 
         }
         for (int i = 0; i < n; i++)
@@ -432,7 +546,34 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 non_FG(i,j) = matrix_non_FG[i][j];
             }
         }
+        
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                E_PS(i,j) = matrix_e_ps[i][j];
+                E_FF(i,j) = matrix_e_ff[i][j];
+                G_S(i,j) = matrix_g_s[i][j];
+                G_FF(i,j) = matrix_g_ff[i][j];
+            }
+        }
+        cout << "A -- beta -- alpha -- xi" << endl; 
+        log<LOG_ERROR>("Submatrix & inverse for E_PS with cond(M) = %1%.") % cond(E_PS);
+        cout << E_PS << endl;
+        cout << pinv(E_PS) << endl;
+        log<LOG_ERROR>("Submatrix & inverse for E_FF with cond(M) = %1%.") % cond(E_FF);
+        cout << E_FF << endl;
+        cout << pinv(E_FF) << endl;
+        log<LOG_ERROR>("Submatrix & inverse for G_S with cond(M) = %1%.") % cond(G_S);
+        cout << G_S << endl;
+        cout << pinv(G_S) << endl;
+        log<LOG_ERROR>("Submatrix & inverse for G_FF with cond(M) = %1%.") % cond(G_FF);
+        cout << G_FF << endl;
+        cout << pinv(G_FF) << endl;
 
+        
+        
+        /*
         cout << FG << endl;
         cout << pinv(FG) << endl;
         cout << FG.i() << endl;
@@ -444,7 +585,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         cout << non_FG.i() << endl;
         log<LOG_ERROR>("Condition number of signal sub-Fisher matrix is %1%.") % cond(non_FG);
         log<LOG_ERROR>("Determinant of signal sub-Fisher matrix is %1%.") % det(non_FG);
-
+        */
     }
 
 

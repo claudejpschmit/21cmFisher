@@ -92,14 +92,14 @@ int main ()
     Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
     Tomography2D analysis2(&model2);
     //analysis2.writeFG("Cl_FG");
-    //Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
-    //fisher_santos.calc_Fls();
+    Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
+    fisher_santos.calc_Fls();
 
     //mat A = fisher_santos.read_matrix("output/matrices_test/Cla_RLy_960_67.5_72.5_51_15_25_santos.bin",\
     //        51,51);
     //cout << A << endl;
     //analysis2.writeT21("T21_Santos.dat");
-    
+    /*    
     ofstream outfile("Cls_FG_140.dat");
     for (int i = 0; i < 40; i++) {
         int l = 1000;
@@ -110,6 +110,7 @@ int main ()
         
     }
     outfile.close();
+    */
     /*
     
     ofstream outfile2("Cls_l10.dat");
