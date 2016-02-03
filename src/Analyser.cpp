@@ -2,10 +2,13 @@
 #include "stdafx.h"
 #include "interpolation.h"
 #include "Log.hpp"
+#include <map>
 
 using namespace alglib;
 
-Analyser::Analyser()
+Analyser::Analyser(bool priors)
+    :
+        priors(priors)
 {}
 
 Analyser::~Analyser()
@@ -120,10 +123,10 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
                 if ((F_ab[k].key1 == key1 && F_ab[k].key2 == key2) ||\
                         (F_ab[k].key1 == key2 && F_ab[k].key2 == key1)){
                     F(i,j) = F_ab[k].value;
-                   
+
                     row_element.push_back(key1);
                     row_element.push_back(key2);
-                
+
                 }
             }
 
@@ -222,7 +225,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 }
                 catch(alglib::ap_error e)
                 {
-                    
+
                     printf("error msg: %s\n", e.msg.c_str());    
                 }
                 for (int k = l[0]; k <= l[l.size()-1]; k++)
@@ -257,10 +260,10 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 if ((F_ab[k].key1 == key1 && F_ab[k].key2 == key2) ||\
                         (F_ab[k].key1 == key2 && F_ab[k].key2 == key1)){
                     F(i,j) = F_ab[k].value;
-                   
+
                     row_element.push_back(key1);
                     row_element.push_back(key2);
-                
+
                 }
             }
 
@@ -268,7 +271,53 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         }
         indecies.push_back(row);
     }
- 
+
+    if (priors)
+    {
+        log<LOG_BASIC>("--- Using priors ---");
+        vector<string> fg_params = {"extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
+                "extragal_ps_xi", "extragal_ff_A", "extragal_ff_beta",\
+                "extragal_ff_alpha" ,"extragal_ff_xi", "gal_synch_A",\
+                "gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi",\
+                "gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
+        map<string, double> FG_param_base_values;
+        // extragalactic point sources
+        FG_param_base_values.insert(pair<string,double>("extragal_ps_A",10));
+        FG_param_base_values.insert(pair<string,double>("extragal_ps_beta",1.1));
+        FG_param_base_values.insert(pair<string,double>("extragal_ps_alpha",2.07));
+        FG_param_base_values.insert(pair<string,double>("extragal_ps_xi",1.0));
+        // extragalactic free-free
+        FG_param_base_values.insert(pair<string,double>("extragal_ff_A",0.014));
+        FG_param_base_values.insert(pair<string,double>("extragal_ff_beta",1.0));
+        FG_param_base_values.insert(pair<string,double>("extragal_ff_alpha",2.1));
+        FG_param_base_values.insert(pair<string,double>("extragal_ff_xi",35));
+        // galactic synchrotron
+        FG_param_base_values.insert(pair<string,double>("gal_synch_A",700));
+        FG_param_base_values.insert(pair<string,double>("gal_synch_beta",2.4));
+        FG_param_base_values.insert(pair<string,double>("gal_synch_alpha",2.8));
+        FG_param_base_values.insert(pair<string,double>("gal_synch_xi",4));
+        // galactic free-free
+        FG_param_base_values.insert(pair<string,double>("gal_ff_A",0.088));
+        FG_param_base_values.insert(pair<string,double>("gal_ff_beta",3));
+        FG_param_base_values.insert(pair<string,double>("gal_ff_alpha",2.15));
+        FG_param_base_values.insert(pair<string,double>("gal_ff_xi",35));
+
+        for (int i = 0; i < num_params; i++)
+        {
+            for (int j = 0; j < num_params; j++)
+            {
+                for (int k = 0; k < fg_params.size(); k++)
+                {
+                    if (indecies[i][j][0] == fg_params[k] && indecies[i][j][1] == fg_params[k])
+                    {
+                        F(i,j) += 1.0/(1*FG_param_base_values[fg_params[k]]);
+                        log<LOG_DEBUG>("Priors added to F(%1%,%2%)") % i % j;
+                    }
+                }
+            }
+        }
+    }
+
     RESULT.matrix = pinv(F);
     log<LOG_DEBUG>("Condition number of Fisher matrix = %1%.") % cond(F);
     bool error = false;
@@ -282,14 +331,14 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
             log<LOG_ERROR>("    Determinant of the Fisher matrix is = %1%.") % det(F);
             error = true;
         }
-    
+
     if (error) {
         log<LOG_ERROR>("Now trying to output FG part of the Fisher matrix");
         vector<string> fg_params = {"extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
             "extragal_ps_xi", "extragal_ff_A", "extragal_ff_beta",\
-            "extragal_ff_alpha" ,"extragal_ff_xi", "gal_synch_A",\
-            "gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi",\
-            "gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
+                "extragal_ff_alpha" ,"extragal_ff_xi", "gal_synch_A",\
+                "gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi",\
+                "gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
         vector<string> non_fg_params = {"gamma", "beta", "alpha", "RLy",\
             "ombh2", "omch2", "omega_lambda", "n_s"};
 
@@ -344,7 +393,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                     row.push_back(pair);
                     push = true;
                 }
-                
+
                 if (k3_found && k4_found)
                 {
                     row_values_n.push_back(F(i,j));
@@ -416,8 +465,8 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
         if ((index2 < 0) && (finv.matrix_indecies[0][i][1] == param2))  
             index2 = i;
     }
-   
-    log<LOG_DEBUG>("%1% %2%") % index1 % index2;
+
+    log<LOG_DEBUG>("Getting correlation matrix for indecies: %1% %2%") % index1 % index2;
     double sig_xx, sig_xy, sig_yy;
     sig_xx = finv.matrix(index1, index1);
     bool show_marginal = true;
@@ -453,8 +502,8 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
         params_done.push_back(finv.matrix_indecies[index2][index2][0]);
     }
 
-    log<LOG_DEBUG>("%1% %2%") % sig_xx % sig_xy;
-    log<LOG_DEBUG>("%1% %2%") % sig_xy % sig_yy;
+    log<LOG_DEBUG>("    %1% %2%") % sig_xx % sig_xy;
+    log<LOG_DEBUG>("    %1% %2%") % sig_xy % sig_yy;
     Ellipse ellipse;
     ellipse.a2 = (sig_xx + sig_yy)/2.0 + sqrt(pow(sig_xx - sig_yy,2)/4.0 +\
             pow(sig_xy,2));

@@ -16,7 +16,10 @@ double AnalysisInterface::Cl_foreground(int l, double x1, double x2, map<string,
 {
     return 0;
 }
-
+double AnalysisInterface::Cl_FG_deriv_analytic(int l, double x1, double x2, string param_key)
+{
+    return 0;
+}
 string AnalysisInterface::give_analysisID()
 {
     return analysisID;

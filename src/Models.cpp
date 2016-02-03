@@ -1263,7 +1263,6 @@ double Model_Santos2006::fz(double z, map<string,double> params)
     return res;
 }
 
-
 double Model_Santos2006::Tk(double z)
 {
     double A = 397.85/(145.0*145.0);

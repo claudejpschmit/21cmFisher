@@ -3,7 +3,6 @@
 #include <sstream>
 #include <string>
 
-
 #include "Log.hpp"
 #include "Model.hpp"
 #include "Analysis.hpp"
@@ -19,7 +18,7 @@ using namespace std;
 // 3 LOG_VERBOSE
 // 4 LOG_DEBUG
 
-log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_NOTHING;
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_ERROR;
 
 
 int main ()
@@ -62,6 +61,7 @@ int main ()
     params.insert(pair<string,double>("RLy", 100));
     params.insert(pair<string,double>("omega_lambda", 0.76));
     params.insert(pair<string,double>("Santos_const_abg",1.0));
+
   
     vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
         "ombh2", "omch2", "omega_lambda", "n_s",\
@@ -92,25 +92,25 @@ int main ()
     Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
     Tomography2D analysis2(&model2);
     //analysis2.writeFG("Cl_FG");
-    Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
-    fisher_santos.calc_Fls();
+    //Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
+    //fisher_santos.calc_Fls();
 
+    //mat A = fisher_santos.read_matrix("output/matrices_test/Cla_RLy_960_67.5_72.5_51_15_25_santos.bin",\
+    //        51,51);
+    //cout << A << endl;
     //analysis2.writeT21("T21_Santos.dat");
-    /* 
-    ofstream outfile("Cls_55_logscale.dat");
-    for (int i = 0; i < 100; i++) {
-        int l;// = 6700;
+    
+    ofstream outfile("Cls_FG_140.dat");
+    for (int i = 0; i < 40; i++) {
+        int l = 1000;
+        double nu = 120 + i;
+        outfile << nu << " " << analysis2.Cl_foreground(1000, nu, 140,\
+                    analysis2.get_base_FG_params())/analysis2.Cl_foreground(1000, 140, 140,\
+                    analysis2.get_base_FG_params()) << endl;
         
-        l = (int)exp((double)i/10.0);
-        if (l > 10000)
-            break;
-        else {
-            double nu = 55;// + i*0.1;
-            outfile << l << " " << l*(l+1)*analysis2.Cl(l, nu, nu, 0,0,0)/(2*model2.pi) << endl;
-        }
     }
     outfile.close();
-   
+    /*
     
     ofstream outfile2("Cls_l10.dat");
     for (int i = 0; i < 150; i++) {

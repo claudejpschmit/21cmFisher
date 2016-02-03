@@ -175,8 +175,174 @@ double Tomography2D::Cl_foreground_individual(int l, double nu1, double nu2, str
 
     double CL = I1 * sqrt(Cl_nu1 * Cl_nu2); 
     return CL;
-
 }
+
+double Tomography2D::Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key)
+{
+    double Cl_p;
+    double nu_f = 130;
+    enum FG_PAR
+    {
+        extragal_ff_A,
+        extragal_ff_alpha,
+        extragal_ff_beta,
+        extragal_ff_xi,
+        
+        extragal_ps_A,
+        extragal_ps_alpha,
+        extragal_ps_beta,
+        extragal_ps_xi,
+            
+        gal_ff_A,
+        gal_ff_alpha,
+        gal_ff_beta,
+        gal_ff_xi,
+        
+        gal_synch_A,
+        gal_synch_alpha,
+        gal_synch_beta,
+        gal_synch_xi,
+    };
+    FG_PAR parameter;
+    if (param_key == "extragal_ff_A") 
+        parameter = extragal_ff_A;
+    else if (param_key == "extragal_ps_A") 
+        parameter = extragal_ps_A;
+    else if (param_key == "gal_ff_A") 
+        parameter = gal_ff_A;
+    else if (param_key == "gal_synch_A") 
+        parameter = gal_synch_A;
+    else if (param_key == "extragal_ff_beta") 
+        parameter = extragal_ff_beta;
+    else if (param_key == "extragal_ps_beta") 
+        parameter = extragal_ps_beta;
+    else if (param_key == "gal_ff_beta") 
+        parameter = gal_ff_beta;
+    else if (param_key == "gal_synch_beta") 
+        parameter = gal_synch_beta;
+    else if (param_key == "extragal_ff_alpha") 
+        parameter = extragal_ff_alpha;
+    else if (param_key == "extragal_ps_alpha") 
+        parameter = extragal_ps_alpha;
+    else if (param_key == "gal_ff_alpha") 
+        parameter = gal_ff_alpha;
+    else if (param_key == "gal_synch_alpha") 
+        parameter = gal_synch_alpha;
+    else if (param_key == "extragal_ff_xi") 
+        parameter = extragal_ff_xi;
+    else if (param_key == "extragal_ps_xi") 
+        parameter = extragal_ps_xi;
+    else if (param_key == "gal_ff_xi") 
+        parameter = gal_ff_xi;
+    else if (param_key == "gal_synch_xi") 
+        parameter = gal_synch_xi;
+
+    switch (parameter) {
+        case extragal_ff_A:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["extragal_ff_xi"],2));
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["extragal_ff_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["extragal_ff_alpha"]);
+            break;
+        case extragal_ps_A:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["extragal_ps_xi"],2));
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["extragal_ps_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["extragal_ps_alpha"]);
+            break;
+        case gal_ff_A:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["gal_ff_xi"],2));
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["gal_ff_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["gal_ff_alpha"]);
+            break;
+        case gal_synch_A:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["gal_synch_xi"],2));
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["gal_synch_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["gal_synch_alpha"]);
+            break;
+
+        case extragal_ff_beta:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["extragal_ff_xi"],2));
+            Cl_p *= FG_param_base_values["extragal_ff_A"] * log(1000.0/(double)l);
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["extragal_ff_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["extragal_ff_alpha"]);
+            break;
+        case extragal_ps_beta:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["extragal_ps_xi"],2));
+            Cl_p *= FG_param_base_values["extragal_ps_A"] * log(1000.0/(double)l);
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["extragal_ps_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["extragal_ps_alpha"]);
+            break;
+        case gal_ff_beta:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["gal_ff_xi"],2));
+            Cl_p *= FG_param_base_values["gal_ff_A"] * log(1000.0/(double)l);
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["gal_ff_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["gal_ff_alpha"]);
+            break;
+        case gal_synch_beta:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["gal_synch_xi"],2));
+            Cl_p *= FG_param_base_values["gal_synch_A"] * log(1000.0/(double)l);
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["gal_synch_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["gal_synch_alpha"]);
+            break;
+        
+        case extragal_ff_alpha:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["extragal_ff_xi"],2));
+            Cl_p *= FG_param_base_values["extragal_ff_A"] * log((nu_f * nu_f)/(nu1 * nu2));
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["extragal_ff_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["extragal_ff_alpha"]);
+            break;
+        case extragal_ps_alpha:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["extragal_ps_xi"],2));
+            Cl_p *= FG_param_base_values["extragal_ps_A"] * log((nu_f * nu_f)/(nu1 * nu2));
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["extragal_ps_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["extragal_ps_alpha"]);
+            break;
+        case gal_ff_alpha:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["gal_ff_xi"],2));
+            Cl_p *= FG_param_base_values["gal_ff_A"] * log((nu_f * nu_f)/(nu1 * nu2));
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["gal_ff_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["gal_ff_alpha"]);
+            break;
+        case gal_synch_alpha:
+            Cl_p = 1 - pow(log(nu1/nu2), 2) / (2 * pow(FG_param_base_values["gal_synch_xi"],2));
+            Cl_p *= FG_param_base_values["gal_synch_A"] * log((nu_f * nu_f)/(nu1 * nu2));
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["gal_synch_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["gal_synch_alpha"]);
+            break;
+        
+        case extragal_ff_xi:
+            Cl_p = pow(log(nu1/nu2), 2) / pow(FG_param_base_values["extragal_ff_xi"], 3);
+            Cl_p *= FG_param_base_values["extragal_ff_A"];
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["extragal_ff_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["extragal_ff_alpha"]);
+            break;
+        case extragal_ps_xi:
+            Cl_p = pow(log(nu1/nu2), 2) / pow(FG_param_base_values["extragal_ps_xi"], 3);
+            Cl_p *= FG_param_base_values["extragal_ps_A"];
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["extragal_ps_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["extragal_ps_alpha"]);
+            break;
+        case gal_ff_xi:
+            Cl_p = pow(log(nu1/nu2), 2) / pow(FG_param_base_values["gal_ff_xi"], 3);
+            Cl_p *= FG_param_base_values["gal_ff_A"];
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["gal_ff_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["gal_ff_alpha"]);
+            break;
+        case gal_synch_xi:
+            Cl_p = pow(log(nu1/nu2), 2) / pow(FG_param_base_values["gal_synch_xi"], 3);
+            Cl_p *= FG_param_base_values["gal_synch_A"];
+            Cl_p *= pow(1000.0/(double)l, FG_param_base_values["gal_synch_beta"]);
+            Cl_p *= pow((nu_f * nu_f) / (nu1 * nu2), FG_param_base_values["gal_synch_alpha"]);
+            break;
+
+        default:
+            log<LOG_ERROR>("Error: The FG parameter passed to the derivative function is not understood.");
+            log<LOG_ERROR>("        param_key = %1%.") % param_key;
+            Cl_p = 0;
+            break;
+    }
+    return Cl_p;
+}
+
 
 void Tomography2D::writeT21(string name)
 {

@@ -122,7 +122,7 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     if (check_file(matrix_filename.str()) && !debug)
     {
        log<LOG_VERBOSE>("///reading matrix from file///");
-        res = read_matrix(matrix_filename.str(),range.size(),range.size());
+       res = read_matrix(matrix_filename.str(),range.size(),range.size());
     }
     else
     {
@@ -135,54 +135,15 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
         double h;
 
         if (FG) {
-            map<string,double> working_params = analysis->get_base_FG_params();
-            h = working_params[param_key]/100.0;
-            double x = working_params[param_key];
-            working_params[param_key] = x + 2 * h;
-            
-            for (unsigned int i = 0; i < range.size(); ++i) {
-                double x1 = range[i];
-                for (unsigned int j = i; j < range.size(); ++j) {
-                    double k2 = range[j];
-                    double res = analysis->Cl_foreground(l, x1, k2, working_params);
-                    f1matrix(i,j) = res;
-                    f1matrix(j,i) = res;
-                }
-            }
-
-            working_params[param_key] = x + h;
             for (unsigned int i = 0; i < range.size(); ++i) {
                 double x1 = range[i];
                 for (unsigned int j = i; j < range.size(); ++j) {
                     double x2 = range[j];
-                    double res = analysis->Cl_foreground(l, x1, x2, working_params);
-                    f2matrix(i,j) = res;
-                    f2matrix(j,i) = res;
+                    double R = analysis->Cl_FG_deriv_analytic(l, x1, x2, param_key);
+                    res(i,j) = R;
+                    res(j,i) = R;
                 }
             }
-
-            working_params[param_key] = x - h;
-            for (unsigned int i = 0; i < range.size(); ++i) {
-                double x1 = range[i];
-                for (unsigned int j = i; j < range.size(); ++j) {
-                    double x2 = range[j];
-                    double res = analysis->Cl_foreground(l, x1, x2, working_params);
-                    f3matrix(i,j) = res;
-                    f3matrix(j,i) = res;
-                }
-            }
-
-            working_params[param_key] = x - 2 * h;
-            for (unsigned int i = 0; i < range.size(); ++i) {
-                double x1 = range[i];
-                for (unsigned int j = i; j < range.size(); ++j) {
-                    double x2 = range[j];
-                    double res = analysis->Cl_foreground(l, x1, x2, working_params);
-                    f4matrix(i,j) = res;
-                    f4matrix(j,i) = res;
-                }
-            }
-            working_params[param_key] = x;
         }
         else {
             map<string,double> working_params = fiducial_params;
@@ -197,10 +158,10 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
             for (unsigned int i = 0; i < range.size(); ++i) {
                 double x1 = range[i];
                 for (unsigned int j = i; j < range.size(); ++j) {
-                    double k2 = range[j];
-                    double res = analysis->Cl(l, x1, k2, *Pk_index, *Tb_index, *q_index);
-                    f1matrix(i,j) = res;
-                    f1matrix(j,i) = res;
+                    double x2 = range[j];
+                    double R = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
+                    f1matrix(i,j) = R;
+                    f1matrix(j,i) = R;
                 }
             }
 
@@ -210,9 +171,9 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
                 double x1 = range[i];
                 for (unsigned int j = i; j < range.size(); ++j) {
                     double x2 = range[j];
-                    double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
-                    f2matrix(i,j) = res;
-                    f2matrix(j,i) = res;
+                    double R = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
+                    f2matrix(i,j) = R;
+                    f2matrix(j,i) = R;
                 }
             }
 
@@ -222,9 +183,9 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
                 double x1 = range[i];
                 for (unsigned int j = i; j < range.size(); ++j) {
                     double x2 = range[j];
-                    double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
-                    f3matrix(i,j) = res;
-                    f3matrix(j,i) = res;
+                    double R = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
+                    f3matrix(i,j) = R;
+                    f3matrix(j,i) = R;
                 }
             }
 
@@ -234,26 +195,25 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
                 double x1 = range[i];
                 for (unsigned int j = i; j < range.size(); ++j) {
                     double x2 = range[j];
-                    double res = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
-                    f4matrix(i,j) = res;
-                    f4matrix(j,i) = res;
+                    double R = analysis->Cl(l, x1, x2, *Pk_index, *Tb_index, *q_index);
+                    f4matrix(i,j) = R;
+                    f4matrix(j,i) = R;
                 }
             }
 
             working_params[param_key] = x;
             analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        }
-        
-        double num;
-        for (unsigned int i = 0; i < range.size(); ++i) {
-            for (unsigned int j = 0; j < range.size(); ++j) {
-                num = -f1matrix(i,j) + 8*f2matrix(i,j) - 8*f3matrix(i,j) +\
-                      f4matrix(i,j);
-                num = num / (12.0 * h);    
-                res(i,j) = num;
+            
+            double num;
+            for (unsigned int i = 0; i < range.size(); ++i) {
+                for (unsigned int j = 0; j < range.size(); ++j) {
+                    num = -f1matrix(i,j) + 8*f2matrix(i,j) - 8*f3matrix(i,j) +\
+                          f4matrix(i,j);
+                    num = num / (12.0 * h);    
+                    res(i,j) = num;
+                }
             }
         }
-
         //!!!!!!!!!!! this line also needs to be removed if not writing.
         // It is fine to just do this here because the name of the matrix will already
         // state that it is a FG parameter that has been differentiated wrt.

@@ -110,6 +110,11 @@ double Cosmology3D::Cl_foreground(int l, double k1, double k2, map<string,double
     return pre * integral;
 }
 
+double Cosmology3D::Cl_FG_deriv_analytic(int l, double k1, double k2, string param_key)
+{
+    return 0;
+}
+
 double Cosmology3D::Cl_FG_nunu(int l, double nu1, double nu2, map<string,double> FG_param_values)
 {
     double I1 = 1-pow(log(nu1/nu2),2)/(2.0*pow(FG_param_values["extragal_ps_xi"],2));

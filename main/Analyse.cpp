@@ -9,7 +9,8 @@
 #include "Log.hpp"
 
 #define SANTOS true
-#define ERROR_ELLIPSES false
+#define ERROR_ELLIPSES true
+#define USE_PRIORS true
 
 using namespace std;
 using namespace arma;
@@ -42,7 +43,7 @@ int main(int argc, char* argv[])
     else 
         prefix << run_number;
 
-    Analyser analyse;
+    Analyser analyse(USE_PRIORS);
     Fisher_return_pair finv;
     if (SANTOS && ERROR_ELLIPSES)
     {

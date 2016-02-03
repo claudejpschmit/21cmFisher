@@ -11,6 +11,7 @@ class AnalysisInterface {
                 int Pk_index, int Tb_index, int q_index);
         virtual double Cl_noise(int l, double x1, double x2);
         virtual double Cl_foreground(int l, double x1, double x2, map<string,double> FG_param_values);
+        virtual double Cl_FG_deriv_analytic(int l, double x1, double x2, string param_key);
         map<string,double> get_base_FG_params();
         // FG parameters list
         vector<string> FG_params;
@@ -34,6 +35,7 @@ class Cosmology3D : public AnalysisInterface {
                 int Pk_index, int Tb_index, int q_index);
         double Cl_noise(int l, double k1, double k2);
         double Cl_foreground(int l, double k1, double k2, map<string,double> FG_param_values);
+        double Cl_FG_deriv_analytic(int l, double k1, double k2, string param_key);
         void writeT21(string name);
 
     private:
@@ -68,7 +70,7 @@ class Tomography2D : public AnalysisInterface {
         double Cl_noise(int l, double nu1, double nu2);
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
         double Cl_foreground_individual(int l, double nu1, double nu2, string FG_source_prefix);
-
+        double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
         void writeT21(string name);
         void writeFG(string filename_prefix);
         void writeCl_integrand(int l, double nu1, double nu2, double kmin,\

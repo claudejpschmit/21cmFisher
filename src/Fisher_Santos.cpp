@@ -13,7 +13,7 @@ Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
         if (fiducial_params[key] == 0.0)
             var_params.insert(pair<string,double>(key,0.0001));
         else
-            var_params.insert(pair<string,double>(key,abs(fiducial_params[key])/100));
+            var_params.insert(pair<string,double>(key,abs(fiducial_params[key])/10));
     }
     noise = false;
     foreground = false;

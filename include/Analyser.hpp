@@ -15,7 +15,7 @@ class Analyser {
         /**
          *  Standard Constructor 
          */
-        Analyser();
+        Analyser(bool priors);
         
         /**
          *  Standard Destructor
@@ -93,4 +93,5 @@ class Analyser {
                 string param2, int run_number, string path);
 
         vector<string> params_done;
+        bool priors;
 };
