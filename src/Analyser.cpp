@@ -310,7 +310,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 {
                     if (indecies[i][j][0] == fg_params[k] && indecies[i][j][1] == fg_params[k])
                     {
-                        F(i,j) += 1.0/(2*FG_param_base_values[fg_params[k]]);
+                        F(i,j) += 1.0/(10*FG_param_base_values[fg_params[k]]);
                         log<LOG_DEBUG>("Priors added to F(%1%,%2%)") % i % j;
                     }
                 }
@@ -334,14 +334,17 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
 
     if (error) {
         log<LOG_ERROR>("Showing the Fisher matrix");
-        for (int i = 0; i < num_params; i++)
+        /*for (int i = 0; i < num_params; i++)
         {
             for (int j = 0; j < num_params; j++)
                 cout << indecies[i][j][0] << "_" << indecies[i][j][1] << "    ";
             cout << endl;
             cout << endl;
-        }
-
+        }*/
+        ofstream param_name_file("params.tmp.dat");
+        for (int j = 0; j < num_params; j++)
+            param_name_file << indecies[0][j][1] << endl;
+        param_name_file.close();
         
         mat I = F;
         for (int i = 0; i < num_params; i++)
@@ -356,13 +359,13 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         }
         outfile_Fisher.close();
         stringstream command_buff;
-        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat";
+        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat params.tmp.dat";
         char* command = new char[command_buff.str().length() + 1];
         strcpy(command, command_buff.str().c_str());
         int r = system(command);
         (void)r;
         delete command;
-        r = system("rm Fisher_matrix.tmp.dat");
+        r = system("rm Fisher_matrix.tmp.dat params.tmp.dat");
         (void)r;
 
         log<LOG_ERROR>("Now trying to output FG part of the Fisher matrix");
@@ -557,7 +560,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 G_FF(i,j) = matrix_g_ff[i][j];
             }
         }
-        cout << "A -- beta -- alpha -- xi" << endl; 
+        log<LOG_ERROR>("A -- beta -- alpha -- xi"); 
         log<LOG_ERROR>("Submatrix & inverse for E_PS with cond(M) = %1%.") % cond(E_PS);
         cout << E_PS << endl;
         cout << pinv(E_PS) << endl;
@@ -570,22 +573,106 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         log<LOG_ERROR>("Submatrix & inverse for G_FF with cond(M) = %1%.") % cond(G_FF);
         cout << G_FF << endl;
         cout << pinv(G_FF) << endl;
+        
+        map<string, double> FG_param_base_values;
+        // extragalactic point sources
+        FG_param_base_values.insert(pair<string,double>("extragal_ps_A",10));
+        FG_param_base_values.insert(pair<string,double>("extragal_ps_beta",1.1));
+        FG_param_base_values.insert(pair<string,double>("extragal_ps_alpha",2.07));
+        FG_param_base_values.insert(pair<string,double>("extragal_ps_xi",1.0));
+        // extragalactic free-free
+        FG_param_base_values.insert(pair<string,double>("extragal_ff_A",0.014));
+        FG_param_base_values.insert(pair<string,double>("extragal_ff_beta",1.0));
+        FG_param_base_values.insert(pair<string,double>("extragal_ff_alpha",2.1));
+        FG_param_base_values.insert(pair<string,double>("extragal_ff_xi",35));
+        // galactic synchrotron
+        FG_param_base_values.insert(pair<string,double>("gal_synch_A",700));
+        FG_param_base_values.insert(pair<string,double>("gal_synch_beta",2.4));
+        FG_param_base_values.insert(pair<string,double>("gal_synch_alpha",2.8));
+        FG_param_base_values.insert(pair<string,double>("gal_synch_xi",4));
+        // galactic free-free
+        FG_param_base_values.insert(pair<string,double>("gal_ff_A",0.088));
+        FG_param_base_values.insert(pair<string,double>("gal_ff_beta",3));
+        FG_param_base_values.insert(pair<string,double>("gal_ff_alpha",2.15));
+        FG_param_base_values.insert(pair<string,double>("gal_ff_xi",35));
+
+
+        log<LOG_ERROR>("From these we get: ");
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                int k = i * 4 + j;
+                mat A;
+                switch (i)
+                {
+                    case 0:
+                        A = pinv(E_PS);
+                        break;
+                    case 1:
+                        A = pinv(E_FF);
+                        break;
+                    case 2:
+                        A = pinv(G_S);
+                        break;
+                    case 3:
+                        A = pinv(G_FF);
+                        break;
+                    default:
+                        break;
+                }
+                log<LOG_ERROR>("%1% = %2% +- %3%. ") % fg_params[k] %\
+                    FG_param_base_values[fg_params[k]] % sqrt(A(j,j));
+                if (FG_param_base_values[fg_params[k]] < sqrt(A(j,j)))
+                    log<LOG_ERROR>(" --------------- ");
+
+            }
+        }
 
         
-        
-        /*
+        log<LOG_ERROR>("The following is the sub-Fisher-matrix for the FG's only.");
+
         cout << FG << endl;
-        cout << pinv(FG) << endl;
+        log<LOG_ERROR>("    As well as the inverse using first a pseudo-inverse.");
+        mat FGi = FG.i();
+        cout << FGi << endl;
+        log<LOG_ERROR>("    Then, a direct inverse.");
         cout << FG.i() << endl;
-        log<LOG_ERROR>("Condition number of FG sub-Fisher matrix is %1%.") % cond(FG);
-        log<LOG_ERROR>("Determinant of FG sub-Fisher matrix is %1%.") % det(FG);
+        log<LOG_ERROR>("------> Condition number of FG sub-Fisher matrix is %1%.") % cond(FG);
+        log<LOG_ERROR>("------> Determinant of FG sub-Fisher matrix is %1%.") % det(FG);
+        
+        log<LOG_ERROR>("------> From this, we get the following parameter constraints:");
+        for (int k = 0; k < fg_params.size(); k++)
+        {
+            log<LOG_ERROR>("%1% = %2% +- %3%. ") % fg_params[k] %\
+                    FG_param_base_values[fg_params[k]] % sqrt(FGi(k,k));
+        }
 
+
+        log<LOG_ERROR>("The following is the sub-Fisher-matrix for the signal only.");
         cout << non_FG << endl;
+        log<LOG_ERROR>("    As well as the inverse using first a pseudo-inverse.");
         cout << pinv(non_FG) << endl;
+        mat non_FGi = pinv(non_FG);
+        for (int k = 0; k < non_fg_params.size(); k++)
+        {
+            log<LOG_ERROR>("%1% = %2% +- %3%. ") % non_fg_params[k] %\
+                    FG_param_base_values[non_fg_params[k]] % sqrt(non_FGi(k,k));
+        }
+
+        log<LOG_ERROR>("    Then, a direct inverse.");
         cout << non_FG.i() << endl;
-        log<LOG_ERROR>("Condition number of signal sub-Fisher matrix is %1%.") % cond(non_FG);
-        log<LOG_ERROR>("Determinant of signal sub-Fisher matrix is %1%.") % det(non_FG);
-        */
+        non_FGi = non_FG.i();
+        log<LOG_ERROR>("------> Condition number of signal sub-Fisher matrix is %1%.") % cond(non_FG);
+        log<LOG_ERROR>("------> Determinant of signal sub-Fisher matrix is %1%.") % det(non_FG);
+        
+        for (int k = 0; k < non_fg_params.size(); k++)
+        {
+            log<LOG_ERROR>("%1% = %2% +- %3%. ") % non_fg_params[k] %\
+                    FG_param_base_values[non_fg_params[k]] % sqrt(non_FGi(k,k));
+        }
+
+        
     }
 
 
@@ -778,7 +865,7 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv,\
     }
     else {
         log<LOG_ERROR>("    ERROR: some ellipses are ill-defined with a^2 < 0 or b^2 < 0.");
-        for (unsigned int i = 0; i<error_ellipses.size(); i++)
+        /*for (unsigned int i = 0; i<error_ellipses.size(); i++)
         {
             if (error_ellipses[i].a2 < 0 or error_ellipses[i].b2 < 0)
             {
@@ -786,7 +873,7 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv,\
                     error_ellipses[i].a2 %\
                     error_ellipses[i].b2;
             }
-        }
+        }*/
         log<LOG_ERROR>("      check for linearly dependent rows or columns.");
         log<LOG_ERROR>("      These can be due to degeneracies between parameters.");
     }

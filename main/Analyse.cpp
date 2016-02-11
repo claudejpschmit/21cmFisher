@@ -8,7 +8,7 @@
 #include "Analyser.hpp"
 #include "Log.hpp"
 
-#define SANTOS true
+#define SANTOS false
 #define ERROR_ELLIPSES true
 #define USE_PRIORS false
 

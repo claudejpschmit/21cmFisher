@@ -885,6 +885,7 @@ Model_Santos2006::Model_Santos2006(map<string, double> params,\
     log<LOG_BASIC>("... 21cm interface built ...");
     log<LOG_BASIC>("... Model_Santos2006 built ...");
 }
+
 Model_Santos2006::~Model_Santos2006()
 {}
 
@@ -989,7 +990,6 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
         }
     }
     if (do_calc) {
-
 
         log<LOG_VERBOSE>("Calculating T21 from scratch");
         ofstream file;

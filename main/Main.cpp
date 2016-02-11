@@ -31,7 +31,7 @@ int main ()
     params.insert(pair<string,double>("foreground",1.0));
     params.insert(pair<string,double>("rsd",0.0));
     params.insert(pair<string,double>("limber",0.0));
-    params.insert(pair<string,double>("tau_noise",5400000));//2000hours
+    params.insert(pair<string,double>("tau_noise",7200000));//2000hours
     params.insert(pair<string,double>("Tsys",1500));
     params.insert(pair<string,double>("lmax_noise",10000));
     params.insert(pair<string,double>("df",0.1));
@@ -93,7 +93,7 @@ int main ()
     Tomography2D analysis2(&model2);
     //analysis2.writeFG("Cl_FG");
     Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
-    fisher_santos.calc_Fls();
+    //fisher_santos.calc_Fls();
 
     //mat A = fisher_santos.read_matrix("output/matrices_test/Cla_RLy_960_67.5_72.5_51_15_25_santos.bin",\
     //        51,51);
@@ -111,18 +111,18 @@ int main ()
     }
     outfile.close();
     */
-    /*
     
-    ofstream outfile2("Cls_l10.dat");
-    for (int i = 0; i < 150; i++) {
-        int l = 10;
+    ofstream outfile2("Cls_140_logscale.dat");
+    for (int i = 0; i < 100; i++) {
+        int l = exp(0.1 * i);
+        if (l>10000)
+            break;
         
-        double nu = 55 + i*0.2;
-        outfile2 << nu << " " << l*(l+1)*analysis2.Cl(l, nu, nu, 0,0,0)/(2*model2.pi) << endl;
+        double nu = 140;
+        outfile2 << l << " " << l*(l+1)*analysis2.Cl(l, nu, nu, 0,0,0)/(2*model2.pi) << endl;
         
     }
     outfile2.close();
-    */
     /*
     ofstream outfile3("Cls_l5_nu65.dat");
     double cl_ref = analysis2.Cl(5, 65, 65, 0,0,0);
