@@ -86,7 +86,7 @@ ANALYSE = Analyser.o Analyse.o
 TOMOGRAPHY = calc_tomography.o Tomography.o 
 SORTING = SortFiles.o
 
-RESTRUCT = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o Fisher.o Fisher1.o Fisher_Santos.o Integrator.o CAMB_interface.o ARES_interface.o Global21cmInterface.o
+RESTRUCT = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o Fisher.o Fisher1.o Fisher_Santos.o Integrator.o CAMB_interface.o ARES_interface.o Global21cmInterface.o iniReader.o
 
 
 all: calc analyse sortFiles 

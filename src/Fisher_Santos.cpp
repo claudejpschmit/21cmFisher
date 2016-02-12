@@ -58,7 +58,6 @@ void Fisher_Santos::set_range_stepsize()
 
 vector<double> Fisher_Santos::set_range(int l, double xmin, double xmax)
 {
-
     int steps = (xmax - xmin)/xstepsize + 1;
     vector<double> range;
     double nu;
@@ -72,8 +71,8 @@ vector<double> Fisher_Santos::set_range(int l, double xmin, double xmax)
         " steps for l = " << l << ".\n";
     log<LOG_VERBOSE>("%1%") % ss.str().c_str();
     return range;
- 
 }
+
 //////////////////////////////
 //  Defining other members  //
 //////////////////////////////

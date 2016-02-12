@@ -1,7 +1,7 @@
 #include "Fisher.hpp"
 #include <assert.h>
 #include "Log.hpp"
-#define TESTMATRIX true
+#define TESTMATRIX false
 
 // Public Destructor.
 

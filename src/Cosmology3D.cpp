@@ -4,7 +4,6 @@
 
 Cosmology3D::Cosmology3D(ModelInterface* model)
 {
-
     log<LOG_BASIC>("... Beginning to build Analysis Class: 3DCosmology ...");
     this->model = model;
     analysisID = "Cosmology3D";

@@ -7,6 +7,7 @@
 #include "Model.hpp"
 #include "Analysis.hpp"
 #include "Fisher.hpp"
+#include "iniReader.hpp"
 
 using namespace std;
 
@@ -18,22 +19,72 @@ using namespace std;
 // 3 LOG_VERBOSE
 // 4 LOG_DEBUG
 
-log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_ERROR;
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
-
-int main ()
+int main (int argc, char* argv[])
 {
-    map<string,double> params;    
+    string iniFilename;
+    if (argc < 2)
+    {
+        log<LOG_ERROR>("--- No .ini file provided. Standard ./params.ini is used. ---");
+        iniFilename = "params.ini";
+    }
+    else
+        iniFilename = argv[1];
+
+    IniReader parser(iniFilename);
+    map<string,double> params = parser.giveRunParams();
+    vector<string> keys = parser.giveParamKeys();
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+    
+    ModelInterface* model; 
+    switch (parser.giveModelAndAnalysis()[0])
+    {
+        case santos:
+            model = new Model_Santos2006(params, &Pk_index, &Tb_index, &q_index);
+            break;
+        case camb_ares:
+            model = new Model_CAMB_ARES(params, &Pk_index, &Tb_index, &q_index);
+            break;
+        case camb_g21:
+            model = new Model_CAMB_G21(params, &Pk_index, &Tb_index, &q_index);
+            break;
+        default:
+            log<LOG_ERROR>("!!!!! Critical Error: No model was defined !!!!!");
+            break;
+    }
+    
+    AnalysisInterface* analysis;
+    FisherInterface* fisher;
+    switch (parser.giveModelAndAnalysis()[1])
+    {
+        case cosmo3D:
+            analysis = new Cosmology3D(model);
+            fisher = new Fisher1(analysis, "test_output.dat", keys);
+            break;
+        case tomography2D:
+            analysis = new Tomography2D(model);
+            fisher = new Fisher_Santos(analysis, "test_output.dat", keys);
+            break;
+        default:
+            log<LOG_ERROR>("!!!!! Critical Error: No analysis was defined !!!!!");
+            break;
+    }
+    
+    cout << model->T21_interp(19, 0) << endl;
+
     params.insert(pair<string,double>("kmax",1));//1
-    params.insert(pair<string,double>("zmax",25));
-    params.insert(pair<string,double>("zsteps",10));//100
+    params.insert(pair<string,double>("zmax",20));
+    params.insert(pair<string,double>("zsteps",54));//100
     params.insert(pair<string,double>("noise",1.0));
-    params.insert(pair<string,double>("foreground",1.0));
+    params.insert(pair<string,double>("foreground",0.0));
     params.insert(pair<string,double>("rsd",0.0));
     params.insert(pair<string,double>("limber",0.0));
     params.insert(pair<string,double>("tau_noise",7200000));//2000hours
-    params.insert(pair<string,double>("Tsys",1500));
-    params.insert(pair<string,double>("lmax_noise",10000));
+    params.insert(pair<string,double>("Tsys",2800));
+    params.insert(pair<string,double>("lmax_noise",10100));
     params.insert(pair<string,double>("df",0.1));
     params.insert(pair<string,double>("fcover",0.38));
 
@@ -63,7 +114,7 @@ int main ()
     params.insert(pair<string,double>("Santos_const_abg",1.0));
 
   
-    vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
+    /* vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
         "ombh2", "omch2", "omega_lambda", "n_s",\
         "extragal_ps_A", "extragal_ps_beta", "extragal_ps_alpha",\
         "extragal_ps_xi", "extragal_ff_A", "extragal_ff_beta",\
@@ -71,28 +122,28 @@ int main ()
         "gal_synch_beta" ,"gal_synch_alpha", "gal_synch_xi",\
         "gal_ff_A", "gal_ff_beta", "gal_ff_alpha", "gal_ff_xi"};
     
-
+    */
     /*
     vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
         "ombh2", "omch2", "omega_lambda", "n_s"};
     */
-    //vector<string>keys = {"ombh2", "omch2", "omega_lambda", "n_s"};
+    /*
+    vector<string>keys = {"ombh2", "omch2", "omega_lambda", "n_s"};
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0; 
-    //Model_CAMB_ARES model(params, &Pk_index, &Tb_index, &q_index);
+
+    Model_CAMB_ARES model(params, &Pk_index, &Tb_index, &q_index);
     //model.show_params(params);
-    //Cosmology3D analysis(&model);
-    //analysis.writeT21("T21_Ares.dat"); 
-    //Fisher1 fisher(&analysis, "test_output.dat", keys);
-    //fisher.calc_Fls();
-    
-    
+    Cosmology3D analysis(&model);
+    Fisher1 fisher(&analysis, "test_output.dat", keys);
+    fisher.calc_Fls();
+    */
     // Santos
-    Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
-    Tomography2D analysis2(&model2);
+    //Model_Santos2006 model2(params, &Pk_index, &Tb_index, &q_index);
+    //Tomography2D analysis2(&model2);
     //analysis2.writeFG("Cl_FG");
-    Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
+    //Fisher_Santos fisher_santos(&analysis2, "test_output.dat", keys);
     //fisher_santos.calc_Fls();
 
     //mat A = fisher_santos.read_matrix("output/matrices_test/Cla_RLy_960_67.5_72.5_51_15_25_santos.bin",\
@@ -111,18 +162,20 @@ int main ()
     }
     outfile.close();
     */
-    
-    ofstream outfile2("Cls_140_logscale.dat");
+    /*
+    ofstream outfile2("Cls_k_logscale_2_models.dat");
     for (int i = 0; i < 100; i++) {
         int l = exp(0.1 * i);
         if (l>10000)
             break;
         
-        double nu = 140;
-        outfile2 << l << " " << l*(l+1)*analysis2.Cl(l, nu, nu, 0,0,0)/(2*model2.pi) << endl;
+        double k = 0.02;
+        outfile2 << l << " " << l*(l+1)*analysis.Cl(l, k, 0.92, 0,0,0)/(2*model2.pi) << " " <<\
+            l*(l+1)*analysis2.Cl(l, k, 0.92, 0,0,0)/(2*model2.pi) << endl;
         
     }
     outfile2.close();
+    */
     /*
     ofstream outfile3("Cls_l5_nu65.dat");
     double cl_ref = analysis2.Cl(5, 65, 65, 0,0,0);

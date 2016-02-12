@@ -45,7 +45,6 @@ class FisherInterface {
         vector<string> model_param_keys; 
         bool noise, foreground;
         double xstepsize;
-
 };
 
 class Fisher1 : public FisherInterface {
@@ -72,8 +71,6 @@ class Fisher1 : public FisherInterface {
         /* Variables */
         bool rsd, limber;
         double kmin, kmax;
-
-
 };
 
 class Fisher_Santos : public FisherInterface {
@@ -98,6 +95,4 @@ class Fisher_Santos : public FisherInterface {
 
         /* Variables */
         bool rsd, limber;
-
-
 };
