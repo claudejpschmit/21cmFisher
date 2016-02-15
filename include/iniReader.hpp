@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 
+
 using namespace std;
 
 enum ModelAnalysis
@@ -31,18 +32,27 @@ class IniReader
         vector<string> giveParamKeys();
         map<string,double> giveRunParams();
         vector<ModelAnalysis> giveModelAndAnalysis();
+        string giveMatrixPath();
+        string giveFisherPath();
+
     private:
         void setBasicParams();
         void setParamNames();
         void parse();
         void stripComments();
+        void genOutputFolders();
+        void cpToOutput();
         vector<string> determineParamKeysToVary();
         map<string,double> determineRunParams();
         vector<ModelAnalysis> determineMA();
+        string determineMatrixPath();
+        string determineFisherPath();
             
         // Note: keys - parameter keys to be varied
         //       paramNames - names of the parameters in outputParams.
         vector<string> iniFileContent, keys, paramNames;
         map<string,double> basicParams, outputParams;
         vector<ModelAnalysis> MA;
+        string matPath, fishPath;
+        string iniFilename;
 };

@@ -50,12 +50,13 @@ INCLUDES += -I../$(LIBRARIES)GLOBAL21CM_include
 
 # These lines seem to be unnecessary, but I leave them in anyways.
 INCLUDES += -I/usr/include/boost
-LINKER = -L/usr/include/boost #-lboost_filesystem
+LINKER = #-L/usr/include/boost 
+BOOSTFLAGS = -lboost_filesystem -lboost_system
+
 
 # Linking GSL
 INCLUDES += -I/usr/include
 LINKER += -L/usr/lib -lgsl -lgslcblas
-
 
 # eventually update flags for including HyRec
 ifneq ($(HYREC),)
@@ -102,7 +103,7 @@ analyse: $(ALGLIB) $(ANALYSE)
 #calc: $(SRC) $(SOURCE) $(TOOLS) $(OUTPUT) $(EXTERNAL) $(ALGLIB) $(GLOBAL21CM) $(ODE) $(MAIN) 
 #	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o calc $(addprefix build/, $(#notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 calc: $(RESTRUCT) $(MAIN) $(ALGLIB) $(GLOBAL21CM)
-	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o calc $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
+	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o calc $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(BOOSTFLAGS)
 
 sortFiles: $(SORTING)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OPTFLAG_CLASS) $(OMPFLAG) $(LDFLAG) $(LINKER) -o sortFiles $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)

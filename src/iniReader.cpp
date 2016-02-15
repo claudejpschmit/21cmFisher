@@ -2,8 +2,14 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include "stdafx.h"
+#include <string.h>
+#include "boost/filesystem.hpp"
+#include "Log.hpp"
 
 IniReader::IniReader(string iniFilename)
+    :
+        iniFilename(iniFilename)
 {
     ifstream iniFile(iniFilename);
     string line;
@@ -30,6 +36,38 @@ void IniReader::parse()
     keys = determineParamKeysToVary();
     MA = determineMA();
     outputParams = determineRunParams();
+    matPath = determineMatrixPath();
+    fishPath = determineFisherPath();
+    genOutputFolders();
+    cpToOutput();
+}
+
+void IniReader::genOutputFolders()
+{
+    boost::filesystem::path p1(matPath);
+    boost::filesystem::path p2(fishPath);
+    if (!boost::filesystem::create_directory(p1))
+        log<LOG_ERROR>("Path: %1% already exists.") % matPath;
+    if (!boost::filesystem::create_directory(p2))
+        log<LOG_ERROR>("Path: %1% already exists.") % fishPath;
+}
+
+void IniReader::cpToOutput()
+{
+    // Copies the params.ini file to both the fisher and matrix 
+    // output directories.
+    boost::filesystem::path filepath(iniFilename);
+    
+    stringstream outpath_mat, outpath_fish;
+    outpath_mat << matPath << "/PARAMS.INI.dat";
+    outpath_fish << fishPath << "/PARAMS.INI.dat";
+    
+    boost::filesystem::path p1(outpath_mat.str());
+    if (!exists(p1))
+        boost::filesystem::copy(filepath, p1);
+    boost::filesystem::path p2(outpath_fish.str());
+    if (!exists(p2))
+        boost::filesystem::copy(filepath, p2);
 }
 
 vector<ModelAnalysis> IniReader::determineMA()
@@ -83,7 +121,6 @@ vector<ModelAnalysis> IniReader::determineMA()
     MAfound.push_back(M);
     MAfound.push_back(A);
     return MAfound;
-   
 }
 
 vector<string> IniReader::giveParamKeys()
@@ -99,6 +136,16 @@ map<string,double> IniReader::giveRunParams()
 vector<ModelAnalysis> IniReader::giveModelAndAnalysis()
 {
     return MA;
+}
+
+string IniReader::giveMatrixPath()
+{
+    return matPath;
+}
+
+string IniReader::giveFisherPath()
+{
+    return fishPath;
 }
 
 map<string,double> IniReader::determineRunParams()
@@ -166,6 +213,38 @@ void IniReader::setParamNames()
         temp.push_back(it->first);
     }
     paramNames = temp;
+}
+
+string IniReader::determineMatrixPath()
+{
+    string value;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("path_matrices_Cl") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> value;
+            break;
+        }
+    }
+    return value;
+}
+
+string IniReader::determineFisherPath()
+{
+    string value;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("path_fisher") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> value;
+            break;
+        }
+    }
+    return value;
 }
 
 void IniReader::setBasicParams()

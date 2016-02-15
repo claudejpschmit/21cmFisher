@@ -23,6 +23,9 @@ log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
 int main (int argc, char* argv[])
 {
+    /*
+     * Parsing .ini file
+     */
     string iniFilename;
     if (argc < 2)
     {
@@ -35,10 +38,15 @@ int main (int argc, char* argv[])
     IniReader parser(iniFilename);
     map<string,double> params = parser.giveRunParams();
     vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0; 
-    
+    /*
+     * Defining analysis methods according to the .ini file.
+     */
     ModelInterface* model; 
     switch (parser.giveModelAndAnalysis()[0])
     {
@@ -73,8 +81,10 @@ int main (int argc, char* argv[])
             break;
     }
     
-    cout << model->T21_interp(19, 0) << endl;
-
+    /*
+     * Reminder, model, analysis & fisher are pointers, so they need to be called as such.
+     * eg. cout << model->T21_interp(19, 0) << endl;
+     */
     params.insert(pair<string,double>("kmax",1));//1
     params.insert(pair<string,double>("zmax",20));
     params.insert(pair<string,double>("zsteps",54));//100
