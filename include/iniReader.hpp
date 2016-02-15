@@ -1,10 +1,17 @@
 #pragma once
 
+/*************************************************************
+ * This header file contains the class iniReader.            *
+ *                                                           *  
+ * iniReader parses the *.ini files for the 21cmFisher code. *
+ *                                                           *
+ * Claude Schmit 15/2/16                                     *
+ *************************************************************/
+
 #include <fstream>
 #include <string>
 #include <map>
 #include <vector>
-
 
 using namespace std;
 
