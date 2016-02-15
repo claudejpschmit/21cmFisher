@@ -46,9 +46,9 @@ void IniReader::genOutputFolders()
 {
     boost::filesystem::path p1(matPath);
     boost::filesystem::path p2(fishPath);
-    if (!boost::filesystem::create_directory(p1))
+    if (!boost::filesystem::create_directories(p1))
         log<LOG_ERROR>("Path: %1% already exists.") % matPath;
-    if (!boost::filesystem::create_directory(p2))
+    if (!boost::filesystem::create_directories(p2))
         log<LOG_ERROR>("Path: %1% already exists.") % fishPath;
 }
 
