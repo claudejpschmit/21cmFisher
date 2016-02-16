@@ -18,6 +18,8 @@ using namespace std;
 // 2 LOG_BASIC
 // 3 LOG_VERBOSE
 // 4 LOG_DEBUG
+//
+// ! This is now overwritten by the level given in the .ini file.
 
 log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
@@ -34,12 +36,15 @@ int main (int argc, char* argv[])
     }
     else
         iniFilename = argv[1];
-
+    
+    // The parsing of the .ini file is done in the object construction.
     IniReader parser(iniFilename);
+    // Information from .ini is stored in local variables.
     map<string,double> params = parser.giveRunParams();
     vector<string> keys = parser.giveParamKeys();
     string matrixPath = parser.giveMatrixPath();
     string fisherPath = parser.giveFisherPath();
+    GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
 
     int Pk_index = 0;
     int Tb_index = 0;

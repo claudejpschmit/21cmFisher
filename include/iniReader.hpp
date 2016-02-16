@@ -12,6 +12,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include "Log.hpp"
 
 using namespace std;
 
@@ -39,6 +40,7 @@ class IniReader
         vector<string> giveParamKeys();
         map<string,double> giveRunParams();
         vector<ModelAnalysis> giveModelAndAnalysis();
+        log_level_t giveVerbosity();
         string giveMatrixPath();
         string giveFisherPath();
 
@@ -52,6 +54,7 @@ class IniReader
         vector<string> determineParamKeysToVary();
         map<string,double> determineRunParams();
         vector<ModelAnalysis> determineMA();
+        log_level_t determineVerbosity();
         string determineMatrixPath();
         string determineFisherPath();
             
@@ -60,6 +63,7 @@ class IniReader
         vector<string> iniFileContent, keys, paramNames;
         map<string,double> basicParams, outputParams;
         vector<ModelAnalysis> MA;
+        log_level_t verbosity;
         string matPath, fishPath;
         string iniFilename;
 };

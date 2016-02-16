@@ -38,6 +38,7 @@ void IniReader::parse()
     outputParams = determineRunParams();
     matPath = determineMatrixPath();
     fishPath = determineFisherPath();
+    verbosity = determineVerbosity();
     genOutputFolders();
     cpToOutput();
 }
@@ -138,6 +139,11 @@ vector<ModelAnalysis> IniReader::giveModelAndAnalysis()
     return MA;
 }
 
+log_level_t IniReader::giveVerbosity()
+{
+    return verbosity;
+}
+
 string IniReader::giveMatrixPath()
 {
     return matPath;
@@ -184,6 +190,39 @@ vector<string> IniReader::determineParamKeysToVary()
         }
     }
     return keysFound;
+}
+
+log_level_t IniReader::determineVerbosity()
+{
+    log_level_t verboFound;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("verbosity") != string::npos) 
+        {
+            string a, b, value;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> value;
+            
+            if (value == "NOTHING")
+                verboFound = LOG_NOTHING;
+            else if (value == "ERROR")
+                verboFound = LOG_ERROR;  
+            else if (value == "BASIC")
+                verboFound = LOG_BASIC;   
+            else if (value == "VERBOSE")
+                verboFound = LOG_VERBOSE; 
+            else if (value == "DEBUG")
+                verboFound = LOG_DEBUG;
+            else
+            {
+                log<LOG_ERROR>("Parsing ERROR: verbosity level %1% not understood.") % value;
+                log<LOG_ERROR>("               verbosity level assumed to be BASIC!");
+                verboFound = LOG_BASIC;
+            }
+            break;
+        }
+    }
+    return verboFound;
 }
 
 void IniReader::stripComments()
