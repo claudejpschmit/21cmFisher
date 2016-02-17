@@ -41,6 +41,7 @@ void IniReader::parse()
     verbosity = determineVerbosity();
     genOutputFolders();
     cpToOutput();
+    
 }
 
 void IniReader::genOutputFolders()
