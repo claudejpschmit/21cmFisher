@@ -56,20 +56,21 @@ GLOBAL21CM = dnumrecipes.o dcomplex.o dcosmology.o astrophysics.o twentyonecm.o 
 MAIN = Main.o
 ANALYSE = Analyser.o Analyse.o
 SORTING = SortFiles.o
+INIREADER = iniReader.o
 
 SOURCE = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o\
 		 Fisher.o Fisher1.o Fisher_Santos.o Integrator.o CAMB_interface.o\
-		 ARES_interface.o Global21cmInterface.o iniReader.o
+		 ARES_interface.o Global21cmInterface.o
 
 # ---------------------------------------------------------------------------------------------------------------#
 
 all: calc analyse sortFiles 
 
-analyse: $(ALGLIB) $(ANALYSE)
+analyse: $(ALGLIB) $(INIREADER) $(ANALYSE) 
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
-		-o analyse $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
+		-o analyse $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(BOOSTFLAGS)
 
-calc: $(SOURCE) $(MAIN) $(ALGLIB) $(GLOBAL21CM)
+calc: $(SOURCE) $(INIREADER) $(MAIN) $(ALGLIB) $(GLOBAL21CM)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o calc $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(BOOSTFLAGS)
 

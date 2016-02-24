@@ -7,6 +7,7 @@
 #include "interpolation.h"
 #include "Analyser.hpp"
 #include "Log.hpp"
+#include "iniReader.hpp"
 
 #define SANTOS false
 #define ERROR_ELLIPSES true
@@ -20,6 +21,36 @@ log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_VERBOSE;
 
 int main(int argc, char* argv[])
 {
+    bool ERROR = false;
+    /*
+     * Parsing .ini file
+     */
+    string iniFilename;
+    if (argc < 2)
+    {
+        log<LOG_ERROR>("--- No .ini file provided. Standard ./analysis.ini is used. ---");
+        iniFilename = "analysis.ini";
+    }
+    else
+        iniFilename = argv[1];
+
+    // Initialize inireader.
+    IniReaderAnalysis parser(iniFilename);
+    // Information from .ini is stored in local variables.
+    GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
+        
+    /*
+    bool giveEllipsesRequired();
+    bool giveShowMatrix();
+    bool giveShowInverse();
+    */
+
+    Fisher_return_pair finv;
+    Analyser analyse(&parser);
+    
+    finv = analyse.build_Fisher_inverse();
+    analyse.draw_error_ellipses(finv);
+    /*
     int run_number;
     vector<string> keys;
     if (argc < 2){
@@ -64,7 +95,7 @@ int main(int argc, char* argv[])
         finv = analyse.build_Fisher_inverse(keys, prefix.str(), "output/Fisher/");
     }
     //cout << finv.matrix.i() << endl;
-    
+    */
     return 0;
 }
 

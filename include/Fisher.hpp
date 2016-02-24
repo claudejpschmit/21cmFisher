@@ -41,16 +41,16 @@ class FisherInterface {
         /* Variables */
         AnalysisInterface* analysis;
         map<string,double> fiducial_params, var_params;
-        ofstream Fl_file;
         vector<string> model_param_keys; 
         bool noise, foreground;
         double xstepsize;
+        string matrixPath, fisherPath;
 };
 
 class Fisher1 : public FisherInterface {
     public:
-        Fisher1(AnalysisInterface *analysis, string Fl_filename,\
-                vector<string> param_keys_considered);
+        Fisher1(AnalysisInterface *analysis, vector<string> param_keys_considered,\
+                string matrixPath, string fisherPath);
         void calc_Fls();
 
     private:
@@ -75,8 +75,8 @@ class Fisher1 : public FisherInterface {
 
 class Fisher_Santos : public FisherInterface {
     public:
-        Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
-                vector<string> param_keys_considered);
+        Fisher_Santos(AnalysisInterface *analysis, vector<string> param_keys_considered,\
+                string matrixPath, string fisherPath);
         void calc_Fls();
 
     private:

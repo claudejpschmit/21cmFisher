@@ -224,7 +224,7 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
                 params["n_s"] == Pkz_interpolators[i].n_s &&\
                 params["A_s"] == Pkz_interpolators[i].A_s &&\
                 params["tau_reio"] == Pkz_interpolators[i].tau &&\
-                params["omega_lambda"] == Pkz_interpolators[i].omega_lambda ){
+                params["omega_lambda"] == Pkz_interpolators[i].omega_lambda){
 
             log<LOG_VERBOSE>("Found precalculated Pkz");
             do_calc = false;
@@ -251,7 +251,6 @@ void Model_CAMB_ARES::update_Pkz(map<string,double> params, int *Pk_index)
             interp.omega_lambda = 0;
         else
             interp.omega_lambda = params["omega_lambda"];
-
 
         CAMB->call(params);    
         vector<double> vk = CAMB->get_k_values();

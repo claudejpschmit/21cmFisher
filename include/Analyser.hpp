@@ -1,9 +1,11 @@
 #include "Helper.hpp"
+#include "iniReader.hpp"
 #include <armadillo>
 #include <fstream>
 #include <string>
 #include "stdafx.h"
 #include "interpolation.h"
+#include <map>
 
 using namespace alglib;
 using namespace arma;
@@ -14,8 +16,12 @@ class Analyser {
 
         /**
          *  Standard Constructor 
+         *
+         *  @param parser is a pointer to a IniReaderAnalysis object, which 
+         *              contains all the information of the .ini file and thus 
+         *              how the analyser should behave.
          */
-        Analyser(bool priors);
+        Analyser(IniReaderAnalysis* parser);
         
         /**
          *  Standard Destructor
@@ -32,24 +38,15 @@ class Analyser {
          * Finally, the resulting matrix F is inverted using a pseudo inverse
          * and returned.
          *
-         * @param param_keys is a vector containing the parameter keys from 
-         *              which the Fisher matrix should be build. 
-         * @param run_prefix contains a string of a two digit number, eg "01",
-         *              identifying the run to be analysed. This is the 
-         *              prefix files containing F_l modes must have.
-         * @param path contains a string containing the relative path to the
-         *              Fisher files from the executable.
          * @return Returns object containing a matrix of the values of the 
          *              full inverse Fisher matrix. The returned object also
          *              contains a matrix with parameter keys to identify
          *              which element of F^-1 corresponds to which parameter
          *              pair.
          */
-        Fisher_return_pair build_Fisher_inverse(vector<string> param_keys,\
-                string run_prefix, string path);
+        Fisher_return_pair build_Fisher_inverse();
         
-        Fisher_return_pair build_Fisher_inverse_Santos(vector<string> param_keys,\
-                string run_prefix, string path);
+        //Fisher_return_pair build_Fisher_inverse_Santos();
 
         /**
          * Function to draw 1sigma and 2sigma error ellipses on triangular grid
@@ -66,8 +63,7 @@ class Analyser {
          * @param path contains a string containing the relative path to the
          *              RUN_INFO.dat file from the executable.
          */
-        void draw_error_ellipses(Fisher_return_pair finv,\
-                vector<string> param_keys, int run_number, string path);
+        void draw_error_ellipses(Fisher_return_pair finv);
 
     private:
 
@@ -89,9 +85,10 @@ class Analyser {
          *              rotation angle and center point of the error ellipse
          *              for a given parameter pair. 
          */
-        Ellipse find_error_ellipse(Fisher_return_pair finv, string param1,\
-                string param2, int run_number, string path);
+        Ellipse find_error_ellipse(Fisher_return_pair finv, string param1, string param2);
 
         vector<string> params_done;
-        bool priors;
+        
+        // local parser
+        IniReaderAnalysis* parser;
 };

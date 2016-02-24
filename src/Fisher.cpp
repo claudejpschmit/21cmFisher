@@ -98,6 +98,8 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
     ////////
     // format is Cla_param-a_l_krange[min]_krange[max]_krange-steps_zmin_zmax_suffix.bin 
     ////////
+    
+    // Being overworked so that each run is only taking the matrices stored in a folder...
     bool FG = false;
     for (int i = 0; i < 16; i++) 
     {
@@ -107,15 +109,13 @@ mat FisherInterface::Cl_derivative_matrix(int l, string param_key, int *Pk_index
         }
     }
 
-    if (TESTMATRIX){
-        prefix = "output/matrices_test/Cla_";
-    }
-    else {
-        prefix = "output/matrices/Cla_";
-    }
-    matrix_filename << prefix << param_key << "_"<< l << "_" <<\
-        range[0] << "_" << range[range.size()-1] << "_"<< range.size() << "_"<<\
-        fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
+    string slash;
+    if (matrixPath.back() == '/')
+        slash = "";
+    else
+        slash = "/";
+    matrix_filename << matrixPath << slash << "Cla_" << param_key << "_" <<\
+        l << "_" << suffix << ".bin";
 
     bool debug = false;
     
@@ -229,21 +229,18 @@ mat FisherInterface::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, 
     // Remove the lines below and the if/else statement when not reading/writing matrix
     stringstream matrix_filename;
     string suffix = generate_matrix_file_suffix();
-    string prefix;
 
     ////////
     // format is Cl_l_krange[min]_krange[max]_krange-steps_zmin_zmax_suffix.bin 
     ////////
-
-    if (TESTMATRIX){
-        prefix = "output/matrices_test/Cl_";
-    }
-    else {
-        prefix = "output/matrices/Cl_";
-    }
-    matrix_filename << prefix << l << "_"<<\
-        range[0] << "_" << range[range.size()-1] << "_"<< range.size() << "_"<<\
-        fiducial_params["zmin"] << "_"<< fiducial_params["zmax"] << "_" << suffix << ".bin";
+    
+    string slash;
+    if (matrixPath.back() == '/')
+        slash = "";
+    else
+        slash = "/";
+    
+    matrix_filename << matrixPath << slash << "Cl_" << l << "_" << suffix << ".bin";
     if (check_file(matrix_filename.str()))
     {
         log<LOG_VERBOSE>("///reading matrix from file///");

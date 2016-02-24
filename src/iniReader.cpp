@@ -7,6 +7,10 @@
 #include "boost/filesystem.hpp"
 #include "Log.hpp"
 
+/////////////////////
+// IniReader Class //
+/////////////////////
+
 IniReader::IniReader(string iniFilename)
     :
         iniFilename(iniFilename)
@@ -26,6 +30,9 @@ IniReader::IniReader(string iniFilename)
     parse();
 }
 
+IniReader::IniReader()
+{}
+
 IniReader::~IniReader()
 {
 }
@@ -41,7 +48,6 @@ void IniReader::parse()
     verbosity = determineVerbosity();
     genOutputFolders();
     cpToOutput();
-    
 }
 
 void IniReader::genOutputFolders()
@@ -49,9 +55,9 @@ void IniReader::genOutputFolders()
     boost::filesystem::path p1(matPath);
     boost::filesystem::path p2(fishPath);
     if (!boost::filesystem::create_directories(p1))
-        log<LOG_ERROR>("Path: %1% already exists.") % matPath;
+        log<LOG_DEBUG>("Path: %1% already exists.") % matPath;
     if (!boost::filesystem::create_directories(p2))
-        log<LOG_ERROR>("Path: %1% already exists.") % fishPath;
+        log<LOG_DEBUG>("Path: %1% already exists.") % fishPath;
 }
 
 void IniReader::cpToOutput()
@@ -173,7 +179,14 @@ map<string,double> IniReader::determineRunParams()
             }
         }
     }
-      
+
+    // If omeega_lambda should not be used, it should be set to -1.
+    // So in that case it will be erased from the parameter list.
+    if (temp["omega_lambda"] == -1) 
+    {
+        log<LOG_VERBOSE>("Omega_lambda is set to -1, so will calculated.");
+        temp.erase("omega_lambda");
+    }
     return temp;
 }
 
@@ -237,14 +250,6 @@ void IniReader::stripComments()
     iniFileContent = newContent;
 }
 
-void IniReader::seeContents()
-{
-    for (unsigned int i = 0; i < iniFileContent.size(); i++)
-    {
-        cout << iniFileContent[i] << endl;
-    }
-}
-
 void IniReader::setParamNames()
 {
     vector<string> temp;
@@ -304,6 +309,8 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("kmax",2));
     basicParams.insert(pair<string,double>("zmax_interp",10));
     basicParams.insert(pair<string,double>("w_DE",-1));
+    basicParams.insert(pair<string,double>("omega_lambda",0.76));
+
 
     basicParams.insert(pair<string,double>("100*theta_s",1.04));
     basicParams.insert(pair<string,double>("A_s",2.42e-9));
@@ -358,4 +365,181 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("Santos_interval_size", 5));
 }
 
+/////////////////////////////
+// IniReaderAnalysis Class //
+/////////////////////////////
+
+IniReaderAnalysis::IniReaderAnalysis(string iniFilename)
+{
+    this->iniFilename = iniFilename;
+    ifstream iniFile(iniFilename);
+    string line;
+    while(getline(iniFile,line))
+    {
+        if (!line.empty())
+            iniFileContent.push_back(line); 
+    }
+    iniFile.close();
+    
+    //generates information from ini file.
+    parse();
+}
+
+IniReaderAnalysis::~IniReaderAnalysis()
+{}
+
+void IniReaderAnalysis::parse()
+{
+    stripComments();
+    ellipsesRequired = determineEllipsesRequired();
+    MA = determineMA();
+    keys = determineParamKeysToVary();
+    fishPath = determineFisherPath();
+    verbosity = determineVerbosity();
+    usePriors = determineUsePriors();
+    if (usePriors)
+        priors = determinePriors();
+    usePseudoInv = determineUsePseudoInv();
+    
+}
+
+bool IniReaderAnalysis::determineEllipsesRequired()
+{
+    bool result = false;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("ellipses") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> result;
+            break;
+        }
+    }
+    return result;
+}
+
+bool IniReaderAnalysis::giveEllipsesRequired()
+{
+    return ellipsesRequired;
+}
+
+bool IniReaderAnalysis::determineShowMatrix()
+{
+    bool result = false;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("show_matrix") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> result;
+            break;
+        }
+    }
+    return result;
+}
+
+bool IniReaderAnalysis::giveShowMatrix()
+{
+    return showMatrix;
+}
+
+bool IniReaderAnalysis::determineShowInverse()
+{
+    bool result = false;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("show_inverse") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> result;
+            break;
+        }
+    }
+    return result;
+}
+
+bool IniReaderAnalysis::giveShowInverse()
+{
+    return showInverse;
+}
+
+bool IniReaderAnalysis::determineUsePriors()
+{
+    bool result = false;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("use_priors") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> result;
+            break;
+        }
+    }
+    return result;
+}
+
+bool IniReaderAnalysis::giveUsePriors()
+{
+    return usePriors;
+}
+
+map<string,double> IniReaderAnalysis::determinePriors()
+{
+    map<string,double> result;
+    vector<string> keys;
+    vector<double> vals;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("prior_key_") != string::npos) 
+        {
+            string a, b, key;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> key;
+            keys.push_back(key);
+        }
+        
+        if (iniFileContent[i].find("prior_value_") != string::npos) 
+        {
+            string a, b;
+            double value;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> value;
+            vals.push_back(value);
+        }
+    }
+    for (unsigned int i = 0; i < keys.size(); i++)
+        result.insert(pair<string, double>(keys[i],vals[i]));
+
+    return result;
+}
+
+map<string,double> IniReaderAnalysis::givePriors()
+{
+    return priors;
+}
+
+bool IniReaderAnalysis::determineUsePseudoInv()
+{
+    bool result = false;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("pseudo_inverse") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> result;
+            break;
+        }
+    }
+    return result;
+}
+
+bool IniReaderAnalysis::giveUsePseudoInv()
+{
+    return usePseudoInv;
+}
 

@@ -6,16 +6,15 @@
 
 using namespace alglib;
 
-Analyser::Analyser(bool priors)
-    :
-        priors(priors)
-{}
+Analyser::Analyser(IniReaderAnalysis* parser)
+{
+    this->parser = parser;
+}
 
 Analyser::~Analyser()
 {}
 
-Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
-        string run_prefix, string path)
+Fisher_return_pair Analyser::build_Fisher_inverse()
 {
     Fisher_return_pair RESULT;
     struct F_values 
@@ -24,18 +23,18 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
         double value;
     };
     vector<F_values> F_ab;
-
+    vector<string> param_keys = parser->giveParamKeys();
     int num_params = param_keys.size();
     for (int i = 0; i < num_params; i++)
     {
         for (int j = i; j < num_params; j++)
         {
             //generate the relevant filenames
-            string filename = path + run_prefix + "_Fisher_" + param_keys[i] +\
+            string filename = parser->giveFisherPath() + "/Fl_" + param_keys[i] +\
                               "_" + param_keys[j] + ".dat";
             ifstream f(filename);
             if (!f.is_open())
-                filename = path + run_prefix + "_Fisher_" + param_keys[j] +\
+                filename = parser->giveFisherPath() + "/Fl_" + param_keys[j] +\
                            "_" + param_keys[i] + ".dat";
 
             //First order file
@@ -107,6 +106,18 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
     vector<vector<vector<string>>> indecies;
     //size of the matrix is
     //int n = (-1+sqrt(1+8*         ofstream filenames_Fl.size()))/2;
+    
+    // Some prior handling here
+    vector<string> priorParams;
+    if (parser->giveUsePriors())
+    {
+        map<string,double> priors = parser->givePriors();
+        for (map<string,double>::iterator it = priors.begin(); it != priors.end(); ++it)
+        {
+            priorParams.push_back(it->first);
+        }
+    }
+    
     mat F = randu<mat>(num_params,num_params);
     //fill the F matrix.
     for (int i = 0; i < num_params; i++)
@@ -134,8 +145,45 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
         }
         indecies.push_back(row);
     }
+    // adding priors if necessary.
+    // creating new variable so that both might be used for testing...
+    mat F_priors_included = F;
+    if (parser->giveUsePriors())
+    {
+        map<string,double> priors = parser->givePriors();
+        for (int i = 0; i < num_params; i++)
+        {
+            for (int j = 0; j < num_params; j++)
+            {
+                for (unsigned int k = 0; k < priorParams.size(); k++)
+                {
+                    if (indecies[i][j][0] == priorParams[k] && indecies[i][j][1] == priorParams[k])
+                    {
+                        double p = priors[priorParams[k]];
+                        F_priors_included(i,j) += p;
+                        log<LOG_DEBUG>("Priors added: F_prior(%1%,%2%) = %3%.") % i % j % p;
+                    }
+                }
+            }
+        }
+    }
+   
+    cout << F << endl;
+    cout << F_priors_included << endl;
+    if (parser->giveUsePseudoInv())
+    {
+        // here using penrose pseudo inverse.
+        RESULT.matrix = pinv(F_priors_included);
+        log<LOG_DEBUG>("Pseudo Inverse used for Fisher inversion.");
+    }
+    else
+    {
+        // here using standard inverse.
+        RESULT.matrix = F_priors_included.i();
+        log<LOG_DEBUG>("Standard Inverse used for Fisher inversion.");
+    }
+    
     bool ERROR = false;
-    RESULT.matrix = pinv(F);
     for (int i = 0; i < num_params; i++)
         if (RESULT.matrix(i,i) < 0)
             ERROR = true;
@@ -150,8 +198,10 @@ Fisher_return_pair Analyser::build_Fisher_inverse(vector<string> param_keys,\
     return RESULT;
 }
 
-Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_keys,\
-        string run_prefix, string path)
+
+//TODO: I'm pretty sure that this function is now unecessary
+/*
+Fisher_return_pair Analyser::build_Fisher_inverse_Santos()
 {
     Fisher_return_pair RESULT;
     struct F_values 
@@ -160,18 +210,18 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         double value;
     };
     vector<F_values> F_ab;
-
+    vector<string> param_keys = parser->giveParamKeys();
     int num_params = param_keys.size();
     for (int i = 0; i < num_params; i++)
     {
         for (int j = i; j < num_params; j++)
         {
             //generate the relevant filenames
-            string filename = path + param_keys[i] +\
+            string filename = parser->giveFisherPath() + param_keys[i] +\
                               "_" + param_keys[j] + ".dat";
             ifstream f(filename);
             if (!f.is_open())
-                filename = path + param_keys[j] +\
+                filename = parser->giveFisherPath() + param_keys[j] +\
                            "_" + param_keys[i] + ".dat";
 
             //First order file
@@ -340,7 +390,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
                 cout << indecies[i][j][0] << "_" << indecies[i][j][1] << "    ";
             cout << endl;
             cout << endl;
-        }*/
+        }* /
         ofstream param_name_file("params.tmp.dat");
         for (int j = 0; j < num_params; j++)
             param_name_file << indecies[0][j][1] << endl;
@@ -675,13 +725,11 @@ Fisher_return_pair Analyser::build_Fisher_inverse_Santos(vector<string> param_ke
         
     }
 
-
     RESULT.matrix_indecies = indecies;
     return RESULT;
 }
-
-Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
-        string param2, int run_number, string path)
+*/
+Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, string param2)
 {
     int index1, index2;
     index1 = -1;
@@ -712,6 +760,7 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
             sqrt(sig_xx);
         params_done.push_back(finv.matrix_indecies[index1][index1][0]);
     }
+
     sig_xy = finv.matrix(index1, index2);
     sig_yy = finv.matrix(index2, index2);
     show_marginal = true;
@@ -740,47 +789,19 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
     //theta is in radiants
     ellipse.theta = 0.5 * atan(2.0 * sig_xy/(sig_xx - sig_yy));
     stringstream runinfo_name;
-    runinfo_name << path << "RUN_INFO.dat";
-    ifstream runinfo(runinfo_name.str());
-    // find line ### run number bla ###
-    //   while the line is not ### run number bla+1 ### or endoffile,
-    //   check for the parameter keys and read the value into cx and cy.
-    stringstream start_line, end_line;
-    bool goodlines = false;
-    start_line <<  "### run number " << run_number << " ###";
-    end_line <<  "### run number " << run_number + 1 << " ###";
-    while (runinfo.good())
-    {   
-        string line;
-        getline(runinfo, line);
-        if (line == start_line.str())
-            goodlines = true;
-        if (line == end_line.str())
-            goodlines = false;
-        if (goodlines)
-        {
-            if (line.find(param1) != string::npos)
-            {
-                string tmp1;
-                char tmp2;
-                double x;
-                stringstream buff(line);
-                buff >> tmp1 >> tmp2 >> x;
-                ellipse.cx = x;
-            }
-            if (line.find(param2) != string::npos)
-            {
-                string tmp1;
-                char tmp2;
-                double y;
-                stringstream buff(line);
-                buff >> tmp1 >> tmp2 >> y;
-                ellipse.cy = y;
-            }
+   
+    // Using the stored ini file to get basic parameter information.
+    // This is necessary to get center points.
+    stringstream tmp;
+    tmp << parser->giveFisherPath() << "/PARAMS.INI.dat"; 
+    string runIniFile = tmp.str();
+    IniReader RunParser(runIniFile);
+    ellipse.cx = RunParser.giveRunParams()[param1];
+    ellipse.cy = RunParser.giveRunParams()[param2];
+    
+    cout << param1 << " " << ellipse.cx << endl;
+    cout << param2 << " " << ellipse.cy << endl;
 
-        }
-    }
-    runinfo.close();  
     ellipse.sigma_x = sqrt(sig_xx);
     ellipse.sigma_y = sqrt(sig_yy);
 
@@ -800,16 +821,14 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1,\
         }
     }
 
-
-
     return ellipse;
 }
 
-void Analyser::draw_error_ellipses(Fisher_return_pair finv,\
-        vector<string> param_keys, int run_number, string path)
+void Analyser::draw_error_ellipses(Fisher_return_pair finv)
 {
     // first need to know how many parameters we have,
     // the grid size is equal to that
+    vector<string> param_keys = parser->giveParamKeys();
     int num_params = param_keys.size();
     // for each parameter pair we need to create an ellipse 
     vector<Ellipse> error_ellipses;
@@ -819,8 +838,7 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv,\
         {
             string param1 = param_keys[i];
             string param2 = param_keys[j];
-            Ellipse ellipse = find_error_ellipse(finv, param2, param1,\
-                    run_number, path);
+            Ellipse ellipse = find_error_ellipse(finv, param2, param1);
             error_ellipses.push_back(ellipse);
         }
     }

@@ -1,8 +1,8 @@
 #include "Fisher.hpp"
 #include "Log.hpp"
 
-Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
-                vector<string> param_keys_considered)
+Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, vector<string> param_keys_considered,\
+                string matrixPath, string fisherPath)
 {
     this->analysis = analysis;
     this->fiducial_params = analysis->model->give_fiducial_params(); 
@@ -21,8 +21,10 @@ Fisher_Santos::Fisher_Santos(AnalysisInterface *analysis, string Fl_filename,\
         noise = true;
     if (fiducial_params["foreground"] == 1.0)
         foreground = true;
-    Fl_file.open(Fl_filename);
     set_range_stepsize();
+    
+    this->matrixPath = matrixPath;
+    this->fisherPath = fisherPath;
 
     log<LOG_BASIC>("... Santos Fisher built ...");
 }
@@ -85,9 +87,14 @@ void Fisher_Santos::run(int lmin, int lstepsize, int n_points_per_thread, int n_
     //TODO: Figure out how to update Runinfo
     //string filename_prefix = update_runinfo(lmin, lmax, lstepsize, kstepsize);
     stringstream filename;
-    string filename_prefix = "output/Fisher_Santos/";
-    filename << filename_prefix;
-    
+    string slash;
+    if (fisherPath.back() == '/')
+        slash = "";
+    else
+        slash = "/";
+    filename << fisherPath << slash << "Fl_";
+    string filename_prefix = filename.str();
+
     // frequency range in MHz
     double interval_size = fiducial_params["Santos_interval_size"];
     //double freq_min = 60;

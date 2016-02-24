@@ -3,7 +3,8 @@
 
 
 // Constructor //
-Fisher1::Fisher1(AnalysisInterface* analysis, string Fl_filename, vector<string> param_keys_considered)
+Fisher1::Fisher1(AnalysisInterface* analysis, vector<string> param_keys_considered,\
+                string matrixPath, string fisherPath)
 {
     this->analysis = analysis;
     this->fiducial_params = analysis->model->give_fiducial_params(); 
@@ -31,8 +32,10 @@ Fisher1::Fisher1(AnalysisInterface* analysis, string Fl_filename, vector<string>
         limber = true;
     if (fiducial_params["foreground"] == 1.0)
         foreground = true;
-    
-    Fl_file.open(Fl_filename);
+
+    this->matrixPath = matrixPath;
+    this->fisherPath = fisherPath;
+
     log<LOG_BASIC>("... Fisher built ...");
 }
 
@@ -103,10 +106,15 @@ vector<double> Fisher1::set_range(int l, double xmin, double xmax)
 void Fisher1::F_fixed_stepsize(int lmin, int lstepsize, int n_points_per_thread, int n_threads)
 {
     int lsteps = n_points_per_thread * n_threads;
-    int lmax = fiducial_params["lmax"];
-    string filename_prefix = update_runinfo(lmin, lmax, lstepsize, xstepsize);
+    //string filename_prefix = update_runinfo(lmin, lmax, lstepsize, xstepsize);
     stringstream filename;
-    filename << filename_prefix;
+    string slash;
+    if (fisherPath.back() == '/')
+        slash = "";
+    else
+        slash = "/";
+    filename << fisherPath << slash << "Fl_";
+    string filename_prefix = filename.str();
 
     // now compute F_ab's (symmetric hence = F_ba's)
     for (int i = 0; i < model_param_keys.size(); i++) {

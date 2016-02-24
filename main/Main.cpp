@@ -2,6 +2,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <boost/version.hpp>
 
 #include "Log.hpp"
 #include "Model.hpp"
@@ -45,7 +46,7 @@ int main (int argc, char* argv[])
     string matrixPath = parser.giveMatrixPath();
     string fisherPath = parser.giveFisherPath();
     GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
-
+    bool ERROR = false;
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0; 
@@ -66,6 +67,7 @@ int main (int argc, char* argv[])
             break;
         default:
             log<LOG_ERROR>("!!!!! Critical Error: No model was defined !!!!!");
+            ERROR = true;
             break;
     }
     
@@ -75,21 +77,27 @@ int main (int argc, char* argv[])
     {
         case cosmo3D:
             analysis = new Cosmology3D(model);
-            fisher = new Fisher1(analysis, "test_output.dat", keys);
+            fisher = new Fisher1(analysis, keys, matrixPath, fisherPath);
             break;
         case tomography2D:
             analysis = new Tomography2D(model);
-            fisher = new Fisher_Santos(analysis, "test_output.dat", keys);
+            fisher = new Fisher_Santos(analysis, keys, matrixPath, fisherPath);
             break;
         default:
             log<LOG_ERROR>("!!!!! Critical Error: No analysis was defined !!!!!");
+            ERROR = true;
             break;
     }
-    
     /*
      * Reminder, model, analysis & fisher are pointers, so they need to be called as such.
      * eg. cout << model->T21_interp(19, 0) << endl;
      */
+
+    // Doing the work
+    if (!ERROR)
+        fisher->calc_Fls();
+
+    /*
     params.insert(pair<string,double>("kmax",1));//1
     params.insert(pair<string,double>("zmax",20));
     params.insert(pair<string,double>("zsteps",54));//100
@@ -127,7 +135,7 @@ int main (int argc, char* argv[])
     params.insert(pair<string,double>("RLy", 100));
     params.insert(pair<string,double>("omega_lambda", 0.76));
     params.insert(pair<string,double>("Santos_const_abg",1.0));
-
+    */
   
     /* vector<string> keys = {"gamma", "beta", "alpha", "RLy",\
         "ombh2", "omch2", "omega_lambda", "n_s",\
