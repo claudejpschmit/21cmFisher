@@ -39,17 +39,12 @@ int main(int argc, char* argv[])
     // Information from .ini is stored in local variables.
     GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
         
-    /*
-    bool giveEllipsesRequired();
-    bool giveShowMatrix();
-    bool giveShowInverse();
-    */
-
     Fisher_return_pair finv;
     Analyser analyse(&parser);
     
     finv = analyse.build_Fisher_inverse();
-    analyse.draw_error_ellipses(finv);
+    if (parser.giveEllipsesRequired())
+        analyse.draw_error_ellipses(finv);
     /*
     int run_number;
     vector<string> keys;
