@@ -397,6 +397,9 @@ void IniReaderAnalysis::parse()
     fishPath = determineFisherPath();
     verbosity = determineVerbosity();
     usePriors = determineUsePriors();
+    showMatrix = determineShowMatrix();
+    showInverse = determineShowInverse();
+    useInterpolation = determineUseInterpolation();
     if (usePriors)
         priors = determinePriors();
     usePseudoInv = determineUsePseudoInv();
@@ -541,5 +544,26 @@ bool IniReaderAnalysis::determineUsePseudoInv()
 bool IniReaderAnalysis::giveUsePseudoInv()
 {
     return usePseudoInv;
+}
+
+bool IniReaderAnalysis::determineUseInterpolation()
+{
+    bool result = false;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("use_interpolation") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> result;
+            break;
+        }
+    }
+    return result;
+}
+
+bool IniReaderAnalysis::giveUseInterpolation()
+{
+    return useInterpolation;
 }
 

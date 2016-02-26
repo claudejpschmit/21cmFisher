@@ -167,9 +167,39 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
             }
         }
     }
+    if (parser->giveShowMatrix())
+    {
+        ofstream param_name_file("params.tmp.dat");
+        for (int j = 0; j < num_params; j++)
+            param_name_file << indecies[0][j][1] << endl;
+        param_name_file.close();
+        
+        mat I = F_priors_included;
+        for (int i = 0; i < num_params; i++)
+            for (int j = 0; j < num_params; j++)
+                I(i,j) = F_priors_included(i,j)/\
+                         sqrt(F_priors_included(i,i)*F_priors_included(j,j));
+
+        ofstream outfile_Fisher("Fisher_matrix.tmp.dat");
+        for (int i = 0; i < num_params; i++)
+        {
+            for (int j = 0; j < num_params; j++)
+                outfile_Fisher << I(i,j) << " ";
+            outfile_Fisher << endl;
+        }
+        outfile_Fisher.close();
+        stringstream command_buff;
+        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat params.tmp.dat";
+        char* command = new char[command_buff.str().length() + 1];
+        strcpy(command, command_buff.str().c_str());
+        int r = system(command);
+        (void)r;
+        delete command;
+        r = system("rm Fisher_matrix.tmp.dat params.tmp.dat");
+        (void)r;
+    }
+
    
-    cout << F << endl;
-    cout << F_priors_included << endl;
     if (parser->giveUsePseudoInv())
     {
         // here using penrose pseudo inverse.
@@ -182,6 +212,39 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
         RESULT.matrix = F_priors_included.i();
         log<LOG_DEBUG>("Standard Inverse used for Fisher inversion.");
     }
+    
+    if (parser->giveShowInverse())
+    {
+        ofstream param_name_file("params.tmp.dat");
+        for (int j = 0; j < num_params; j++)
+            param_name_file << indecies[0][j][1] << endl;
+        param_name_file.close();
+        
+        mat I = RESULT.matrix;
+        for (int i = 0; i < num_params; i++)
+            for (int j = 0; j < num_params; j++)
+                I(i,j) = RESULT.matrix(i,j)/\
+                         sqrt(RESULT.matrix(i,i) * RESULT.matrix(j,j));
+
+        ofstream outfile_Fisher("Fisher_matrix.tmp.dat");
+        for (int i = 0; i < num_params; i++)
+        {
+            for (int j = 0; j < num_params; j++)
+                outfile_Fisher << I(i,j) << " ";
+            outfile_Fisher << endl;
+        }
+        outfile_Fisher.close();
+        stringstream command_buff;
+        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat params.tmp.dat";
+        char* command = new char[command_buff.str().length() + 1];
+        strcpy(command, command_buff.str().c_str());
+        int r = system(command);
+        (void)r;
+        delete command;
+        r = system("rm Fisher_matrix.tmp.dat params.tmp.dat");
+        (void)r;
+    }
+
     
     bool ERROR = false;
     for (int i = 0; i < num_params; i++)

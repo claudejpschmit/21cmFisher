@@ -206,6 +206,12 @@ class IniReaderAnalysis : public IniReader
          * Function returns whether pseudo-inverse should be used to invert Fisher matrix
          */
         bool giveUsePseudoInv();
+        
+        /**
+         * Function returns whether Interpolation between l values should be
+         * used or just the ones calculated.
+         */
+        bool giveUseInterpolation();
 
     private:
         
@@ -243,8 +249,14 @@ class IniReaderAnalysis : public IniReader
          * Uses iniFileContent to determine whether Pseudo inverse should be used to invert F.
          */
         bool determineUsePseudoInv();
+        
+        /**
+         * Uses iniFileContent to determine whether Pseudo inverse should be used to invert F.
+         */
+        bool determineUseInterpolation();
 
         /////////// Parameters
-        bool ellipsesRequired, showMatrix, showInverse, usePriors, usePseudoInv;
+        bool ellipsesRequired, showMatrix, showInverse, usePriors, usePseudoInv,\
+            useInterpolation;
         map<string,double> priors;  
 };

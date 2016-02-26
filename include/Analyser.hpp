@@ -55,11 +55,6 @@ class Analyser {
          *
          * @param finv contains a Fisher matrix return pair from which the 
          *              error ellipse information will be gained. 
-         * @param param_keys is a vector containing the parameter keys for
-         *              which ellipses should be drawn. 
-         * @param run_number is the run identifier necessary to find the 
-         *              centre point for the ellipse from the RUN_INFO
-         *              file.
          * @param path contains a string containing the relative path to the
          *              RUN_INFO.dat file from the executable.
          */
@@ -76,11 +71,6 @@ class Analyser {
          *              error ellipse information will be gained. 
          * @param param1 is the first parameter key for the ellipse.
          * @param param2 is the second parameter key for the ellipse.
-         * @param run_number is the run identifier necessary to find the 
-         *              centre point for the ellipse from the RUN_INFO
-         *              file.
-         * @param path contains a string containing the relative path to the
-         *              Fisher files from the executable.
          * @return Returns an object containing the semi-major, semi-minor,
          *              rotation angle and center point of the error ellipse
          *              for a given parameter pair. 
