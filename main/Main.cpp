@@ -26,6 +26,7 @@ log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
 int main (int argc, char* argv[])
 {
+    //Just a test
     /*
      * Parsing .ini file
      */
