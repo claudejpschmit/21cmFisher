@@ -5,6 +5,7 @@ import sys
 fig, ax = plt.subplots()
 filename = sys.argv[1]
 filename2 = sys.argv[2]
+fisher_mode = sys.argv[3]
 data_array = np.loadtxt(filename)
 parameters = np.loadtxt(filename2, dtype = 'string')
 formatted_params = {'ombh2':r'$\Omega_b h^2$',\
@@ -41,5 +42,9 @@ labels = [formatted_params[z] for z in parameters]
 ax.xaxis.tick_top()
 plt.xticks(x, labels, rotation = 90, fontsize = 12)
 plt.yticks(x, labels, fontsize = 12)
+if fisher_mode == 'inverse':
+    plt.title("Inverse Fisher Matrix", y=1.1)
+elif fisher_mode == 'fisher':
+    plt.title("Fisher Matrix", y = 1.1)
 plt.savefig("Matrix_representation.png")
 plt.show()

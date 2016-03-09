@@ -26,6 +26,7 @@ CXX = g++ -Wall -std=c++11 -ffast-math -s -Wno-deprecated -fopenmp
 OPTFLAG = -O4
 ARMAFLAGS = -larmadillo
 GSLFLAGS = -lgsl -lgslcblas
+WIGNERFLAGS = -lwignerSymbols
 
 # This decreases the precision of the bessel functions significantly if 
 # added to the compilation of the files containing boost->sph_bess(l,x).
@@ -62,9 +63,10 @@ SOURCE = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o\
 		 Fisher.o Fisher1.o Fisher_Santos.o Integrator.o CAMB_interface.o\
 		 ARES_interface.o Global21cmInterface.o
 
+BISPECTRUM = Bispectrum_main.o
 # ---------------------------------------------------------------------------------------------------------------#
 
-all: calc analyse sortFiles 
+all: calc analyse sortFiles bispectrum 
 
 analyse: $(ALGLIB) $(INIREADER) $(ANALYSE) 
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
@@ -78,10 +80,14 @@ sortFiles: $(SORTING)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o sortFiles $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 
+bispectrum: $(BISPECTRUM)
+	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
+		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS)
 
 clean: .base
 	rm -rf $(WRKDIR);
 	rm calc;
 	rm analyse;
 	rm sortFiles;
+	rm bispectrum;
 

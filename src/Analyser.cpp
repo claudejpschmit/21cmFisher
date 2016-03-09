@@ -189,7 +189,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
         }
         outfile_Fisher.close();
         stringstream command_buff;
-        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat params.tmp.dat";
+        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat params.tmp.dat fisher";
         char* command = new char[command_buff.str().length() + 1];
         strcpy(command, command_buff.str().c_str());
         int r = system(command);
@@ -235,7 +235,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
         }
         outfile_Fisher.close();
         stringstream command_buff;
-        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat params.tmp.dat";
+        command_buff << "python PlotMatrix.py Fisher_matrix.tmp.dat params.tmp.dat inverse";
         char* command = new char[command_buff.str().length() + 1];
         strcpy(command, command_buff.str().c_str());
         int r = system(command);
@@ -246,7 +246,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
     }
 
     
-    bool ERROR = false;
+    bool ERROR = true;
     for (int i = 0; i < num_params; i++)
         if (RESULT.matrix(i,i) < 0)
             ERROR = true;
@@ -862,9 +862,6 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
     ellipse.cx = RunParser.giveRunParams()[param1];
     ellipse.cy = RunParser.giveRunParams()[param2];
     
-    cout << param1 << " " << ellipse.cx << endl;
-    cout << param2 << " " << ellipse.cy << endl;
-
     ellipse.sigma_x = sqrt(sig_xx);
     ellipse.sigma_y = sqrt(sig_yy);
 
