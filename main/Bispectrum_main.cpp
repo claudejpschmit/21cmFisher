@@ -86,13 +86,14 @@ int main(int argc, char* argv[])
         Bispectrum_LISW LISW(analysis);
         ofstream file("LISW.dat");
         
+
         for (int i = 0; i < 40; i++)
         {
             int l = pow(10,0.1*i);
-            double D = LISW.calc_angular_B(l,l,l,0,0,0,50,50,50);            
+            double D = LISW.calc_angular_B(l,l,l,0,0,0,50,50,50);
             file << l << " " << D << endl;
         }
-
+ 
         //file << LISW.calc_angular_B(10,10,10,0,0,0, 50,50,50) << endl; 
         /*
         ofstream file("g1_function.dat");
