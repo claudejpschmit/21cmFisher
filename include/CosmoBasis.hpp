@@ -306,7 +306,9 @@ class CosmoBasis {
         
         /// \brief T_* = hc/k_b Lambda_21cm [K].
         const double T_star = h_planck * c / (k_b *0.21);
-    
+        
+        virtual double E(double z);
+
     protected:
         void check_params();
         
@@ -314,7 +316,6 @@ class CosmoBasis {
         //is overloaded at a later stage in one of the child classes, all
         //instances where it is used will use the updated version. If no
         //update occurs, the original one will be used.
-        virtual double E(double z);
         double Z(double z);
         double S_k(double x);
         double mpc_to_m(double x);

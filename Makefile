@@ -63,7 +63,12 @@ SOURCE = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o\
 		 Fisher.o Fisher1.o Fisher_Santos.o Integrator.o CAMB_interface.o\
 		 ARES_interface.o Global21cmInterface.o
 
+<<<<<<< HEAD
 BISPECTRUM = Bispectrum_main.o
+=======
+BISPECTRUM = Bispectrum_main.o Bispectrum.o LISW.o
+
+>>>>>>> bispectrum
 # ---------------------------------------------------------------------------------------------------------------#
 
 all: calc analyse sortFiles bispectrum 
@@ -80,9 +85,16 @@ sortFiles: $(SORTING)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o sortFiles $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 
+<<<<<<< HEAD
 bispectrum: $(BISPECTRUM)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS)
+=======
+bispectrum: $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM)
+	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
+		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(BOOSTFLAGS)
+
+>>>>>>> bispectrum
 
 clean: .base
 	rm -rf $(WRKDIR);
