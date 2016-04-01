@@ -66,7 +66,8 @@ double Bispectrum_LISW::Ql(int l, double z)
 {
     cout << "Calculating Ql" << endl;
     double r = analysis->model->r_interp(z);
-    double eta = -(1.0+z);
+    // TODO:
+    double eta = 1.0;
     auto integrand = [&](double zp)
     {
         double rzp = analysis->model->r_interp(zp);
