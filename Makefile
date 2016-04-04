@@ -14,7 +14,8 @@ LIBRARIES = lib/
 vpath %.cpp src:\
 	main:\
 	$(LIBRARIES)ALGLIB_source:\
-	$(LIBRARIES)GLOBAL21CM_source
+	$(LIBRARIES)GLOBAL21CM_source:\
+	$(LIBRARIES)ODE_source
 
 vpath %.o build
 vpath .base build
@@ -39,6 +40,7 @@ LDFLAG = -g -fPIC
 INCLUDES = -I../include
 INCLUDES += -I../$(LIBRARIES)ALGLIB_include
 INCLUDES += -I../$(LIBRARIES)GLOBAL21CM_include
+INCLUDES += -I../$(LIBRARIES)ODE_include
 
 INCLUDES += -I/usr/include/boost
 BOOSTFLAGS = -lboost_filesystem -lboost_system
@@ -62,7 +64,7 @@ INIREADER = iniReader.o
 SOURCE = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o\
 		 Fisher.o Fisher1.o Fisher_Santos.o Integrator.o CAMB_interface.o\
 		 ARES_interface.o Global21cmInterface.o
-
+ODE = ODEs.o ODE_Solver.o
 BISPECTRUM = Bispectrum_main.o Bispectrum.o LISW.o
 
 # ---------------------------------------------------------------------------------------------------------------#
@@ -81,7 +83,7 @@ sortFiles: $(SORTING)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o sortFiles $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 
-bispectrum: $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM)
+bispectrum: $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM) $(ODE)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(BOOSTFLAGS)
 

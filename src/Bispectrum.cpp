@@ -57,6 +57,7 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
         file << z << " " << spline1dcalc(Growth_function_interpolator, z) << endl;
     }
     
+    
     log<LOG_BASIC>("Precalculating alpha_g1 function for fast integrations - 2");
     
     vector<double> zs_v2, a_v;
@@ -94,7 +95,7 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
     }
 
 
-
+    
     cout << "... Bispectrum Class initialized ..." << endl;
 }
 
@@ -336,28 +337,29 @@ double Bispectrum::Wnu(double z)
 
 double Bispectrum::g1(double z)
 {
-    double exp1 = -alpha_g1_interp(z);
+    double exp1 = alpha_g1_interp(z);
     exp1 = exp(exp1);
     cout << exp1 << endl;
-    double res = 2.0/3.0 * exp1;
+    double res = exp1 * 2.0 / 3.0;
     
     auto integrand = [&] (double zp)
     {
-        double a = alpha_g1_interp(zp);
+        double a = -alpha_g1_interp(zp);
         double exp2 = exp(a);
-        double D = D_Growth_interp(zp);
-        double F = 1.0/D;
-        double h = 0.001;
-        double deriv = (D_Growth_interp(zp+h) - D)/h;
-        F *= deriv;
+        //double D = D_Growth_interp(zp);
+        //double F = 1.0/D;
+        //double h = 0.001;
+        //double deriv = (D_Growth_interp(zp+h) - D)/h;
+        //F *= deriv;
         //double dtdz = this->analysis->model->hubble_time()/((1+zp)*this->analysis->model->E(zp));
         //cout << F << " " << deriv << " " << dtdz << endl;
+        double F = -1.0/(1.0+zp);
         return F*exp2;
     };
-    double I = integrate(integrand, z, 1000.0, 10000, simpson());
+    double I = integrate(integrand, 0.0, z, 10000, simpson());
     res *= I;
 
-    return abs(res);
+    return res;
 }
 
 double Bispectrum::alpha_g1_interp(double z)
@@ -369,6 +371,22 @@ double Bispectrum::alpha_g1(double z)
 {
     auto integrand = [&] (double zp)
     {
+        double C;
+        double TCMB = (1.0+zp)*2.73;
+        double TG = TCMB;
+        if (zp < 200)
+        {
+            TG = 2.73/201.0 * pow(1.0+zp,2);
+        }
+        double K = 9.88 *10E-8/(this->analysis->model->give_fiducial_params()["ombh2"]);
+
+        C = K*TCMB*pow(1.0+zp,3.0/2.0)/TG;
+        double F = -1.0/(1.0+zp);
+    
+        double A = C - F;
+        return A;
+
+        /*
         double C;
         double TCMB = (1+zp)*2.73;
         double TG = TCMB;
@@ -385,8 +403,9 @@ double Bispectrum::alpha_g1(double z)
         F *= deriv;
         double dtdz = this->analysis->model->hubble_time()/((1+zp)*this->analysis->model->E(zp));
         return (F+C * dtdz);
+        */
     };
-    double I = integrate(integrand, z, 1001.0, 10000, simpson());
+    double I = integrate(integrand, 0.0, z, 10000, simpson());
     return I;
 }
 

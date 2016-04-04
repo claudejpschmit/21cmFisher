@@ -10,9 +10,12 @@
 #include "iniReader.hpp"
 #include "Bispectrum.hpp"
 #include "LISW.hpp"
+#include "ODEs.hpp"
+#include "ODE_Solver.hpp"
 
 using namespace std;
 typedef std::complex<double> dcomp;
+
 
 log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
@@ -82,21 +85,30 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        //Bispectrum BS(analysis);
-        Bispectrum_LISW LISW(analysis);
-        ofstream file("LISW.dat");
+        Bispectrum BS(analysis);
+        //Bispectrum_LISW LISW(analysis);
+        //ofstream file("LISW.dat");
+        
+        g1_ODE G1(0.0, &BS);
+
+        FORKMethod F_Method(0.05, &G1, 0.0);
+        ofstream file("g1.dat");
+        for (int i = 1; i < 10000; ++i)
+            file << i*0.5 << " " << F_Method.step() << endl;
+        
         
 
-        for (int i = 0; i < 40; i++)
+        
+        /*for (int i = 0; i < 40; i++)
         {
             int l = pow(10,0.1*i);
             double D = LISW.calc_angular_B(l,l,l,0,0,0,50,50,50);
             file << l << " " << D << endl;
         }
- 
+        */
         //file << LISW.calc_angular_B(10,10,10,0,0,0, 50,50,50) << endl; 
-        /*
-        ofstream file("g1_function.dat");
+        
+        /*ofstream file("g1_function.dat");
 
         for (int i = 0; i < 30; i++)
         {

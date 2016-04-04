@@ -16,10 +16,10 @@ class Bispectrum {
         double D_Growth_interp(double z);
         dcomp calc_Blll(int l1, int l2, int l3);
         double g1(double z);
-        
+        AnalysisInterface* analysis;
 
     private:
-        AnalysisInterface* analysis;
+        
         dcomp B_ll(int la, int lb, int lc);
         double sph_bessel_camb(int l, double x);
         double theta(int li, int lj, double z, int q);
