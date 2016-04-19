@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iostream>
-#include "Bispectrum.hpp"
 
 class ODE {
         
@@ -40,11 +39,9 @@ public:
 
 class g1_ODE : public ODE {
     public:
-        g1_ODE(double z0, Bispectrum* BS);
+        g1_ODE(double z0);
 
         double first_derivative(double g1, double z);
         double initial_value();
         double exact_solution(double z);
-    private:
-        Bispectrum* BS;
 };

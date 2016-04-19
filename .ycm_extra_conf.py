@@ -39,6 +39,7 @@ flags = [
     '-I./include',
     '-I./lib/ALGLIB_include',
     '-I./lib/GLOBAL21CM_include',
+    '-I./lib/ODE_include',
     '-I/usr/include',
     '-I/usr/include/boost',
     '-Wall',

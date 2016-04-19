@@ -179,6 +179,7 @@ void CAMB_CALLER::update_params_ini(map<string, double> params)
     for (int i = 0; i < num_params; i++)
         parameters_found[i] = false;
     int n_redshifts = params["Pk_steps"];
+    cout << n_redshifts << endl;
     double zmin = params["zmin"];
     double zmax = params["zmax"];
     double stepsize_z = (zmax - zmin)/(double)(n_redshifts - 1);

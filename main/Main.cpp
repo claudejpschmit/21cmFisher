@@ -63,6 +63,9 @@ int main (int argc, char* argv[])
         case camb_ares:
             model = new Model_CAMB_ARES(params, &Pk_index, &Tb_index, &q_index);
             break;
+        case camb_ares_2D:
+            model = new Model_Santos_ARES(params, &Pk_index, &Tb_index, &q_index);
+            break;
         case camb_g21:
             model = new Model_CAMB_G21(params, &Pk_index, &Tb_index, &q_index);
             break;
@@ -97,7 +100,13 @@ int main (int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        fisher->calc_Fls();
+        ofstream file("Cl_55.dat");
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l< 10000)
+                file << l << " " << (l+1)*l*analysis->Cl(l,55,55,0,0,0)/(2.0*M_PI) << endl;; 
+        }
     }
 
     return 0;

@@ -27,14 +27,13 @@ class Bispectrum {
         double D_Growth(double z);
         double alpha(int l, double k, double z);
         double f1(double z);
-        double alpha_g1(double z);
         double Wnu(double z);
         double power(double z);
         double var;
         double pi = M_PI;
         double Growth_function_norm;
-        double alpha_g1_interp(double z);
+        double g1_interp(double z);
 
-        spline1dinterpolant Growth_function_interpolator, alpha_g1_interpolator;
+        spline1dinterpolant Growth_function_interpolator, g1_interpolator;
     
 };

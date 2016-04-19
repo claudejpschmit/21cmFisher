@@ -73,6 +73,13 @@ struct Tb_interpolator_Santos {
     spline1dinterpolant interpolator;
     spline1dinterpolant fz_interpolator;
 };
+struct Tb_interpolator_Santos_ARES {
+    double ombh2, omnuh2, omch2, omk, hubble, s8, T_CMB, n_s, w_DE,\
+        fstar, fesc, nion, fX, Tmin, Nlw, cX, HeByMass, omega_lambda;
+    double alpha, beta, gamma, RLy;
+    spline1dinterpolant interpolator;
+    spline1dinterpolant fz_interpolator;
+};
 
 /**
  * A Fisher_return pair includes a matrix of Fisher values, as well as a

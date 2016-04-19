@@ -22,6 +22,7 @@ enum ModelAnalysis
     santos,
     camb_ares,
     camb_g21,
+    camb_ares_2D,
 
     // analysis
     cosmo3D,

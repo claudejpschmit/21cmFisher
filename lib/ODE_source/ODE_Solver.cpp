@@ -53,7 +53,7 @@ FORKMethod::FORKMethod(double dt, ODE* ode, double t0)
 {
     this->dt = dt;
     tn = t0;
-    this->ode = ode;    
+    this->ode = ode;
     y_n = ode->initial_value();
 }
 

@@ -143,3 +143,38 @@ class Model_Santos2006 : public ModelParent<Tb_interpolator_Santos> {
 
 };
 
+class Model_Santos_ARES : public ModelParent<Tb_interpolator_Santos_ARES> {
+    
+    public:
+        Model_Santos_ARES(map<string, double> params,\
+                int *Pk_index, int *Tb_index, int *q_index);
+        ~Model_Santos_ARES(); 
+        void set_Santos_params(double *alpha, double *beta,\
+                double *gamma, double *RLy, int Tb_index);
+
+    private:
+        void update_Pkz(map<string,double> params, int *Pk_index);
+        void update_T21(map<string,double> params, int *Tb_index);
+        void update_q(map<string,double> params, int *q_index);
+        
+        /* Model specific functions */
+        double z_from_nu(double nu);
+        double t21(double z, map<string,double> params);
+        double fz(double z, map<string,double> params);
+        double Tk(double z);
+        double Tc(double z, map<string,double> params);
+        double y_tot(double z, map<string,double> params);
+        double P_a(double z);
+
+        void update_gamma(map<string,double> params);
+        double gamma(double z, map<string,double> params);
+
+        /* Variables */
+        CAMB_CALLER* CAMB;
+        AresInterface* ARES;
+
+        double zmin_Ml, zmax_Ml, stepsize_Ml;
+        int zsteps_Ml;
+
+};
+

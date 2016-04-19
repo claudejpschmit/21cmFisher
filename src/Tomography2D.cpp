@@ -68,7 +68,6 @@ double Tomography2D::Cl(int l, double nu1, double nu2,\
     //model->set_Santos_params(&alpha, &beta, &gamma, &RLy, Tb_index);
     //double dTb1 = gamma*model->T21_interp(z1, Tb_index);
     //double dTb2 = gamma*model->T21_interp(z2, Tb_index);
-    
     double dTb1 = gamma1*model->T21_interp(z1, Tb_index);
     double dTb2 = gamma2*model->T21_interp(z2, Tb_index);
     auto integrand = [&](double k)
@@ -97,7 +96,6 @@ double Tomography2D::Cl(int l, double nu1, double nu2,\
     };
     //TODO: get the right limits.
     double integral = integrate_simps(integrand, lower_kappa_bound, higher_kappa_bound, steps);
-
     return 2/model->pi * dTb1 *dTb2 * integral;
 }
 

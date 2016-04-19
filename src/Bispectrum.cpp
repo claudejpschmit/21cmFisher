@@ -5,12 +5,16 @@
 #include <cmath>
 #include "Log.hpp"
 #include <fstream>
+#include "ODEs.hpp"
+#include "ODE_Solver.hpp"
+
 
 Bispectrum::Bispectrum(AnalysisInterface* analysis)
 {
     this->analysis = analysis;
 
     log<LOG_BASIC>("Precalculating Growth function for fast integrations");
+    
     auto integrand = [&](double z)
     {
         double H3 = this->analysis->model->Hf_interp(z);
@@ -58,20 +62,20 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
     }
     
     
-    log<LOG_BASIC>("Precalculating alpha_g1 function for fast integrations - 2");
+    log<LOG_BASIC>("Precalculating g1 function");
     
+    g1_ODE G1(2000.0);
+    FORKMethod F_Method(-0.01, &G1, 2000.0);
     vector<double> zs_v2, a_v;
 
-    zs_v2.resize(1000);
-    a_v.resize(1000);
-    #pragma omp parallel for
-    for (int i = 0; i < 1000; i++)
+    zs_v2.resize(200000);
+    a_v.resize(200000);
+    for (int i = 0; i < 200000; i++)
     {
-        double z = i;
-        double a = alpha_g1(z);
-
+        double z = 2000.0 - i*0.01;
+        double g = F_Method.step();
         zs_v2[i] = z;
-        a_v[i] = a;
+        a_v[i] = g;
     }
 
     real_1d_array zs2, as;
@@ -79,19 +83,19 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
     as.setlength(a_v.size());
 
     for (unsigned int i = 0; i < zs_v2.size(); i++){
-        zs2[i] = zs_v2[i];
+        zs2[i] = zs_v2[199999-i];
     }
     for (unsigned int i = 0; i < a_v.size(); i++){
-        as[i] = a_v[i];
+        as[i] = a_v[199999-i];
     }
-    spline1dbuildcubic(zs2, as, alpha_g1_interpolator);
+    spline1dbuildcubic(zs2, as, g1_interpolator);
     
-    log<LOG_BASIC>("Writing alpha_g1 to file...");
-    ofstream file2("alpha_g1.dat");
-    for (int i = 0; i < 10000; i++)
+    log<LOG_BASIC>("Writing g1 to file...");
+    ofstream file2("g1_BS_precalculated.dat");
+    for (int i = 0; i < 200000; i++)
     {
-        double z = i*0.1;
-        file2 << z << " " << spline1dcalc(alpha_g1_interpolator, z) << endl;
+        double z = i*0.01;
+        file2 << z << " " << a_v[199999-i] << endl;
     }
 
 
@@ -337,76 +341,12 @@ double Bispectrum::Wnu(double z)
 
 double Bispectrum::g1(double z)
 {
-    double exp1 = alpha_g1_interp(z);
-    exp1 = exp(exp1);
-    cout << exp1 << endl;
-    double res = exp1 * 2.0 / 3.0;
-    
-    auto integrand = [&] (double zp)
-    {
-        double a = -alpha_g1_interp(zp);
-        double exp2 = exp(a);
-        //double D = D_Growth_interp(zp);
-        //double F = 1.0/D;
-        //double h = 0.001;
-        //double deriv = (D_Growth_interp(zp+h) - D)/h;
-        //F *= deriv;
-        //double dtdz = this->analysis->model->hubble_time()/((1+zp)*this->analysis->model->E(zp));
-        //cout << F << " " << deriv << " " << dtdz << endl;
-        double F = -1.0/(1.0+zp);
-        return F*exp2;
-    };
-    double I = integrate(integrand, 0.0, z, 10000, simpson());
-    res *= I;
-
-    return res;
+    return g1_interp(z);
 }
 
-double Bispectrum::alpha_g1_interp(double z)
+double Bispectrum::g1_interp(double z)
 {
-    return spline1dcalc(alpha_g1_interpolator, z);
-}
-
-double Bispectrum::alpha_g1(double z)
-{
-    auto integrand = [&] (double zp)
-    {
-        double C;
-        double TCMB = (1.0+zp)*2.73;
-        double TG = TCMB;
-        if (zp < 200)
-        {
-            TG = 2.73/201.0 * pow(1.0+zp,2);
-        }
-        double K = 9.88 *10E-8/(this->analysis->model->give_fiducial_params()["ombh2"]);
-
-        C = K*TCMB*pow(1.0+zp,3.0/2.0)/TG;
-        double F = -1.0/(1.0+zp);
-    
-        double A = C - F;
-        return A;
-
-        /*
-        double C;
-        double TCMB = (1+zp)*2.73;
-        double TG = TCMB;
-        if (zp < 200)
-        {
-            TG = 2.73/201.0 * pow(1+zp,2);
-        }
-        C = -9.88 *10E-8 *TCMB/(TG*this->analysis->model->give_fiducial_params()["ombh2"]);
-        C *= pow(1+zp,3.0/2.0);
-        double D = D_Growth_interp(zp);
-        double F = 1.0/D;
-        double h = 0.001;
-        double deriv = (D_Growth_interp(zp+h) - D)/h;
-        F *= deriv;
-        double dtdz = this->analysis->model->hubble_time()/((1+zp)*this->analysis->model->E(zp));
-        return (F+C * dtdz);
-        */
-    };
-    double I = integrate(integrand, 0.0, z, 10000, simpson());
-    return I;
+    return spline1dcalc(g1_interpolator, z);
 }
 
 double Bispectrum::power(double k)

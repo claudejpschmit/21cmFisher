@@ -54,6 +54,9 @@ int main(int argc, char* argv[])
         case camb_ares:
             model = new Model_CAMB_ARES(params, &Pk_index, &Tb_index, &q_index);
             break;
+        case camb_ares_2D:
+            model = new Model_Santos_ARES(params, &Pk_index, &Tb_index, &q_index);
+            break;
         case camb_g21:
             model = new Model_CAMB_G21(params, &Pk_index, &Tb_index, &q_index);
             break;
@@ -85,27 +88,76 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        Bispectrum BS(analysis);
-        //Bispectrum_LISW LISW(analysis);
-        //ofstream file("LISW.dat");
-        
-        g1_ODE G1(0.0, &BS);
-
-        FORKMethod F_Method(0.05, &G1, 0.0);
-        ofstream file("g1.dat");
-        for (int i = 1; i < 10000; ++i)
-            file << i*0.5 << " " << F_Method.step() << endl;
-        
-        
-
-        
-        /*for (int i = 0; i < 40; i++)
+        //ofstream file("test.dat");
+        /*for (int i = 1; i < 100000; ++i)
         {
-            int l = pow(10,0.1*i);
-            double D = LISW.calc_angular_B(l,l,l,0,0,0,50,50,50);
-            file << l << " " << D << endl;
+            double z = i*0.05;
+            double h = 0.0001;
+            double deriv = model->T21_interp(z+h,0) - model->T21_interp(z,0);
+            deriv /= h;
+            file << z << " " << model->T21_interp(z,0) << " " << deriv << endl; 
+        }
+        Bispectrum_LISW LISW(analysis);
+        ofstream file2("Ql.dat");
+        double zf = 20;
+        int l = 100;
+        for (int i = 1; i < 1000; ++i)
+        {
+            file2 << i << " " << LISW.calc_angular_B(l,l,l,0,0,0,50,50,50) << endl;
         }
         */
+        Bispectrum BS(analysis);
+        g1_ODE G1(2000.0);
+
+        FORKMethod F_Method(-0.01, &G1, 2000.0);
+        ofstream file("g1_backwards2.dat");
+        for (int i = 1; i < 200000; ++i)
+            file << 2000-i*0.01 << " " << F_Method.step() << endl;
+        
+        /*NegExp NE(0.0);
+        FORKMethod F_Method(0.05, &NE, 0.0);
+        ofstream file("NE.dat");
+        for (int i = 1; i < 100000; ++i)
+            file << i*0.05 << " " << F_Method.step() << endl;
+        */
+
+        /*Bispectrum_LISW LISW(analysis);
+        for (int i = 0; i < 100000; i++)
+        {
+            double z = 0.01+0.01*i;
+            double z_fixed = 5;
+            int l = 100;
+            double D = LISW.integrand_Ql(l, z, z_fixed);            
+            file << z << " " << D << endl;
+        }
+        */
+        
+        
+        
+        /*vector<int> l_list;
+        l_list.push_back(0);
+        for (int i = 30; i < 400; i++)
+        {
+            int l = pow(10,0.01*i);
+            if (l % 2 == 1)
+                l+=1;
+            bool done = false;
+            for (int j = 0; j < l_list.size(); j++)
+            {
+                if (l == l_list[j])
+                {
+                    done = true;
+                    break;
+                }
+            }
+            if (!done)
+            {
+                l_list.push_back(l);
+                double D = LISW.calc_angular_B(l,l,l,0,0,0,50,50,50);
+                file << l << " " << abs(D) << endl;
+            }
+        }*/
+        
         //file << LISW.calc_angular_B(10,10,10,0,0,0, 50,50,50) << endl; 
         
         /*ofstream file("g1_function.dat");

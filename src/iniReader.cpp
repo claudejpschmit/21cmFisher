@@ -98,6 +98,8 @@ vector<ModelAnalysis> IniReader::determineMA()
                 M = camb_ares;
             else if (value == "camb_g21")
                 M = camb_g21;
+            else if (value == "camb_ares_2D")
+                M = camb_ares_2D;
             else
                 M = error;
             
