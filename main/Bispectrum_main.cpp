@@ -12,6 +12,7 @@
 #include "LISW.hpp"
 #include "ODEs.hpp"
 #include "ODE_Solver.hpp"
+#include "Zygelman.hpp"
 
 using namespace std;
 typedef std::complex<double> dcomp;
@@ -106,14 +107,16 @@ int main(int argc, char* argv[])
             file2 << i << " " << LISW.calc_angular_B(l,l,l,0,0,0,50,50,50) << endl;
         }
         */
-        Bispectrum BS(analysis);
+        /*Bispectrum BS(analysis);
         g1_ODE G1(2000.0);
 
         FORKMethod F_Method(-0.01, &G1, 2000.0);
         ofstream file("g1_backwards2.dat");
         for (int i = 1; i < 200000; ++i)
             file << 2000-i*0.01 << " " << F_Method.step() << endl;
+        */
         
+
         /*NegExp NE(0.0);
         FORKMethod F_Method(0.05, &NE, 0.0);
         ofstream file("NE.dat");

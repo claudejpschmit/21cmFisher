@@ -26,7 +26,13 @@ class Bispectrum {
         double F(double z);
         double D_Growth(double z);
         double alpha(int l, double k, double z);
+        double f0(double z);
         double f1(double z);
+        double f1b(double z);
+        double f1T(double z);
+        double S(double z);
+        double C(double z);
+        double Y(double z);
         double Wnu(double z);
         double power(double z);
         double var;

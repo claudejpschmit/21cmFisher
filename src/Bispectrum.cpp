@@ -331,7 +331,62 @@ double Bispectrum::D_Growth_interp(double z)
 //TODO
 double Bispectrum::f1(double z)
 {
+    return f1b(z) + g1(z)*f1T(z);
+}
+
+double Bispectrum::f1b(double z)
+{
+    double Tcmb = 2.73 * (1+z);
+    double Tgas = 1;
+    double xbar = 1;
+    double delta_T = Tcmb - Tgas;
+    double S_factor = S(z);
+    double Y_factor = Y(z);
+    double term1 = (1.0-Tcmb/S_factor)*(1.0-xbar);
+    double term2 = Tcmb*C(z)*pow(1.0+z,3)/(pow(Y_factor,2)*pow(S_factor,2))*\
+                   delta_T*pow(1.0-xbar,2); 
+    return f0(z) * (term1 + term2);
+}
+
+double Bispectrum::C(double z)
+{
+    double A10 = 2.85*pow(10.0,-15);
+    double Tstar = 0.068;//in K (kelvin)
     return 1;
+}
+
+double Bispectrum::S(double z)
+{
+    return 1;
+}
+
+double Bispectrum::Y(double z)
+{
+    return 1;
+}
+
+//in mK
+double Bispectrum::f0(double z)
+{
+    return 69.05*(analysis->model->give_fiducial_params()["ombh2"]/0.035)*\
+        sqrt(0.27/analysis->model->Omega_M(0)) * sqrt((1.0+z)/51.0);
+}
+
+double Bispectrum::f1T(double z)
+{
+    double Tcmb = 2.73 * (1.0+z);
+    double Tgas = 1;
+    double xbar = 1;
+    double delta_T = Tcmb - Tgas;
+    double S_factor = S(z);
+    double Y_factor = Y(z);
+    double eta1 = 1;
+    double Y_alpha = 1;
+    double term1 = (Tcmb*C(z)*pow(1.0+z,3))/(Y_factor*S_factor)*\
+                   (1.0-2*(delta_T/(Y_factor*S_factor))*eta1) *\
+                   pow(1.0-xbar,2);
+    double term2 = (Tcmb*Y_alpha*Tgas)/(Y_factor*pow(S_factor,2)) * (1.0 - xbar);
+    return f0(z) * (term1 + term2);
 }
 
 double Bispectrum::Wnu(double z)
