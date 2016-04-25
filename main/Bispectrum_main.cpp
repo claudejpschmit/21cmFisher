@@ -107,15 +107,31 @@ int main(int argc, char* argv[])
             file2 << i << " " << LISW.calc_angular_B(l,l,l,0,0,0,50,50,50) << endl;
         }
         */
-        /*Bispectrum BS(analysis);
-        g1_ODE G1(2000.0);
-
-        FORKMethod F_Method(-0.01, &G1, 2000.0);
-        ofstream file("g1_backwards2.dat");
-        for (int i = 1; i < 200000; ++i)
-            file << 2000-i*0.01 << " " << F_Method.step() << endl;
-        */
-        
+        Bispectrum BS(analysis);
+        ofstream file("bispectrum_test_lll2.dat");
+        vector<int> l_list;
+        l_list.push_back(0);
+        for (int i = 30; i < 400; i++)
+        {
+            int l = pow(10,0.01*i);
+            if (l % 2 == 1)
+                l+=1;
+            bool done = false;
+            for (int j = 0; j < l_list.size(); j++)
+            {
+                if (l == l_list[j])
+                {
+                    done = true;
+                    break;
+                }
+            }
+            if (!done)
+            {
+                l_list.push_back(l);
+                double B = BS.calc_Blll(l,l,l,50);
+                file << l << " " << abs(B) << endl;
+            }
+        }
 
         /*NegExp NE(0.0);
         FORKMethod F_Method(0.05, &NE, 0.0);

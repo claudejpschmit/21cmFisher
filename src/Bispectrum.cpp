@@ -98,45 +98,51 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
         file2 << z << " " << a_v[199999-i] << endl;
     }
 
-
-    
     cout << "... Bispectrum Class initialized ..." << endl;
 }
 
 Bispectrum::~Bispectrum()
 {}
 
-double Bispectrum::calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3)
+double Bispectrum::calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3,\
+        double z_out)
 {
     double w = WignerSymbols::wigner3j(l1,l2,l3,m1,m2,m3);
-    dcomp B_lll = calc_Blll(l1,l2,l3);
+    double B_lll = calc_Blll(l1,l2,l3,z_out);
     cout << B_lll << endl; 
     // return the magintude:
-    return norm(B_lll * w);
+    return B_lll * w;
 }
 
-dcomp Bispectrum::calc_Blll(int l1, int l2, int l3)
+double Bispectrum::calc_Blll(int l1, int l2, int l3, double z_out)
 {
-    dcomp B_lll = B_ll(l1,l2,l3) + B_ll(l1,l3,l2) + B_ll(l2,l3,l1); 
-    return B_lll;
+    dcomp B_lll;
+    if (l1 == l2 and l1 == l3)
+        B_lll = 3.0 * B_ll(l1,l2,l3,z_out);
+    else
+        B_lll = B_ll(l1,l2,l3,z_out) + B_ll(l1,l3,l2,z_out) + B_ll(l2,l3,l1,z_out);
+ 
+    double result = norm(B_lll);
+    return result;
 
 }
 
-dcomp Bispectrum::B_ll(int la, int lb, int lc)
+dcomp Bispectrum::B_ll(int la, int lb, int lc, double z_out)
 {
 
     log<LOG_DEBUG>("Calculation for la = %1%, lb = %2% and lc = %3%") % la % lb % lc;
     double A0, A1, A2, W1, W2, W3, W6J;
-    A0 = 1;
-    A1 = 1;
-    A2 = 1;
-    dcomp prefactor = 16/pi * sqrt((2*la+ 1) * (2*lb + 1) * (2*lc + 1)/pow(4*pi,3));
+    A0 = 10.0/7.0;
+    A1 = 1.0;
+    A2 = 4.0/7.0;
+    dcomp prefactor = 16.0/pi * sqrt((2*la+ 1) * (2*lb + 1) * (2*lc + 1)/pow(4*pi,3));
     dcomp B0abc, B1abc, B2abc;
     // Integration params:
+    // TODO
     double zmin, zmax;
-    zmin = 0;
-    zmax = 1;
-    int steps = 10;
+    zmin = 49;
+    zmax = 51;
+    int steps = 5;
 
     /*
      * B0abc = ...
@@ -147,7 +153,7 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
      *
      * return prefactor * Babc
      */
-
+    ///////////////////////////////////////////////////////////////
     // Calculation for B0abc:
     W1 = WignerSymbols::wigner3j(la, la, 0, 0, 0, 0);
     W2 = WignerSymbols::wigner3j(lb, lb, 0, 0, 0, 0);
@@ -158,19 +164,32 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
 
     double I1 = 0;
     if (pre != 0){
+        // The conversion factor is added in F(z).
         auto integrand = [&](double z)
         {
             double Fz = F(z);
-            double THETA1 = theta(la,la,z,0);
-            double THETA2 = theta(lb,lb,z,0);
+            double THETA1, THETA2;
+            THETA1 = theta(la,la,z,0,z_out);
+            if (la == lb) 
+            {
+                THETA2 = THETA1;
+            }
+            else 
+            {
+                THETA2 = theta(lb,lb,z,0,z_out);
+            }
+            cout << "Thetas = " << THETA1 << " " << THETA2 << endl;
             return Fz * THETA1 * THETA2;
         };
 
         log<LOG_DEBUG>("%1% %2% %3% %4%") % W1 % W2 % W3 % W6J; 
         I1 = integrate(integrand, zmin, zmax, steps, simpson());
+        cout << I1 << endl;
     }
     B0abc = pre * I1 * pow(-1, la + lb);
     log<LOG_BASIC>("B0 done -> %1%") % B0abc;
+    
+    ///////////////////////////////////////////////////////////
     // Calculation for B1abc:
     double B1 = A1;
     dcomp c_sum(0,0);
@@ -192,10 +211,10 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
                 auto integrand2 = [&](double z)
                 {
                     double Fz = F(z);
-                    double THETA1 = theta(la,l6,z,-1);
-                    double THETA2 = theta(lb,l7,z,1);
-                    double THETA3 = theta(la,l6,z,1);
-                    double THETA4 = theta(lb,l7,z,-1);
+                    double THETA1 = theta(la,l6,z,-1,z_out);
+                    double THETA2 = theta(lb,l7,z,1,z_out);
+                    double THETA3 = theta(la,l6,z,1,z_out);
+                    double THETA4 = theta(lb,l7,z,-1,z_out);
 
                     return Fz * (THETA1 * THETA2 + THETA3 * THETA4);
                 };
@@ -215,6 +234,8 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
     i_exp = pow(i_exp, la+lb);
     B1abc = i_exp * B1 * c_sum;
     log<LOG_BASIC>("B1 done -> %1%") % B1abc;
+    
+    ////////////////////////////////////////////////////////
     // Calculation for B2abc:
     double B2 = 2*A2/3.0;
     c_sum = 0;
@@ -237,8 +258,8 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
                 auto integrand3 = [&](double z)
                 {
                     double Fz = F(z);
-                    double THETA1 = theta(la,l6,z,0);
-                    double THETA2 = theta(lb,l7,z,0);
+                    double THETA1 = theta(la,l6,z,0,z_out);
+                    double THETA2 = theta(lb,l7,z,0,z_out);
 
                     return Fz * THETA1 * THETA2;
                 };
@@ -258,7 +279,7 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
     B2abc = i_exp * B2 * c_sum;
     log<LOG_BASIC>("B2 done -> %1%") % B2abc;
 
-    /////////////////
+    /////////////////////////////////////////////////////////////////
     //
     dcomp Babc = B0abc + B1abc + B2abc;
     return Babc * prefactor;
@@ -270,23 +291,31 @@ double Bispectrum::F(double z)
     double res = analysis->model->c / (analysis->model->Hf_interp(z) * 1000.0);
     double D = D_Growth_interp(z);
     res *= D*D;
-
-    res *= f1(z) * Wnu(z);
+    double f = f1(z);
+    double W = Wnu(z);
+    res *= f * W;
     return res;
 }
 
-double Bispectrum::theta(int li, int lj, double z, int q)
+double Bispectrum::x_bar(double z)
+{
+    double z0 = 10;
+    double deltaZ = 0.5;
+    return 1.0/(1.0+exp((z-z0)/deltaZ));
+}
+
+double Bispectrum::theta(int li, int lj, double z, int q, double z_out)
 {
     double r = analysis->model->r_interp(z);
     auto integrand = [&](double k)
     {
-        double res = pow(k, 2+q) * alpha(li, k, z);
+        double res = pow(k, 2+q) * alpha(li, k, z_out);
         double P = power(k);
         double jl = sph_bessel_camb(lj, k*r);
         res *= P*jl;
         return res;
     };
-    double I = integrate(integrand, 0.0, 1.0, 100, simpson());
+    double I = integrate(integrand, 0.0, 1.0, 1000, simpson());
     return I;
 }
 
@@ -294,16 +323,17 @@ double Bispectrum::alpha(int l, double k, double z)
 {
     auto integrand = [&](double zp)
     {
-        double r = analysis->model->r_interp(z);
+        double r = analysis->model->r_interp(zp);
         double jl = analysis->model->sph_bessel_camb(l,k*r);
         // 1000 factor is necessary to convert km into m.
-        double hub = analysis->model->Hf_interp(z)*1000.0;
+        double hub = analysis->model->Hf_interp(zp)*1000.0;
         double D = D_Growth_interp(zp);
 
-        return (analysis->model->c / hub) * jl * D * f1(z) * Wnu(z);
+        return (analysis->model->c / hub) * jl * D * f1(zp) * Wnu(zp);
     };
-
-    double I = integrate(integrand, 0.0, z, 100, simpson());
+    double zmin = 49;
+    double zmax = 51;
+    double I = integrate(integrand, zmin, zmax, 5, simpson());
     return I;
 }
 
@@ -328,43 +358,67 @@ double Bispectrum::D_Growth_interp(double z)
     return spline1dcalc(Growth_function_interpolator, z);
 }
 
-//TODO
 double Bispectrum::f1(double z)
 {
-    return f1b(z) + g1(z)*f1T(z);
+    double gg = g1(z);
+    double ffb = f1b(z);
+    double ffT = f1T(z);
+    return ffb + gg*ffT;
 }
 
 double Bispectrum::f1b(double z)
 {
     double Tcmb = 2.73 * (1+z);
-    double Tgas = 1;
-    double xbar = 1;
+    double Tgas = Tg(z);
+    //TODO
+    double xbar = x_bar(z);
     double delta_T = Tcmb - Tgas;
     double S_factor = S(z);
     double Y_factor = Y(z);
     double term1 = (1.0-Tcmb/S_factor)*(1.0-xbar);
     double term2 = Tcmb*C(z)*pow(1.0+z,3)/(pow(Y_factor,2)*pow(S_factor,2))*\
-                   delta_T*pow(1.0-xbar,2); 
-    return f0(z) * (term1 + term2);
+                   delta_T*pow(1.0-xbar,2);
+    double f_0 = f0(z);
+    return f_0 * (term1 + term2);
 }
 
 double Bispectrum::C(double z)
 {
     double A10 = 2.85*pow(10.0,-15);
     double Tstar = 0.068;//in K (kelvin)
-    return 1;
+    double kappa = CollisionKappa.kappa10(z);
+    double Tgas = Tg(z);
+    //TODO
+    double nHI = 1;
+    return (4.0*kappa*Tstar*nHI)/(3.0*A10*Tgas);
 }
 
 double Bispectrum::S(double z)
 {
-    return 1;
+    double Tcmb = 2.73*(1.0+z);
+    double Tgas = Tg(z);
+    double Y_alpha = Yalpha(z);
+    return (Tcmb + Y_alpha * Tgas + YC(z) * Tgas) / Y(z);
+}
+
+double Bispectrum::YC(double z)
+{
+    //TODO
+    double xbar = x_bar(z);
+    return C(z)*pow(1.0+z,3)*(1-xbar);
 }
 
 double Bispectrum::Y(double z)
 {
-    return 1;
+    double Y_alpha = Yalpha(z);
+    return 1.0 + Y_alpha + YC(z);
 }
 
+double Bispectrum::Yalpha(double z)
+{
+    //TODO
+    return 1;
+}
 //in mK
 double Bispectrum::f0(double z)
 {
@@ -372,16 +426,26 @@ double Bispectrum::f0(double z)
         sqrt(0.27/analysis->model->Omega_M(0)) * sqrt((1.0+z)/51.0);
 }
 
+double Bispectrum::Tg(double z)
+{
+    if (z >= 200)
+        return 2.73*(1.0+z);
+    else
+        return pow(1.0+z,2)*2.73/201.0;
+}
+
 double Bispectrum::f1T(double z)
 {
     double Tcmb = 2.73 * (1.0+z);
-    double Tgas = 1;
-    double xbar = 1;
+    double Tgas = Tg(z);
+    //TODO
+    double xbar = x_bar(z);
     double delta_T = Tcmb - Tgas;
     double S_factor = S(z);
     double Y_factor = Y(z);
+    //TODO
     double eta1 = 1;
-    double Y_alpha = 1;
+    double Y_alpha = Yalpha(z);
     double term1 = (Tcmb*C(z)*pow(1.0+z,3))/(Y_factor*S_factor)*\
                    (1.0-2*(delta_T/(Y_factor*S_factor))*eta1) *\
                    pow(1.0-xbar,2);
@@ -389,9 +453,21 @@ double Bispectrum::f1T(double z)
     return f0(z) * (term1 + term2);
 }
 
+//TODO:
 double Bispectrum::Wnu(double z)
 {
-    return 1;
+   
+    if (z < 49.0 or z > 51.0)
+        return 0;
+    else
+    {
+        double nu50 = 1420.4/51.0;
+        double zup = 1420.4/(nu50+0.1) - 1; 
+        double zdown = 1420.4/(nu50-0.1) - 1;
+        double z_centre = 50.0;
+        double sigma = abs(zup-zdown)/2.0;
+        return exp(-pow(z-z_centre,2)/(2.0*pow(sigma,2)));
+    }
 }
 
 double Bispectrum::g1(double z)
@@ -410,6 +486,7 @@ double Bispectrum::power(double k)
     double P = analysis->model->Pkz_interp(k,0,0);
     return A * P;
 }
+
 double Bispectrum::sph_bessel_camb(int l, double x)
 {
     // seems to be slightly less fast than boost.
