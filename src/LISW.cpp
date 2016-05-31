@@ -168,3 +168,46 @@ double Bispectrum_LISW::calc_angular_Blll(int l, double z1, double z2, double z3
     term6 = Cl(l, nu3, nu2) * Ql(l, min_z1z3); 
     return W * (term1+term2+term3+term4+term5+term6);
 }
+
+
+double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, double z1, double z2, double z3)
+{
+    double min_z1z2, min_z1z3, min_z2z3;
+    min_z1z2 = z1;
+    min_z1z3 = z1;
+    min_z2z3 = z2;
+    
+    if (z2 < z1)
+        min_z1z2 = z2;
+    if (z3 < z1)
+        min_z1z3 = z3;
+    if (z3 < z2)
+        min_z2z3 = z3;
+
+    double term1, term2, term3, term4, term5, term6;
+    double W3J = WignerSymbols::wigner3j(l1,l2,l3,0,0,0);
+    
+    double pre = 0.5 * sqrt((2.0*l1+1.0)*(2.0*l2+1.0)*(2.0*l3+1.0)/(4.0*pi)) * W3J;
+    // careful with Cl's, here Santos is used so we need to change from redshift to 
+    // frequency.
+    double nu1 = 1420.0/(1.0+z1);
+    double nu2 = 1420.0/(1.0+z2);
+    double nu3 = 1420.0/(1.0+z3);
+  
+    // TODO: Check the nu's and whether they are in the right position.
+    // This obviously doesn't matter if all z's are the same...
+    term1 = Cl(l2, nu1, nu2) * Ql(l3, min_z1z3); 
+    term2 = Cl(l3, nu2, nu3) * Ql(l2, min_z1z2); 
+    term3 = Cl(l3, nu3, nu1) * Ql(l1, min_z2z3); 
+    term4 = Cl(l1, nu1, nu3) * Ql(l3, min_z1z2); 
+    term5 = Cl(l1, nu2, nu1) * Ql(l2, min_z2z3); 
+    term6 = Cl(l2, nu3, nu2) * Ql(l1, min_z1z3); 
+    return pre * (L_lll(l1,l2,l3)*(term1+term2)+\
+            L_lll(l2,l3,l1)*(term3+term4)+\
+            L_lll(l3,l1,l2)*(term5+term6));
+}
+
+double Bispectrum_LISW::L_lll(int l1, int l2, int l3)
+{
+    return (-l1*(l1+1.0) + l2*(l2+1.0) + l3*(l3+1.0));
+}
