@@ -38,8 +38,8 @@ for i in range(0,rows-1):
         if data_new[i][j] == 0:
             data_reduced[i][j] = 0
         else:
-            data_reduced[i][j] = math.log(max_val/data_new[i][j])
-print data_reduced
+            data_reduced[i][j] = math.log(data_new[i][j]/max_val)
+#print data_reduced
 middle = 0.5;
 extent = (0,1,0.5,1)
 plt.imshow(data_new,extent=extent,interpolation='none')
