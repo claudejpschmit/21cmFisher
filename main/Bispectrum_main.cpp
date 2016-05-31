@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
         ofstream file1("LISW_squeezed5.dat");
         
         int l1, l2, l3;
-        l1 = 100;
+        l1 = 10;
         ofstream file_bispectrum("LISW_triangle_values3.dat");
         ofstream file_xy("LISW_triangle_xy3.dat");
         for (l2 = l1/2; l2 <= l1; l2 += 2)
