@@ -219,7 +219,7 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
             W6J = WignerSymbols::wigner6j(la, lb, lc, l7, l6, 1);
             double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
             // For debug:
-            //l_terms = 0;
+            l_terms = 0;
             double I2 = 0;
             if (l_terms != 0){
                 auto integrand2 = [&](double z)
@@ -279,7 +279,7 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
 
             double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
             // For debug:
-            //l_terms = 0;
+            l_terms = 0;
 
             double I3 = 0;
             if (l_terms != 0){

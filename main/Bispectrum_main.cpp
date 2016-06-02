@@ -149,13 +149,15 @@ int main(int argc, char* argv[])
         */
         
         Bispectrum_LISW LISW(analysis);
-        
+        //Bispectrum BS(analysis);
+
         int l1, l2, l3;
-        l1 = 20;
+        l1 = 40;
         int lmin = l1/2;
         if (lmin % 2 == 1) 
             lmin++;
-        ofstream file_bispectrum("output/Bispectrum/Triangle_plots/LISW_triangle_values_l20.dat");
+        //ofstream file_bispectrum("output/Bispectrum/Triangle_plots/Bispectrum_NLG_triangle_l20.dat");
+        ofstream file_bispectrum("output/Bispectrum/Triangle_plots/LISW_triangle_values_l50.dat");
         for (l2 = lmin; l2 <= l1; l2 += 2)
         {
             for (l3 = 0; l3 <= l1; l3 += 2)
@@ -166,6 +168,8 @@ int main(int argc, char* argv[])
                     //do stuff
                     cout << l1 << " " << l2 << " " << l3 << endl;
                     B = abs(LISW.calc_angular_Blll_all_config(l1,l2,l3, 50.0, 50.0, 50.0));
+                    //B = BS.calc_Blll(l1,l2,l3);
+
                     cout << B << endl;
                 }
                 else

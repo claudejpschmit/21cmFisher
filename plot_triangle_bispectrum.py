@@ -16,9 +16,10 @@ ax.annotate('', xy = (0.01,0.98), xytext=(0.48, 0.51), arrowprops=dict(arrowstyl
 ax.annotate('', xy = (0.99,0.98), xytext=(0.52, 0.51), arrowprops=dict(arrowstyle='<->',facecolor='black'))
 ax.annotate('elongated', xy = (0.22,0.72),xytext=(0.22, 0.72), rotation=-45)
 ax.annotate('isoceles', xy = (0.22,0.72),xytext=(0.72, 0.71), rotation=45)
-ax.annotate('$l_1 = 100$', xy = (0.8,0.54),xytext=(0.8, 0.54))
+ax.annotate('$l_1 = 50$', xy = (0.8,0.54),xytext=(0.8, 0.54))
 
-filename = "output/Bispectrum/Triangle_plots/LISW_triangle_values_l100.dat"
+#filename = "output/Bispectrum/Triangle_plots/Bispectrum_NLG_triangle_l20.dat"
+filename = "output/Bispectrum/Triangle_plots/LISW_triangle_values_l50.dat"
 
 f = file(filename)
 data_vals = np.loadtxt(f)
