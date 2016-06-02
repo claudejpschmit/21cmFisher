@@ -850,43 +850,105 @@ double Bispectrum::Blll_PNG_integrand(int la, int lb, int lc, double r)
         double beta_a, beta_b, beta_c, gamma_a, gamma_b, gamma_c;
         if (la == lb)
         {
-            beta_a = beta_l(la,r); 
-            beta_b = beta_a;
-            beta_c = beta_l(lc,r);
-
-            gamma_a = Gamma_l(la,r);
-            gamma_b = gamma_a;
-            gamma_c = Gamma_l(lc,r);
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                {
+                    beta_a = beta_l(la,r); 
+                    beta_b = beta_a;
+                }
+                #pragma omp section
+                {
+                    beta_c = beta_l(lc,r);
+                }
+                #pragma omp section
+                {
+                    gamma_a = Gamma_l(la,r);
+                    gamma_b = gamma_a;
+                }
+                #pragma omp section
+                {
+                    gamma_c = Gamma_l(lc,r);
+                }
+            }
         }
-        else if (la == lb)
+        else if (la == lc)
         {
-            beta_a = beta_l(la,r); 
-            beta_b = beta_l(lb,r);
-            beta_c = beta_a;
-
-            gamma_a = Gamma_l(la,r);
-            gamma_b = Gamma_l(lb,r);
-            gamma_c = gamma_a;
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                {
+                    beta_a = beta_l(la,r); 
+                    beta_c = beta_a;
+                }
+                #pragma omp section
+                {
+                    beta_b = beta_l(lb,r);
+                }
+                #pragma omp section
+                {
+                    gamma_a = Gamma_l(la,r);
+                    gamma_c = gamma_a;
+                }
+                #pragma omp section
+                {
+                    gamma_b = Gamma_l(lb,r);
+                }
+            }
         }
         else if (lb == lc)
         {
-            beta_a = beta_l(la,r); 
-            beta_b = beta_l(lb,r);
-            beta_c = beta_b;
-
-            gamma_a = Gamma_l(la,r);
-            gamma_b = Gamma_l(lb,r);
-            gamma_c = gamma_b;
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                {
+                    beta_a = beta_l(la,r); 
+                }
+                #pragma omp section
+                {
+                    beta_b = beta_l(lb,r);
+                    beta_c = beta_b;
+                }
+                #pragma omp section
+                {
+                    gamma_a = Gamma_l(la,r);
+                }
+                #pragma omp section
+                {
+                    gamma_b = Gamma_l(lb,r);
+                    gamma_c = gamma_b;
+                }
+            }
         }
         else
         {
-            beta_a = beta_l(la,r); 
-            beta_b = beta_l(lb,r);
-            beta_c = beta_l(lc,r);
-
-            gamma_a = Gamma_l(la,r);
-            gamma_b = Gamma_l(lb,r);
-            gamma_c = Gamma_l(lc,r);
+            #pragma omp parallel sections
+            {
+                #pragma omp section
+                {
+                    beta_a = beta_l(la,r); 
+                }
+                #pragma omp section
+                {
+                    beta_b = beta_l(lb,r);
+                }
+                #pragma omp section
+                {
+                    beta_c = beta_l(lc,r);
+                }
+                #pragma omp section
+                {
+                    gamma_a = Gamma_l(la,r);
+                }
+                #pragma omp section
+                {
+                    gamma_b = Gamma_l(lb,r);
+                }
+                #pragma omp section
+                {
+                    gamma_c = Gamma_l(lc,r);
+                }
+            }
         }
         sum = beta_a * beta_b * gamma_c +\
               beta_b * beta_c * gamma_a +\
