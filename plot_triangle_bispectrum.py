@@ -20,7 +20,7 @@ ax.annotate('$l_1 = 1000$', xy = (0.8,0.54),xytext=(0.8, 0.54), fontsize = 16)
 plt.title('Bispectrum due to LISW')
 
 #filename = "output/Bispectrum/Triangle_plots/Bispectrum_NLG_triangle_l20.dat"
-filename = "output/Bispectrum/Triangle_plots/LISW_triangle_values_l1000_new.dat"
+filename = "output/Bispectrum/Triangle_plots/LISW_triangle_values_l1000.dat"
 
 f = file(filename)
 data_vals = np.loadtxt(f)
@@ -51,7 +51,7 @@ for i in range(0,rows):
         if data_new[i][j] == 0:
             data_reduced[i][j] = np.nan
         else:
-            data_reduced[i][j] = math.log(data_new[i][j]/max_val)
+            data_reduced[i][j] = math.log10(data_new[i][j]/max_val)
             data.append(data_reduced[i][j])
 #print imax, jmax, data_new[imax][jmax], max_val
 
@@ -68,6 +68,6 @@ norm = colors.LogNorm()
 plt.colorbar(cax=cax)
 plt.title('Small difference between \n $B_{l_1l_2l_3}$ and $B_{max}$', y = 1.03, fontsize=16)
 plt.xlabel('\n \n Large difference between \n $B_{l_1l_2l_3}$ and $B_{max}$', fontsize=16)
-plt.ylabel(r'$\ln\left(\frac{B_{l_1l_2l_3}}{B_{max}}\right)$', fontsize=16)
+plt.ylabel(r'$\log_{10}\left(\frac{B_{l_1l_2l_3}}{B_{max}}\right)$', fontsize=16)
 
 plt.show()

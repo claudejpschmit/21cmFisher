@@ -820,7 +820,7 @@ double Bispectrum::Blll_PNG(int la, int lb, int lc, double fNL)
     {   
         return Blll_PNG_integrand_z(la, lb, lc, z);
     };
-    double I = integrate(integrand, 49.0, 51.0, 100, simpson());
+    double I = integrate(integrand, 49.5, 50.5, 10, simpson());
     double W3J = WignerSymbols::wigner3j(la,lb,lc,0,0,0);
     double pre = (16.0/pow(pi,3)) * fNL *\
                  sqrt(((2.0*la+1.0) * (2.0*lb+1.0) * (2.0*lc+1.0))/(4.0*pi)) * W3J;
@@ -841,8 +841,18 @@ double Bispectrum::Blll_PNG_integrand(int la, int lb, int lc, double r)
     double sum = 0;
     if (la == lb and la == lc)
     {
-        double beta = beta_l(la,r); 
-        double gamma = Gamma_l(la,r);
+        double beta, gamma;
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            {
+                beta = beta_l(la,r); 
+            }
+            #pragma omp section
+            {
+                gamma = Gamma_l(la,r);
+            }
+        }
         sum = 3.0 * beta * beta * gamma;
     }
     else 
