@@ -15,7 +15,7 @@ ax.annotate('', xy = (0.01,0.98), xytext=(0.48, 0.51), arrowprops=dict(arrowstyl
 ax.annotate('', xy = (0.99,0.98), xytext=(0.52, 0.51), arrowprops=dict(arrowstyle='<->',facecolor='black'))
 ax.annotate('elongated', xy = (0.22,0.72),xytext=(0.22, 0.72), rotation=-45)
 ax.annotate('isoceles', xy = (0.22,0.72),xytext=(0.72, 0.71), rotation=45)
-
+ax.annotate('$l_1 = 100$', xy = (0.8,0.54),xytext=(0.8, 0.54))
 xs1 = []
 ys1 = []
 
@@ -43,6 +43,8 @@ for i in range(0,rows-1):
     for j in range(0,columns-1):
         if max_val < data_new[i][j]:
             max_val = data_new[i][j]
+
+ax.annotate('$B_{max} = %s$' % max_val, xy = (0.8,0.52), xytext=(0.8, 0.52))
 
 data_reduced = copy.copy(data_new)
 for i in range(0,rows-1):
