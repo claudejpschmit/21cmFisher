@@ -1,6 +1,8 @@
 #include "LISW.hpp"
 #include "wignerSymbols.h"
 #include "Integrator.hpp"
+#include <fstream>
+#include <math.h>
 
 
 Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
@@ -56,10 +58,10 @@ double Bispectrum_LISW::W_lll_mmm(int l1, int l2, int l3, int m1, int m2, int m3
     return 0.5 * pow(-1.0, m1+m2+m3) * (l3*(l3+1.0) + l2*(l2+1.0) - l1*(l1+1.0)) * Gaunt_integral;
 }
 
-double Bispectrum_LISW::Cl(int l, double z1, double z2)
+double Bispectrum_LISW::Cl(int l, double nu1, double nu2)
 {
     cout << "Calculating Cl" << endl;
-    return analysis->Cl(l,z1,z2,0,0,0);
+    return analysis->Cl(l,nu1,nu2,0,0,0);
 }
 
 double Bispectrum_LISW::Ql(int l, double z)
@@ -211,3 +213,100 @@ double Bispectrum_LISW::L_lll(int l1, int l2, int l3)
 {
     return (-l1*(l1+1.0) + l2*(l2+1.0) + l3*(l3+1.0));
 }
+
+double Bispectrum_LISW::Cl_noise(int l, double nu1, double nu2)
+{
+    return analysis->Cl_noise(l, nu1, nu2);
+}
+
+double Bispectrum_LISW::sigma_squared_a(int l1, int l2, int l3, double z1, double z2, double z3)
+{
+    double nu1 = 1420.0/(1.0+z1);
+    double nu2 = 1420.0/(1.0+z2);
+    double nu3 = 1420.0/(1.0+z3);
+
+    double DELTA = 1.0;
+    if (l1 == l2 and l1 == l3)
+        DELTA = 6.0;
+    else if (l1 == l2 or l1 == l3 or l2 == l3)
+        DELTA = 3.0;
+    else
+        DELTA = 1.0;
+
+    double Cl1 = Cl(l1,nu1,nu1) + Cl_noise(l1,nu1,nu1);
+    double Cl2 = Cl(l2,nu2,nu2) + Cl_noise(l2,nu2,nu2);
+    double Cl3 = Cl(l3,nu3,nu3) + Cl_noise(l3,nu3,nu3);
+    return Cl1 * Cl2 * Cl3 * DELTA;
+}
+
+vector<vector<double>> Bispectrum_LISW::build_triangle(int lmax, double z,\
+        string filename, bool variance_included)
+{
+    vector<vector<double>> result;
+    int l1, l2, l3;
+    l1 = lmax;
+    int lmin = l1/2;
+    if (lmin % 2 == 1) 
+        lmin++;
+    stringstream name;
+    name << "output/Bispectrum/Triangle_plots/SN/" << filename; 
+    ofstream file_bispectrum(name.str());
+    for (l2 = lmin; l2 <= l1; l2 += 2)
+    {
+        vector<double> row;
+        for (l3 = 0; l3 <= l1; l3 += 2)
+        {
+            double B = 0;
+            double sigma = 1.0;
+            if (l3 >= (l1-l2) and l3 <= l2)
+            {
+                //do stuff
+                cout << l1 << " " << l2 << " " << l3 << endl;
+                B = abs(calc_angular_Blll_all_config(l1,l2,l3, z, z, z));
+                if (l1 == l2 and l3 == 0)
+                {
+                    B = 0;
+                }
+
+                if (variance_included)
+                    sigma = sigma_squared_a(l1,l2,l3,z,z,z);
+
+            }
+            else
+            {
+                //enter 0
+                B = 0;
+                sigma = 1.0;
+            }
+            file_bispectrum << B/sigma << " ";
+            row.push_back(B/sigma);
+        }
+        file_bispectrum << endl;
+        result.push_back(row);
+    }
+    return result;
+}
+
+void Bispectrum_LISW::detection_SN(int lmin, int lmax, double z, string SN_filename)
+{
+    ofstream file(SN_filename);
+    string name_base = "LISW_SN_triangle_l"; 
+    double SN = 0;
+    for (int l = lmin; l < lmax; l+=2)
+    {
+        stringstream name;
+        name << name_base << l << ".dat";
+        vector<vector<double>> triangle = build_triangle(l, z, name.str(),true);
+        for (int i = 0; i < triangle.size(); i++)
+        {
+            for (int j = 0; j < triangle[0].size(); j++)
+            {
+                SN += triangle[i][j];
+            }
+        }
+        file << l << " " << SN << endl;
+    }
+
+}
+
+

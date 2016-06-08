@@ -148,8 +148,11 @@ int main(int argc, char* argv[])
             file3 << 0.1*z << " " << BS.f1b(0.1*z) << endl;
         */
         
-        //Bispectrum_LISW LISW(analysis);
-        Bispectrum BS(analysis);
+        Bispectrum_LISW LISW(analysis);
+        LISW.detection_SN(20,60,50.0, "SN_20-1000.dat");
+        
+        
+        /*Bispectrum BS(analysis);
 
         int l1, l2, l3;
         l1 = 40;
@@ -182,7 +185,7 @@ int main(int argc, char* argv[])
             }
             file_bispectrum << endl;
         }
-        
+        */
         //Bispectrum BS(analysis);
         //ofstream file2("Blll_squeezed.dat");
         /*vector<int> l_list;
