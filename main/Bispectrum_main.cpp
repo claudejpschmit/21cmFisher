@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
         */
         
         Bispectrum_LISW LISW(analysis);
-        LISW.detection_SN(20,60,50.0, "SN_20-1000.dat");
+        LISW.detection_SN(20,1000, 2,50.0, "SN_20-1000_all.dat");
         
         
         /*Bispectrum BS(analysis);

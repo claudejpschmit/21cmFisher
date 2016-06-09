@@ -249,50 +249,70 @@ vector<vector<double>> Bispectrum_LISW::build_triangle(int lmax, double z,\
     if (lmin % 2 == 1) 
         lmin++;
     stringstream name;
-    name << "output/Bispectrum/Triangle_plots/SN/" << filename; 
-    ofstream file_bispectrum(name.str());
-    for (l2 = lmin; l2 <= l1; l2 += 2)
-    {
-        vector<double> row;
-        for (l3 = 0; l3 <= l1; l3 += 2)
+    name << "output/Bispectrum/Triangle_plots/SN/" << filename;
+    ifstream infile(name.str());
+    if (infile.good()){
+        cout << "Reading file " << name.str() << endl;
+        string line;
+        while (getline(infile,line))
         {
-            double B = 0;
-            double sigma = 1.0;
-            if (l3 >= (l1-l2) and l3 <= l2)
+            istringstream iss(line);
+            double val;
+            vector<double> row;
+            while (iss >> val)
             {
-                //do stuff
-                cout << l1 << " " << l2 << " " << l3 << endl;
-                B = abs(calc_angular_Blll_all_config(l1,l2,l3, z, z, z));
-                if (l1 == l2 and l3 == 0)
-                {
-                    B = 0;
-                }
-
-                if (variance_included)
-                    sigma = sigma_squared_a(l1,l2,l3,z,z,z);
-
+                row.push_back(val);
             }
-            else
-            {
-                //enter 0
-                B = 0;
-                sigma = 1.0;
-            }
-            file_bispectrum << B/sigma << " ";
-            row.push_back(B/sigma);
+            result.push_back(row);
         }
-        file_bispectrum << endl;
-        result.push_back(row);
+    }
+    else {    
+        infile.close();
+        ofstream file_bispectrum(name.str());
+        for (l2 = lmin; l2 <= l1; l2 += 2)
+        {
+            vector<double> row;
+            for (l3 = 0; l3 <= l1; l3 += 2)
+            {
+                double B = 0;
+                double sigma = 1.0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {
+                    //do stuff
+                    cout << l1 << " " << l2 << " " << l3 << endl;
+                    B = abs(calc_angular_Blll_all_config(l1,l2,l3, z, z, z));
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+
+                    if (variance_included)
+                        sigma = sigma_squared_a(l1,l2,l3,z,z,z);
+
+                }
+                else
+                {
+                    //enter 0
+                    B = 0;
+                    sigma = 1.0;
+                }
+                file_bispectrum << B/sigma << " ";
+                row.push_back(B/sigma);
+            }
+            file_bispectrum << endl;
+            result.push_back(row);
+        }
     }
     return result;
 }
 
-void Bispectrum_LISW::detection_SN(int lmin, int lmax, double z, string SN_filename)
+void Bispectrum_LISW::detection_SN(int lmin, int lmax, int delta_l, double z, string SN_filename)
 {
     ofstream file(SN_filename);
     string name_base = "LISW_SN_triangle_l"; 
+    double mult_fact = delta_l/2.0;
     double SN = 0;
-    for (int l = lmin; l < lmax; l+=2)
+    for (int l = lmin; l < lmax; l+=delta_l)
     {
         stringstream name;
         name << name_base << l << ".dat";
@@ -301,7 +321,7 @@ void Bispectrum_LISW::detection_SN(int lmin, int lmax, double z, string SN_filen
         {
             for (int j = 0; j < triangle[0].size(); j++)
             {
-                SN += triangle[i][j];
+                SN += mult_fact*triangle[i][j];
             }
         }
         file << l << " " << SN << endl;
