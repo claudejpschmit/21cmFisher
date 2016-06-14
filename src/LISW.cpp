@@ -324,9 +324,171 @@ void Bispectrum_LISW::detection_SN(int lmin, int lmax, int delta_l, double z, st
                 SN += mult_fact*triangle[i][j];
             }
         }
-        file << l << " " << SN << endl;
+        file << l << " " << sqrt(SN) << endl;
     }
 
 }
 
+vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngaps_x, int ngaps_y,\
+        double z, string filename, bool variance_included)
+{
+    bool debug = false;
+    vector<vector<double>> result;
+    int l1, l2, l3;
+    l1 = lmax;
+    int lmin = l1/2;
+    if (lmin % 2 == 1) 
+        lmin++;
+    stringstream name;
+    name << "output/Bispectrum/Triangle_plots/SN_sparse/" << filename;
+    ifstream infile(name.str());
+    
+    // make a list of modes that should be calculated.
+    vector<double> xmodes, ymodes;
+    int nmax_x = lmax/2 + 1;
+    int nmax_y = lmax/4 + 1;
+    int gaps_x = nmax_x/3;
+    int gaps_y = nmax_y/2;
+    if (ngaps_x < gaps_x)
+        gaps_x = ngaps_x;
+    if (ngaps_y < gaps_y)
+        gaps_y = ngaps_y;
+
+    int next_mode_x = 0;
+    for (int i = 0; i <= nmax_x; i++)
+    {
+        if (i == next_mode_x)
+        {
+            xmodes.push_back(i);
+            next_mode_x += 1+gaps_x;
+        }
+    }
+    int next_mode_y = 0;
+    for (int i = 0; i <= nmax_y; i++)
+    {
+        if (i == next_mode_y)
+        {
+            ymodes.push_back(i);
+            next_mode_y += 1+gaps_y;
+        }
+    }
+
+    if (infile.good() && !debug){
+        cout << "Reading file " << name.str() << endl;
+        string line;
+        while (getline(infile,line))
+        {
+            istringstream iss(line);
+            double val;
+            vector<double> row;
+            while (iss >> val)
+            {
+                row.push_back(val);
+            }
+            result.push_back(row);
+        }
+    }
+    else {    
+        infile.close();
+        ofstream file_bispectrum(name.str());
+     
+        int y_count = 0;
+        for (l2 = lmin; l2 <= l1; l2 += 2)
+        {
+            vector<double> row;
+            if (ymodes[y_count] == (l2-lmin)/2)
+            {
+                y_count++;
+                if (y_count > ymodes.size())
+                    y_count--;
+
+
+                int x_count = 0;
+                for (l3 = 0; l3 <= l1; l3 += 2)
+                {
+                    double B = 0;
+                    double sigma = 1.0;
+
+                    if (xmodes[x_count] == l3/2)
+                    {
+                        x_count++;
+                        if (x_count > xmodes.size())
+                            x_count--;
+
+                        if (l3 >= (l1-l2) and l3 <= l2)
+                        {
+                                                
+                            //do stuff
+                            cout << l1 << " " << l2 << " " << l3 << endl;
+                            B = abs(calc_angular_Blll_all_config(l1,l2,l3, z, z, z));
+                            if (l1 == l2 and l3 == 0)
+                            {
+                                B = 0;
+                            }
+
+                            if (variance_included)
+                                sigma = sigma_squared_a(l1,l2,l3,z,z,z);
+                        
+                        }
+                        else 
+                        {
+                            B = 0;
+                            sigma = 1.0;
+                        }
+                    }
+                    else
+                    {
+                        //enter 0
+                        B = 0;
+                        sigma = 1.0;
+                    }
+                    file_bispectrum << B/sigma << " ";
+                    row.push_back(B/sigma);
+                }
+            }
+            else
+            {
+                for (l3 = 0; l3 <= l1; l3 += 2)
+                {
+                    file_bispectrum << 0 << " ";
+                    row.push_back(0);
+                }
+            }
+            file_bispectrum << endl;
+            result.push_back(row);
+        }
+    }
+    return result;
+}
+
+void Bispectrum_LISW::detection_SN_sparse(int lmin, int lmax, int delta_l, int gaps,\
+        double z, string SN_filename)
+{
+    ofstream file(SN_filename);
+    string name_base = "LISW_SN_triangle_l"; 
+    double mult_fact = delta_l/2.0;
+   
+    double SN = 0;
+    for (int l = lmin; l < lmax; l+=delta_l)
+    {
+        int nmax_y = lmax/4 + 1;
+        int gaps_y = nmax_y/2;
+   
+        if (gaps < gaps_y)
+            gaps_y = gaps;
+        
+        stringstream name;
+        name << name_base << l << "_gaps"<<gaps_y<<".dat";
+        vector<vector<double>> triangle = build_triangle_sparse(l, gaps_y, gaps_y, z, name.str(),true);
+        for (int i = 0; i < triangle.size(); i++)
+        {
+            for (int j = 0; j < triangle[0].size(); j++)
+            {
+                SN += mult_fact*(gaps+1)*(gaps+1)*triangle[i][j];
+            }
+        }
+        file << l << " " << sqrt(SN) << endl;
+    }
+
+}
 

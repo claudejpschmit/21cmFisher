@@ -21,7 +21,12 @@ class Bispectrum_LISW {
         double Cl_noise(int l, double nu1, double nu2);
         vector<vector<double>> build_triangle(int lmax, double z,\
                 string filename, bool variance_included);
+        vector<vector<double>> build_triangle_sparse(int lmax, int ngaps_x, int ngaps_y, double z,\
+                string filename, bool variance_included);
+
         void detection_SN(int lmin, int lmax, int delta_l, double z, string filename);
+        void detection_SN_sparse(int lmin, int lmax, int delta_l, int gaps,\
+                double z, string SN_filename);
 
     private:
         double W_lll_mmm(int l1, int l2, int l3, int m1, int m2, int m3);

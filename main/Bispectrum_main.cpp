@@ -149,9 +149,30 @@ int main(int argc, char* argv[])
         */
         
         Bispectrum_LISW LISW(analysis);
-        LISW.detection_SN(20,1000, 2,50.0, "SN_20-1000_all.dat");
+        //LISW.detection_SN(20,100, 10,50.0, "SN_20-100_delta10.dat");
+        LISW.detection_SN_sparse(20,100,10, 2, 50.0, "SN_20-100_sparse_2.dat");
+        /*vector<vector<double>> triangle = LISW.build_triangle_sparse(40, 1,1,50.0,"test_sparse.dat",true);
+        double SN = 0;
+        for (int i = 0; i < triangle.size(); i++)
+        {
+            for (int j = 0; j < triangle[0].size(); j++)
+            {
+                SN += 4*triangle[i][j];
+            }
+        }
+        cout << "SN from sparse matrix = " << sqrt(SN) << endl;
         
-        
+        vector<vector<double>> triangle2 = LISW.build_triangle(40, 50.0, "test_full.dat", true);
+        double SN2 = 0;
+        for (int i = 0; i < triangle2.size(); i++)
+        {
+            for (int j = 0; j < triangle2[0].size(); j++)
+            {
+                SN2 += triangle2[i][j];
+            }
+        }
+        cout << "SN from full matrix = " << sqrt(SN2) << endl;
+        */
         /*Bispectrum BS(analysis);
 
         int l1, l2, l3;

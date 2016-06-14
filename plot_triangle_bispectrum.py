@@ -20,7 +20,7 @@ ax.annotate('$l_1 = 1000$', xy = (0.8,0.54),xytext=(0.8, 0.54), fontsize = 16)
 plt.title('Bispectrum due to Non-Linear Gravity')
 
 #filename = "output/Bispectrum/Triangle_plots/Bispectrum_NLG_triangle_l40.dat"
-filename = "output/Bispectrum/Triangle_plots/SN/LISW_SN_triangle_l24.dat"
+filename = "output/Bispectrum/Triangle_plots/SN_sparse/LISW_SN_triangle_l90_gaps2.dat"
 
 f = file(filename)
 data_vals = np.loadtxt(f)
