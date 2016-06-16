@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
         
         Bispectrum_LISW LISW(analysis);
         //LISW.detection_SN(20,100, 10,50.0, "SN_20-100_delta10.dat");
-        LISW.detection_SN_sparse(20,100,10, 2, 50.0, "SN_20-100_sparse_2.dat");
+        LISW.detection_SN_sparse(1000, 10000, 1000, 5, 50.0, 2.4, "SN_1000-10000_sparse_5.dat");
         /*vector<vector<double>> triangle = LISW.build_triangle_sparse(40, 1,1,50.0,"test_sparse.dat",true);
         double SN = 0;
         for (int i = 0; i < triangle.size(); i++)

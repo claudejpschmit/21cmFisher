@@ -462,13 +462,17 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
 }
 
 void Bispectrum_LISW::detection_SN_sparse(int lmin, int lmax, int delta_l, int gaps,\
-        double z, string SN_filename)
+        double z, double IniValue,string SN_filename)
 {
     ofstream file(SN_filename);
     string name_base = "LISW_SN_triangle_l"; 
     double mult_fact = delta_l/2.0;
    
-    double SN = 0;
+    double SN;
+    if (IniValue < 0)
+        SN = 0;
+    else 
+        SN = IniValue;
     for (int l = lmin; l < lmax; l+=delta_l)
     {
         int nmax_y = lmax/4 + 1;
