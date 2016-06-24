@@ -28,6 +28,7 @@ OPTFLAG = -O4
 ARMAFLAGS = -larmadillo
 GSLFLAGS = -lgsl -lgslcblas
 WIGNERFLAGS = -lwignerSymbols
+CUBAFLAGS = -lcuba
 
 # This decreases the precision of the bessel functions significantly if 
 # added to the compilation of the files containing boost->sph_bess(l,x).
@@ -50,7 +51,7 @@ INCLUDES += -I/usr/include
 LINKER += -L/usr/lib
 
 %.o: %.cpp .base
-	cd $(WRKDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(CCFLAG) $(INCLUDES) -c ../$< -o $*.o $(ARMAFLAGS) $(GSLFLAGS)
+	cd $(WRKDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(CCFLAG) $(INCLUDES) -c ../$< -o $*.o $(ARMAFLAGS) $(GSLFLAGS) $(CUBAFLAGS) -lm
 
 ALGLIB = alglibinternal.o alglibmisc.o ap.o dataanalysis.o diffequations.o\
 		 fasttransforms.o integration.o interpolation.o linalg.o optimization.o\
@@ -85,7 +86,7 @@ sortFiles: $(SORTING)
 
 bispectrum: $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM) $(ODE)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
-		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(BOOSTFLAGS)
+		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(CUBAFLAGS) $(BOOSTFLAGS)
 
 
 clean: .base

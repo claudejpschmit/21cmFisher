@@ -3,7 +3,37 @@
 #include "Integrator.hpp"
 #include <fstream>
 #include <math.h>
+#include "cuba.h"
 
+#define NDIM 3			// definitions for libcuba
+#define NCOMP 1
+#define EPSREL 1e-3		// LibCUBA tries to get the "easier" accuracy 
+#define EPSABS 1e-20		// here, epsrel is easier to fulfill than epsabs (integral ~ 1e-5...1e-10)
+#define VERBOSE 0
+#define SEED 0
+#define NVEC 1
+#define MINEVAL 0
+#define MAXEVAL 10000 	// choose adaptively with a power law on lmax!
+#define NSTART 1000
+#define NINCREASE 500
+#define NBATCH 1000
+#define GRIDNO 0
+#define SPIN NULL
+#define STATEFILE NULL
+#define LAST 4
+#define KEY 0
+#define NNEW 1000
+#define FLATNESS 25.
+#define KEY1 47
+#define KEY2 1
+#define KEY3 1
+#define MAXPASS 5
+#define BORDER 0.
+#define MAXCHISQ 10.
+#define MINDEVIATION .25
+#define NGIVEN 0
+#define LDXGIVEN NDIM
+#define NEXTRA 0
 
 Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
 {
@@ -493,6 +523,71 @@ void Bispectrum_LISW::detection_SN_sparse(int lmin, int lmax, int delta_l, int g
         }
         file << l << " " << sqrt(SN) << endl;
     }
+}
 
+void Bispectrum_LISW::test_MC()
+{
+    auto integrand = [&](const int *ndim, const double xx[], const int *ncomp, double ff[], void *userdata)
+    {
+        double sum, aux, sigma, result;
+        int i,n = *ndim;
+        sigma = 0.1;
+        sigma *= sigma;
+
+        sum = 0.0;
+        for (i = 0; i < n; i++)
+        {
+            aux = xx[i] - 0.5;
+            sum += aux * aux;
+        }
+        result = exp(-sum/2.0/sigma) / pow(2.0 * 3.1415 * sigma, n/2.0);
+        ff[0] = result;
+        double a = f(2);
+        return(-998);
+    };
+
+    double error,prob,result;
+	int neval,fail;
+		
+	Vegas(NDIM,NCOMP,integrand,NULL,NVEC,EPSREL,EPSABS,VERBOSE,SEED,MINEVAL,\
+            MAXEVAL,NSTART,NINCREASE,NBATCH,GRIDNO,STATEFILE,SPIN,&neval,&fail,\
+            &result,&error,&prob);
+	
+	printf("result = %e +/- %e\n",result,error);
+
+}
+
+void Bispectrum_LISW::detection_SN_MC(int lmax, double z)
+{
+    double error,prob,result;
+	int neval,fail;
+		
+	Vegas(NDIM,NCOMP,f,NULL,NVEC,EPSREL,EPSABS,VERBOSE,SEED,MINEVAL,\
+            MAXEVAL,NSTART,NINCREASE,NBATCH,GRIDNO,STATEFILE,SPIN,&neval,&fail,\
+            &result,&error,&prob);
+	
+	printf("result = %e +/- %e\n",result,error);
+
+}
+
+double Bispectrum_LISW::f(const int *ndim, const double xx[], const int *ncomp, double ff[], void *userdata)
+{
+    double sum, aux, sigma, result;
+    int i,n = *ndim;
+    sigma = 0.1;
+    sigma *= sigma;
+
+    sum = 0.0;
+    for (i = 0; i < n; i++)
+    {
+        aux = xx[i] - 0.5;
+        sum += aux * aux;
+    }
+    result = exp(-sum/2.0/sigma) / pow(2.0 * 3.1415 * sigma, n/2.0);
+    ff[0] = result;
+    //double B = analysis->Cl_noise(1,10,10);
+
+        
+    return(-998);
 }
 

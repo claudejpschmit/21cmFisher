@@ -14,9 +14,9 @@ ys2 = []
 xs3 = []
 ys3 = []
 
-filename2 = "Bispectrum_PNG.dat"
-filename1 = "LISW_compare.dat"
-filename3 = "Bispectrum_equilateral_new.dat"
+filename2 = "output/Bispectrum/Bispectrum_PNG.dat"
+filename1 = "output/Bispectrum/LISW_compare.dat"
+filename3 = "output/Bispectrum/Bispectrum_equilateral_new.dat"
 f1 = file(filename1)
 f2 = file(filename2)
 f3 = file(filename3)
@@ -71,4 +71,5 @@ plt.plot(xs3,y2, label = 'Non-linear Gravity', linewidth = 2, linestyle = '--')
 plt.legend(loc = 3)
 plt.xlabel(r'$l$')
 plt.ylabel(r'$|B_{lll}|$ (mK$^3$)')
+plt.title(r'Contributions to the 21cm Bispectrum at $z=50$')
 plt.show()
