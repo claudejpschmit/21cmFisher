@@ -29,8 +29,7 @@ class Bispectrum_LISW {
                 double z, double IniValue, string SN_filename);
         void detection_SN_MC(int lmax, double z);
         void test_MC();
-        double f(const int *ndim, const double xx[], const int *ncomp, double ff[], void *userdata);
-
+        double f(double sum, double sigma, int n);
     private:
         double W_lll_mmm(int l1, int l2, int l3, int m1, int m2, int m3);
         double L_lll(int l1, int l2, int l3);

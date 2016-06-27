@@ -527,8 +527,9 @@ void Bispectrum_LISW::detection_SN_sparse(int lmin, int lmax, int delta_l, int g
 
 void Bispectrum_LISW::test_MC()
 {
-    auto integrand = [&](const int *ndim, const double xx[], const int *ncomp, double ff[], void *userdata)
+    auto integrand = [](const int *ndim, const double xx[], const int *ncomp, double ff[], void *userdata)
     {
+        auto This = (Bispectrum_LISW*) userdata;
         double sum, aux, sigma, result;
         int i,n = *ndim;
         sigma = 0.1;
@@ -540,16 +541,15 @@ void Bispectrum_LISW::test_MC()
             aux = xx[i] - 0.5;
             sum += aux * aux;
         }
-        result = exp(-sum/2.0/sigma) / pow(2.0 * 3.1415 * sigma, n/2.0);
+        result = This->f(sum, sigma, n);
         ff[0] = result;
-        double a = f(2);
         return(-998);
     };
 
     double error,prob,result;
 	int neval,fail;
 		
-	Vegas(NDIM,NCOMP,integrand,NULL,NVEC,EPSREL,EPSABS,VERBOSE,SEED,MINEVAL,\
+	Vegas(NDIM,NCOMP,integrand,this,NVEC,EPSREL,EPSABS,VERBOSE,SEED,MINEVAL,\
             MAXEVAL,NSTART,NINCREASE,NBATCH,GRIDNO,STATEFILE,SPIN,&neval,&fail,\
             &result,&error,&prob);
 	
@@ -559,35 +559,12 @@ void Bispectrum_LISW::test_MC()
 
 void Bispectrum_LISW::detection_SN_MC(int lmax, double z)
 {
-    double error,prob,result;
-	int neval,fail;
-		
-	Vegas(NDIM,NCOMP,f,NULL,NVEC,EPSREL,EPSABS,VERBOSE,SEED,MINEVAL,\
-            MAXEVAL,NSTART,NINCREASE,NBATCH,GRIDNO,STATEFILE,SPIN,&neval,&fail,\
-            &result,&error,&prob);
-	
-	printf("result = %e +/- %e\n",result,error);
-
+    
 }
 
-double Bispectrum_LISW::f(const int *ndim, const double xx[], const int *ncomp, double ff[], void *userdata)
+double Bispectrum_LISW::f(double sum, double sigma, int n)
 {
-    double sum, aux, sigma, result;
-    int i,n = *ndim;
-    sigma = 0.1;
-    sigma *= sigma;
-
-    sum = 0.0;
-    for (i = 0; i < n; i++)
-    {
-        aux = xx[i] - 0.5;
-        sum += aux * aux;
-    }
-    result = exp(-sum/2.0/sigma) / pow(2.0 * 3.1415 * sigma, n/2.0);
-    ff[0] = result;
-    //double B = analysis->Cl_noise(1,10,10);
-
-        
-    return(-998);
+    return exp(-sum/2.0/sigma) /\
+        pow(2.0 * 3.1415 * sigma, n/2.0);
 }
 
