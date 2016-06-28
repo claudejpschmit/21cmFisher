@@ -8,7 +8,7 @@
 #define NDIM 3			// definitions for libcuba
 #define NCOMP 1
 #define EPSREL 1e-3		// LibCUBA tries to get the "easier" accuracy 
-#define EPSABS 1e-20		// here, epsrel is easier to fulfill than epsabs (integral ~ 1e-5...1e-10)
+#define EPSABS 1e-5		// here, epsrel is easier to fulfill than epsabs (integral ~ 1e-5...1e-10) (base value is 1e-20)
 #define VERBOSE 0
 #define SEED 0
 #define NVEC 1
@@ -204,7 +204,7 @@ double Bispectrum_LISW::calc_angular_Blll(int l, double z1, double z2, double z3
 
 double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, double z1, double z2, double z3)
 {
-    cout << "B, l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << endl;
+    cout << "B, l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << l3 << endl;
     double min_z1z2, min_z1z3, min_z2z3;
     min_z1z2 = z1;
     min_z1z3 = z1;
@@ -566,7 +566,7 @@ void Bispectrum_LISW::detection_SN_MC(int lmax, double z)
     {
         auto This = (Bispectrum_LISW*) userdata;
         double result;
-        int lmax = This->lmax_calculated;
+        int lmax = 1+This->lmax_calculated;
         double z = This->redshift_z;
         double l1 = ll[0] * lmax;
         double l2 = ll[1] * lmax;
