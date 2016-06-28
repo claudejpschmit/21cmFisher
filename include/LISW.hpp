@@ -38,5 +38,7 @@ class Bispectrum_LISW {
         //AnalysisInterface is the general interface which calculates the Cls.
         AnalysisInterface* analysis;
         double pi = M_PI;
+        double redshift_z;
+        int lmax_calculated;
 
 };

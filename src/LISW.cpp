@@ -559,7 +559,33 @@ void Bispectrum_LISW::test_MC()
 
 void Bispectrum_LISW::detection_SN_MC(int lmax, double z)
 {
-    
+    this->lmax_calculated = lmax;
+    this->redshift_z = z;
+    auto integrand = [](const int *ndim, const double ll[], const int *ncomp, double ff[], void *userdata)
+    {
+        auto This = (Bispectrum_LISW*) userdata;
+        double result;
+        int lmax = This->lmax_calculated;
+        double z = This->redshift_z;
+        double l1 = ll[0] * lmax;
+        double l2 = ll[1] * lmax;
+        double l3 = ll[2] * lmax;
+        double B = abs(This->calc_angular_Blll_all_config((int)l1,(int)l2,(int)l3, z, z, z));
+        double sigma = This->sigma_squared_a((int)l1,(int)l2,(int)l3,z,z,z);
+        result = sqrt(B/sigma);
+        ff[0] = result;
+        return(-998);
+    };
+
+    double error,prob,result;
+	int neval,fail;
+		
+	Vegas(NDIM,NCOMP,integrand,this,NVEC,EPSREL,EPSABS,VERBOSE,SEED,MINEVAL,\
+            MAXEVAL,NSTART,NINCREASE,NBATCH,GRIDNO,STATEFILE,SPIN,&neval,&fail,\
+            &result,&error,&prob);
+	
+	printf("result = %e +/- %e\n",result,error);
+
 }
 
 double Bispectrum_LISW::f(double sum, double sigma, int n)
