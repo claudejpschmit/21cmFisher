@@ -204,7 +204,6 @@ double Bispectrum_LISW::calc_angular_Blll(int l, double z1, double z2, double z3
 
 double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, double z1, double z2, double z3)
 {
-    cout << "B, l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << l3 << endl;
     double min_z1z2, min_z1z3, min_z2z3;
     min_z1z2 = z1;
     min_z1z3 = z1;
@@ -235,9 +234,13 @@ double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, dou
     term4 = Cl(l1, nu1, nu3) * Ql(l3, min_z1z2); 
     term5 = Cl(l1, nu2, nu1) * Ql(l2, min_z2z3); 
     term6 = Cl(l2, nu3, nu2) * Ql(l1, min_z1z3); 
-    return pre * (L_lll(l1,l2,l3)*(term1+term2)+\
+
+    double result = pre * (L_lll(l1,l2,l3)*(term1+term2)+\
             L_lll(l2,l3,l1)*(term3+term4)+\
             L_lll(l3,l1,l2)*(term5+term6));
+    
+    cout << "B = " << result << ", l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << l3 << endl;
+    return result;
 }
 
 double Bispectrum_LISW::L_lll(int l1, int l2, int l3)
