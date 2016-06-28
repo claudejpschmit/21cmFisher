@@ -90,13 +90,13 @@ double Bispectrum_LISW::W_lll_mmm(int l1, int l2, int l3, int m1, int m2, int m3
 
 double Bispectrum_LISW::Cl(int l, double nu1, double nu2)
 {
-    cout << "Calculating Cl" << endl;
+    //cout << "Calculating Cl" << endl;
     return analysis->Cl(l,nu1,nu2,0,0,0);
 }
 
 double Bispectrum_LISW::Ql(int l, double z)
 {
-    cout << "Calculating Ql" << endl;
+    //cout << "Calculating Ql" << endl;
     double r = analysis->model->r_interp(z);
     double h = 0.001;
     double dTbdz = analysis->model->T21_interp(z+h,0) - analysis->model->T21_interp(z,0);
@@ -204,6 +204,7 @@ double Bispectrum_LISW::calc_angular_Blll(int l, double z1, double z2, double z3
 
 double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, double z1, double z2, double z3)
 {
+    cout << "B, l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << endl;
     double min_z1z2, min_z1z3, min_z2z3;
     min_z1z2 = z1;
     min_z1z3 = z1;
