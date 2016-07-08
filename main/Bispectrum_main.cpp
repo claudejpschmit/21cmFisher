@@ -61,6 +61,9 @@ int main(int argc, char* argv[])
         case camb_g21:
             model = new Model_CAMB_G21(params, &Pk_index, &Tb_index, &q_index);
             break;
+        case camb_IM:
+            model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+            break;
         default:
             log<LOG_ERROR>("!!!!! Critical Error: No model was defined !!!!!");
             ERROR = true;
@@ -75,6 +78,9 @@ int main(int argc, char* argv[])
             break;
         case tomography2D:
             analysis = new Tomography2D(model);
+            break;
+        case intensitymapping:
+            analysis = new IntensityMapping(model);
             break;
         default:
             log<LOG_ERROR>("!!!!! Critical Error: No analysis was defined !!!!!");
@@ -147,10 +153,25 @@ int main(int argc, char* argv[])
         for (int z = 300; z < 1000; z++)
             file3 << 0.1*z << " " << BS.f1b(0.1*z) << endl;
         */
+        Model_Intensity_Mapping Model_IM(params, &Pk_index, &Tb_index, &q_index);
+        ofstream file("Omega_HI.dat");
+        double zmin = params["zmin_IM"];
+        double zmax = params["zmax_IM"];
+        double zbin_size = params["zbin_size"];
+        int zsteps = (zmax-zmin)/zbin_size;
+
+        for (int i = 0; i < zsteps; i++)
+        {
+            double z = zmin + i * zbin_size;
+            file << z << " " << Model_IM.Omega_HI(z) << endl;
+        }
+    
+
+        //Bispectrum_LISW LISW(analysis);
+        //LISW.test_MC();
+        //cout << LISW.calc_angular_Blll_all_config(20,20,20, 50.0, 50.0, 50.0) << endl;
         
-        Bispectrum_LISW LISW(analysis);
-        LISW.test_MC();
-        LISW.detection_SN_MC(20,50.0);
+        //LISW.detection_SN_MC(20,50.0);
         //LISW.detection_SN(20,100, 10,50.0, "SN_20-100_delta10.dat");
         //LISW.detection_SN_sparse(20, 10000, 20, 3, 50.0, -1, "SN_20-10000_sparse_3.dat");
         /*vector<vector<double>> triangle = LISW.build_triangle_sparse(40, 1,1,50.0,"test_sparse.dat",true);

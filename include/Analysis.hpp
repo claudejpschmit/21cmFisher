@@ -101,3 +101,17 @@ class Tomography2D : public AnalysisInterface {
         double a_beta, b_beta;
         double a_gamma, b_gamma, c_gamma;
 };
+
+/**     Model used for intensity mapping    **/
+class IntensityMapping : public AnalysisInterface {
+    public:
+        IntensityMapping(ModelInterface* model);
+        
+        double Cl(int l, double nu1, double nu2,\
+                int Pk_index, int Tb_index, int q_index);
+        double Cl_noise(int l, double nu1, double nu2);
+        double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
+        double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
+    private:
+        double P(double k, double z1, double z2, double Pk_index);
+};

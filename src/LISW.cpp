@@ -8,12 +8,12 @@
 #define NDIM 3			// definitions for libcuba
 #define NCOMP 1
 #define EPSREL 1e-3		// LibCUBA tries to get the "easier" accuracy 
-#define EPSABS 1e-5		// here, epsrel is easier to fulfill than epsabs (integral ~ 1e-5...1e-10) (base value is 1e-20)
+#define EPSABS 1e-10		// here, epsrel is easier to fulfill than epsabs (integral ~ 1e-5...1e-10) (base value is 1e-20)
 #define VERBOSE 0
 #define SEED 0
 #define NVEC 1
 #define MINEVAL 0
-#define MAXEVAL 10000 	// choose adaptively with a power law on lmax!
+#define MAXEVAL 1000 	// choose adaptively with a power law on lmax!
 #define NSTART 1000
 #define NINCREASE 500
 #define NBATCH 1000
@@ -574,6 +574,7 @@ void Bispectrum_LISW::detection_SN_MC(int lmax, double z)
         double l1 = ll[0] * lmax;
         double l2 = ll[1] * lmax;
         double l3 = ll[2] * lmax;
+        
         double B = abs(This->calc_angular_Blll_all_config((int)l1,(int)l2,(int)l3, z, z, z));
         double sigma = This->sigma_squared_a((int)l1,(int)l2,(int)l3,z,z,z);
         result = sqrt(B/sigma);
@@ -589,7 +590,6 @@ void Bispectrum_LISW::detection_SN_MC(int lmax, double z)
             &result,&error,&prob);
 	
 	printf("result = %e +/- %e\n",result,error);
-
 }
 
 double Bispectrum_LISW::f(double sum, double sigma, int n)
@@ -597,4 +597,5 @@ double Bispectrum_LISW::f(double sum, double sigma, int n)
     return exp(-sum/2.0/sigma) /\
         pow(2.0 * 3.1415 * sigma, n/2.0);
 }
+
 

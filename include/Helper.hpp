@@ -82,6 +82,16 @@ struct Tb_interpolator_Santos_ARES {
 };
 
 /**
+ * This is the interpolator used for intensity mapping when, the 21cm signal 
+ * is simpler to calculate, according to Bull et al 2015
+ */
+struct Tb_interpolator_IM{
+    double ombh2, omnuh2, omch2, omk, hubble, T_CMB, w_DE, omega_lambda;
+    spline1dinterpolant interpolator;
+    spline1dinterpolant fz_interpolator;
+};
+
+/**
  * A Fisher_return pair includes a matrix of Fisher values, as well as a
  * matrix of parameter key pairs so to identify which matrix elements 
  * correspond to which parameters.

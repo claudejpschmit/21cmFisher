@@ -100,6 +100,8 @@ vector<ModelAnalysis> IniReader::determineMA()
                 M = camb_g21;
             else if (value == "camb_ares_2D")
                 M = camb_ares_2D;
+            else if (value == "camb_IM")
+                M = camb_IM;
             else
                 M = error;
             
@@ -118,6 +120,8 @@ vector<ModelAnalysis> IniReader::determineMA()
                 A = cosmo3D;
             else if (value == "tomography2D")
                 A = tomography2D;
+            else if (value == "intensitymapping")
+                A = intensitymapping;
             else
                 A = error;
             
@@ -365,6 +369,11 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("gamma",-3.13));
     basicParams.insert(pair<string,double>("RLy",100));
     basicParams.insert(pair<string,double>("Santos_interval_size", 5));
+
+    //Intensity mapping parameters
+    basicParams.insert(pair<string,double>("zmin_IM",0.1));
+    basicParams.insert(pair<string,double>("zmax_IM",1.0));
+    basicParams.insert(pair<string,double>("zbin_size",0.01));
 }
 
 /////////////////////////////

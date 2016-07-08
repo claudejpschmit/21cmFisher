@@ -23,10 +23,12 @@ enum ModelAnalysis
     camb_ares,
     camb_g21,
     camb_ares_2D,
+    camb_IM,
 
     // analysis
     cosmo3D,
     tomography2D,
+    intensitymapping,
 
     // error
     error

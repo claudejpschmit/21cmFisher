@@ -178,3 +178,30 @@ class Model_Santos_ARES : public ModelParent<Tb_interpolator_Santos_ARES> {
 
 };
 
+class Model_Intensity_Mapping : public ModelParent<Tb_interpolator_IM> {
+    
+    public:
+        Model_Intensity_Mapping(map<string, double> params,\
+                int *Pk_index, int *Tb_index, int *q_index);
+        ~Model_Intensity_Mapping(); 
+        double Omega_HI(double z); 
+    private:
+        void update_Pkz(map<string,double> params, int *Pk_index);
+        void update_T21(map<string,double> params, int *Tb_index);
+        void update_q(map<string,double> params, int *q_index);
+        
+        /* Model specific functions */
+        double Tb(double z);
+        void update_hmf(double z);
+        double interp_dndm(double M);
+
+
+        
+        /* Variables */
+        CAMB_CALLER* CAMB;
+
+        double zmin_Ml, zmax_Ml, stepsize_Ml;
+        int zsteps_Ml;
+        spline1dinterpolant interpolator_hmf;
+};
+
