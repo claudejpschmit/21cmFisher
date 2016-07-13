@@ -28,6 +28,8 @@ class Bispectrum_LISW {
         void detection_SN(int lmin, int lmax, int delta_l, double z, string filename);
         void detection_SN_sparse(int lmin, int lmax, int delta_l, int gaps,\
                 double z, double IniValue, string SN_filename);
+        void detection_SN_sparse_fast(int lmin, int lmax, int delta_l, int gaps,\
+                double z, double IniValue, string SN_filename);
         void detection_SN_MC(int lmax, double z);
         void test_MC();
         double f(double sum, double sigma, int n);

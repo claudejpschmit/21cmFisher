@@ -82,6 +82,10 @@ int main(int argc, char* argv[])
         case intensitymapping:
             analysis = new IntensityMapping(model);
             break;
+        case highz:
+            analysis = new HighZAnalysis(model);
+            break;
+
         default:
             log<LOG_ERROR>("!!!!! Critical Error: No analysis was defined !!!!!");
             ERROR = true;
@@ -95,24 +99,14 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        //ofstream file("test.dat");
-        /*for (int i = 1; i < 100000; ++i)
+        ofstream file("test3.dat");
+        
+        for (int i = 1; i < 10000; ++i)
         {
-            double z = i*0.05;
-            double h = 0.0001;
-            double deriv = model->T21_interp(z+h,0) - model->T21_interp(z,0);
-            deriv /= h;
-            file << z << " " << model->T21_interp(z,0) << " " << deriv << endl; 
+            double z = i*0.1;
+            file << z << " " << model->T21_interp(z,0)  << endl; 
         }
-        Bispectrum_LISW LISW(analysis);
-        ofstream file2("Ql.dat");
-        double zf = 20;
-        int l = 100;
-        for (int i = 1; i < 1000; ++i)
-        {
-            file2 << i << " " << LISW.calc_angular_B(l,l,l,0,0,0,50,50,50) << endl;
-        }
-        */
+                
         
         /*Bispectrum BS(analysis);
         cout << BS.Gamma_integral(10) << endl;
@@ -153,6 +147,7 @@ int main(int argc, char* argv[])
         for (int z = 300; z < 1000; z++)
             file3 << 0.1*z << " " << BS.f1b(0.1*z) << endl;
         */
+       /*
         Model_Intensity_Mapping Model_IM(params, &Pk_index, &Tb_index, &q_index);
         ofstream file("Omega_HI.dat");
         double zmin = params["zmin_IM"];
@@ -165,14 +160,14 @@ int main(int argc, char* argv[])
             double z = zmin + i * zbin_size;
             file << z << " " << Model_IM.Omega_HI(z) << endl;
         }
-    
+    */
 
         //Bispectrum_LISW LISW(analysis);
         //LISW.test_MC();
         //cout << LISW.calc_angular_Blll_all_config(20,20,20, 50.0, 50.0, 50.0) << endl;
-        
+        //LISW.detection_SN_sparse(20, 80, 20, 3, 50.0, -1,"SN_new.dat");
         //LISW.detection_SN_MC(20,50.0);
-        //LISW.detection_SN(20,100, 10,50.0, "SN_20-100_delta10.dat");
+        //LISW.detection_SN(20,1000, 2,50.0, "SN_20-1000_delta2.dat");
         //LISW.detection_SN_sparse(20, 10000, 20, 3, 50.0, -1, "SN_20-10000_sparse_3.dat");
         /*vector<vector<double>> triangle = LISW.build_triangle_sparse(40, 1,1,50.0,"test_sparse.dat",true);
         double SN = 0;

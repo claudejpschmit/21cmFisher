@@ -63,7 +63,7 @@ SORTING = SortFiles.o
 INIREADER = iniReader.o
 
 SOURCE = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o\
-		 IntensityMapping.o Fisher.o Fisher1.o Fisher_Santos.o Integrator.o\
+		 IntensityMapping.o HighZAnalysis.o Fisher.o Fisher1.o Fisher_Santos.o Integrator.o\
 		 CAMB_interface.o ARES_interface.o Global21cmInterface.o Zygelman.o
 ODE = ODEs.o ODE_Solver.o
 BISPECTRUM = Bispectrum_main.o Bispectrum.o LISW.o

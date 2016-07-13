@@ -165,7 +165,7 @@ void ModelParent<T21>::writePK_T21_q()
     q.close();
 
     for (int i = 0; i < 1000; i++) {
-        double z = 7 + i*0.001;
+        double z = 0.1 + i*0.1;
         t21 << z << " " << T21_interp(z,0) << endl;
     }
     t21.close();
@@ -1018,6 +1018,7 @@ void Model_Santos2006::update_T21(map<string,double> params, int *Tb_index)
             zmin = params["zmin"] - 2; 
         double zmax = params["zmax"] + 2;
         double stepsize = 0.05;
+        log<LOG_DEBUG>("Tc is being interpolated between zmin = %1% and zmax = %2%") % zmin % zmax;
         int steps = abs(zmax - zmin)/stepsize;
         for (int i = 0; i < steps; i++)
         {
@@ -1283,9 +1284,16 @@ double Model_Santos2006::Tc(double z, map<string,double> params)
         h_local = sqrt((params["ombh2"] + params["omch2"] + params["omnuh2"])/\
                 (1.0-params["omega_lambda"]-params["omk"]));
     }
-    return 23 * xHI * (0.7/h_local) * (ombh2/0.02) * sqrt((0.15/omch2)*((1+z)/10.0));
+    return 23 * xHI * (0.7/h_local) * (ombh2/0.02) * sqrt((0.15/omch2)*((1.0+z)/10.0));
 }
-
+void Model_Santos2006::writeTc(string name)
+{
+    ofstream file(name);
+    for (int i = 0; i < 1000; i++)
+    {
+        file << 0.1+i * 0.1 << " " << Tc(0.1+i*0.1, this->give_fiducial_params()) << endl;
+    }
+}
 void Model_Santos2006::update_gamma(map<string,double> params)
 {
 
@@ -1310,6 +1318,14 @@ double Model_Santos2006::y_tot(double z, map<string,double> params)
 // Note that this is the model Santos et al. 2006 use as their Fiducial model  //
 // and so it is only valid in a redshift range of z in [15, 25].               //
 /////////////////////////////////////////////////////////////////////////////////
+// This means that the only difference between this and CAMB_ARES is that the  //
+// Cosmological Parameters that are used by default are different. CAMB_ARES   //
+// uses the parameters specified in the params.ini file, whereas this model    //
+// uses the parameters stated in the Santos paper.                             //
+/////////////////////////////////////////////////////////////////////////////////
+// Therefore, only use this model when trying to recover the results of that   //
+// paper.                                                                      //
+/////////////////////////////////////////////////////////////////////////////////
 
 Model_Santos_ARES::Model_Santos_ARES(map<string, double> params,\
         int *Pk_index, int *Tb_index, int *q_index)
@@ -1325,6 +1341,7 @@ Model_Santos_ARES::Model_Santos_ARES(map<string, double> params,\
     new_params["A_s"] = 1.562e-9;
     new_params["tau_reio"] = 0.089 ;
     set_fiducial_params(new_params);
+    
     zmin_Ml = fiducial_params["zmin"];
     zmax_Ml = fiducial_params["zmax"];
     zsteps_Ml = fiducial_params["zsteps"];
@@ -1375,6 +1392,7 @@ void Model_Santos_ARES::update_Pkz(map<string,double> params, int *Pk_index)
             break;
         }
     }
+ 
 
     if (do_calc) {
         log<LOG_VERBOSE>("Calculating Pkz from scratch");
@@ -1545,7 +1563,6 @@ void Model_Santos_ARES::update_T21(map<string,double> params, int *Tb_index)
         log<LOG_VERBOSE>("Ares dTb update done");
     }
 }
-
 
 void Model_Santos_ARES::update_q(map<string,double> params, int *q_index)
 {
@@ -2105,7 +2122,7 @@ double Model_Intensity_Mapping::Tb(double z)
     //TODO
     // Update some container that that holds the halo mass function
     // at this redshift which is needed to compute Omega
-    update_hmf(z);
+    
     double OmHI = Omega_HI(z);
     double h = 1;
     double H0 = Hf_interp(0);
@@ -2116,8 +2133,18 @@ double Model_Intensity_Mapping::Tb(double z)
 
 double Model_Intensity_Mapping::Omega_HI(double z)
 {
-    
-    return 1;
+    update_hmf(z);
+    auto integrand = [&](double M)
+    {
+        double alpha = 0.6;
+        return interp_dndm(M) * pow(M, alpha);
+    };
+    double Mmin = 10E10 * pow(1.0+z, -1.5);
+    double Mmax = 10E10 * pow(200.0/30.0,3) * pow(1.0+z, -1.5);
+    int steps = 100;
+    double rho_z = integrate(integrand, Mmin, Mmax, steps, simpson());
+    double rho_0 = 1;
+    return rho_z/(rho_0*pow(1.0+z,3));
 }
 
 void Model_Intensity_Mapping::update_hmf(double z)
@@ -2146,7 +2173,7 @@ void Model_Intensity_Mapping::update_hmf(double z)
     Ms.setlength(xs.size());
     DNDMs.setlength(ys.size());
 
-    // when I read them in, I should probably ignore to first few to make
+    // when I read them in, I should probably ignore the first few to make
     // sure none are NaN's...
 
     

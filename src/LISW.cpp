@@ -270,6 +270,7 @@ double Bispectrum_LISW::sigma_squared_a(int l1, int l2, int l3, double z1, doubl
     double Cl1 = Cl(l1,nu1,nu1) + Cl_noise(l1,nu1,nu1);
     double Cl2 = Cl(l2,nu2,nu2) + Cl_noise(l2,nu2,nu2);
     double Cl3 = Cl(l3,nu3,nu3) + Cl_noise(l3,nu3,nu3);
+    
     return Cl1 * Cl2 * Cl3 * DELTA;
 }
 
@@ -313,7 +314,7 @@ vector<vector<double>> Bispectrum_LISW::build_triangle(int lmax, double z,\
                 if (l3 >= (l1-l2) and l3 <= l2)
                 {
                     //do stuff
-                    cout << l1 << " " << l2 << " " << l3 << endl;
+                    //cout << l1 << " " << l2 << " " << l3 << endl;
                     B = abs(calc_angular_Blll_all_config(l1,l2,l3, z, z, z));
                     if (l1 == l2 and l3 == 0)
                     {
@@ -366,7 +367,10 @@ void Bispectrum_LISW::detection_SN(int lmin, int lmax, int delta_l, double z, st
 vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngaps_x, int ngaps_y,\
         double z, string filename, bool variance_included)
 {
-    bool debug = false;
+    //This function only computes the modes if the file doesn't exist yet, otherwise it will read
+    //in the file.
+    cout << "Sparse triangle called with xgap = " << ngaps_x << " and ygap = " << ngaps_y << endl;
+    bool debug = true;
     vector<vector<double>> result;
     int l1, l2, l3;
     l1 = lmax;
@@ -406,7 +410,19 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
             next_mode_y += 1+gaps_y;
         }
     }
-
+    
+    for (int i = 0; i < xmodes.size(); i++)
+    {
+        cout << xmodes[i] << " " ;
+    }
+    cout << endl;
+    for (int i = 0; i < ymodes.size(); i++)
+    {
+        cout << ymodes[i] << " " ;
+    }
+    cout << endl;
+    //I think this way of is now working right... 
+    //So debug is true until I fix this
     if (infile.good() && !debug){
         cout << "Reading file " << name.str() << endl;
         string line;
@@ -453,7 +469,7 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
                         {
                                                 
                             //do stuff
-                            cout << l1 << " " << l2 << " " << l3 << endl;
+                            //cout << l1 << " " << l2 << " " << l3 << endl;
                             B = abs(calc_angular_Blll_all_config(l1,l2,l3, z, z, z));
                             if (l1 == l2 and l3 == 0)
                             {
@@ -478,6 +494,8 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
                     }
                     file_bispectrum << B/sigma << " ";
                     row.push_back(B/sigma);
+                    cout << "B/sigma = " << B/sigma << endl;
+                    cout << B << " " << sigma << endl;
                 }
             }
             else
@@ -598,4 +616,49 @@ double Bispectrum_LISW::f(double sum, double sigma, int n)
         pow(2.0 * 3.1415 * sigma, n/2.0);
 }
 
+void Bispectrum_LISW::detection_SN_sparse_fast(int lmin, int lmax, int delta_l, int gaps,\
+                double z, double IniValue, string SN_filename)
+{
+    ofstream file(SN_filename);
+    string name_base = "LISW_SN_triangle_l"; 
+    double mult_fact = delta_l/2.0;
+   
+    double SN;
+    if (IniValue < 0)
+        SN = 0;
+    else 
+        SN = IniValue;
+    int new_gaps = gaps;
+    for (int l = lmin; l < lmax; l+=delta_l)
+    {
+        // This says that there are nmax_y modes in the y direction to be filled out
+        int nmax_y = lmax/4 + 1;
+        // This says that the maximum gap_size needs to be less that half the number 
+        // of modes, ie. the least number of rows that there can be in the triangle 
+        // plots is 2.
+        int gaps_y = nmax_y/2;
+        
+        // Here I change the gapsize as l increases, so that the time taken to compute the 
+        // triangles does not increase as l^2 but slower.
+        new_gaps = (int)(gaps * sqrt((double)l/(double)lmin));
+        
+        // Here I check if the gapsize I impose is larger than the maximum. If it is,
+        // it will just be set to the maximum.
+        if (new_gaps < gaps_y)
+            gaps_y = new_gaps;
+        
+        stringstream name;
+        name << name_base << l << "_gaps"<<gaps_y<<".dat";
+        vector<vector<double>> triangle = build_triangle_sparse(l, gaps_y, gaps_y, z, name.str(),true);
+        for (int i = 0; i < triangle.size(); i++)
+        {
+            for (int j = 0; j < triangle[0].size(); j++)
+            {
+                SN += mult_fact*(gaps_y+1)*(gaps_y+1)*triangle[i][j];
+                cout << SN <<" "<< mult_fact << " " << gaps_y << " " << triangle[i][j] << endl;
+            }
+        }
+        file << l << " " << sqrt(SN) << endl;
+    }
+}
 

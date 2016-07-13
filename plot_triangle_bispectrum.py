@@ -26,7 +26,7 @@ plt.ylabel(r'$l_2/l_1$')#, fontsize=16)
 #filename = "output/Bispectrum/Triangle_plots/Bispectrum_PNG_triangle_l40.dat"
 #filename = "output/Bispectrum/Triangle_plots/Bispectrum_NLG_triangle_l40.dat"
 #filename = "output/Bispectrum/Triangle_plots/LISW_triangle_values_l50.dat"
-filename = "output/Bispectrum/Triangle_plots/SN/LISW_SN_triangle_l150.dat"
+filename = "output/Bispectrum/Triangle_plots/SN_sparse/LISW_SN_triangle_l180_gaps9.dat"
 f = file(filename)
 data_vals = np.loadtxt(f)
 

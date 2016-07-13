@@ -29,6 +29,7 @@ enum ModelAnalysis
     cosmo3D,
     tomography2D,
     intensitymapping,
+    highz,
 
     // error
     error

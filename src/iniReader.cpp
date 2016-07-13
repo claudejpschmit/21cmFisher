@@ -122,7 +122,9 @@ vector<ModelAnalysis> IniReader::determineMA()
                 A = tomography2D;
             else if (value == "intensitymapping")
                 A = intensitymapping;
-            else
+            else if (value == "highz")
+                A = highz;
+            else                
                 A = error;
             
             counter++;
@@ -371,8 +373,8 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("Santos_interval_size", 5));
 
     //Intensity mapping parameters
-    basicParams.insert(pair<string,double>("zmin_IM",0.1));
-    basicParams.insert(pair<string,double>("zmax_IM",1.0));
+    basicParams.insert(pair<string,double>("IM_zlow",0.1));
+    basicParams.insert(pair<string,double>("IM_zhigh",5.0));
     basicParams.insert(pair<string,double>("zbin_size",0.01));
 }
 

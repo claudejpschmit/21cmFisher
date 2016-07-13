@@ -348,9 +348,10 @@ void Tomography2D::writeT21(string name)
     double alpha, beta, gamma, RLy;
     model->set_Santos_params(&alpha, &beta, &gamma, &RLy, 0);
 
-    for (int i= 0; i < 1000; i++)
+    for (int i= 0; i < 100; i++)
     {
-        double z = 10 + i*0.1;
+        double z = 1 + i;
+        cout << gamma << " " << model->T21_interp(z,0)<< endl;
         file << z << " " << gamma*model->T21_interp(z,0) << endl; 
     }
     file.close();
@@ -463,7 +464,6 @@ double Tomography2D::F(double k, double z, double alpha, double beta, double RLy
 
 double Tomography2D::I(int l, double k, double nu_0)
 {
-    //TODO: Find out what the right boundaries are for the integral.
     double nu_low = nu_0-0.1/2.0;
     double nu_high = nu_0+0.1/2.0;
     double nu_stepsize = 0.01;
@@ -473,14 +473,17 @@ double Tomography2D::I(int l, double k, double nu_0)
     {
         double z = z_from_nu(nu);
         double r = model->r_interp(z);
-        double denom = (1+z)*(1+z);
+        
+        // I've taken this denom parameter out, cause I don't know why it is
+        // in there to begin with
+        //double denom = (1+z)*(1+z);
         double jl = model->sph_bessel_camb(l,k*r);
         
-        return jl/denom;
+        return jl;///denom;
     };
 
     double integral = integrate_simps(integrand, nu_low, nu_high, nu_steps);
-    return 1420 * integral;
+    return integral;//*1420 don't know why this factor was here.
 }
 
 double Tomography2D::J(int l, double k, double nu_0)
@@ -495,17 +498,20 @@ double Tomography2D::J(int l, double k, double nu_0)
     {
         double z = z_from_nu(nu);
         double r = model->r_interp(z);
-        double denom = (1+z)*(1+z);
+        // I've taken this denom parameter out, cause I don't know why it is
+        // in there to begin with
+        //double denom = (1+z)*(1+z);
         double kr = k*r;
         double jl_2 = model->sph_bessel_camb(l-2,kr);
         double jl_1 = model->sph_bessel_camb(l-1, kr);
         double jl = model->sph_bessel_camb(l, kr);
         double num = jl_2 - (2*l+1)/kr * jl_1 + (l*l + 3*l + 2)/(kr*kr) * jl;
-        return num/denom;
+        return num;//denom;
     };
 
     double integral = integrate_simps(integrand, nu_low, nu_high, nu_steps);
-    return 1420 * integral;
+    // don't know why there was a factor of 1420
+    return integral;//*1420
 }
 
 double Tomography2D::P(double k, double z1, double z2, double Pk_index)
@@ -594,7 +600,7 @@ void Tomography2D::write_gamma()
     ofstream file("gamma.dat");
     for (int i = 0; i < 1000; i++)
     {
-        double z = 15+i*0.01;
+        double z = 0.1+i*0.1;
         double gamma = gamma_fiducial(z);
         double alpha = alpha_fiducial(z);
         double beta = beta_fiducial(z);

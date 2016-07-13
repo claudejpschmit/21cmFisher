@@ -3,14 +3,14 @@
 #include "Log.hpp"
 
 
-IntensityMapping::IntensityMapping(ModelInterface* model)
+HighZAnalysis::HighZAnalysis(ModelInterface* model)
 {
     this->model = model;
     log<LOG_DEBUG>("-> You better be using camb_ares_2D or camb_ares as your model!");
-    analysisID = "IntensityMapping_analysis";
+    analysisID = "HighZAnalysis_analysis";
 }
 
-double IntensityMapping::Cl(int l, double nu1, double nu2,\
+double HighZAnalysis::Cl(int l, double nu1, double nu2,\
         int Pk_index, int Tb_index, int q_index)
 {
     //This determines the lower bound of the kappa integral
@@ -24,54 +24,39 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
     } else {
         low = (double)l/(10000);
     }
-
-    double z1 = 1420.0/nu1 - 1.0;
-    double z2 = 1420.0/nu2 - 1.0;
-    
     double lower_kappa_bound;// = k_low;
-    
-    if (z1 < 2 or z2 < 2)
-    {
-        double r1 = model->q_interp(z1,q_index);
-        low = (double)l/r1;
-    }
-    
     if (low > k_low)
         lower_kappa_bound = low;
     else
         lower_kappa_bound = k_low;
     
-    
-    
-   
     //This determines the upper bound of the kappa integral
     // set the interval size to constant 0.8 after inspection.
     // This is good for l about 10000.
-    double higher_kappa_bound = lower_kappa_bound + 2.0;
-    if (z1 < 1 or z2 < 1)
-    {
-        higher_kappa_bound = lower_kappa_bound + 5;
-    }
+    double higher_kappa_bound = lower_kappa_bound + 0.8;
     // The stepsize needs to be at least 0.0001 for good coverage. 
     int steps = (int)(abs(higher_kappa_bound - lower_kappa_bound)/0.0001);
     if (steps % 2 == 1)
         ++steps;
     
-    if (z1 > 5.0 or z2 > 5.0)
+    double z1 = 1420.0/nu1 - 1.0;
+    double z2 = 1420.0/nu2 - 1.0;
+    if (z1 < 25.0 or z2 < 25.0)
     {
-        log<LOG_ERROR>("ERROR: bad z range. Cl from IM analysis method is only valid for z < 5.");
+        log<LOG_ERROR>("ERROR: bad z range. Cl from HighZ analysis method is only valid for z > 25.");
     }
-        
+       
+    //TODO: write this
     double dTb1 = model->T21_interp(z1, Tb_index);
     double dTb2 = model->T21_interp(z2, Tb_index);
     auto integrand = [&](double k)
     {
-        //double r1 = model->q_interp(z1,q_index);
-        //double r2 = model->q_interp(z2,q_index);
+        double r1 = model->q_interp(z1,q_index);
+        double r2 = model->q_interp(z2,q_index);
 
-        //TODO: I should probably put the window function in here instead of simply jl
-        double jl1 = I(l,k, nu1);//model->sph_bessel_camb(l,k*r1);
-        double jl2 = I(l,k, nu2);//model->sph_bessel_camb(l,k*r2);
+        //TODO: I should probably
+        double jl1 = model->sph_bessel_camb(l,k*r1);
+        double jl2 = model->sph_bessel_camb(l,k*r2);
        
         double Pdd = P(k,z1,z2, Pk_index);
         
@@ -79,44 +64,18 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
     };
     //TODO: set bias
     double BIAS_squared = 1.0;
-    cout << lower_kappa_bound << " " << higher_kappa_bound << endl;
     double integral = integrate_simps(integrand, lower_kappa_bound, higher_kappa_bound, steps);
     return 2.0/(model->pi) * dTb1 * dTb2 * BIAS_squared * integral;
 }
 
-double IntensityMapping::I(int l, double k, double nu_0)
-{
-    double nu_low = nu_0-0.1/2.0;
-    double nu_high = nu_0+0.1/2.0;
-    double nu_stepsize = 0.01;
-    int nu_steps = 0.1/nu_stepsize;
-
-    auto integrand = [&](double nu)
-    {
-        double z = 1420.0/nu - 1.0;
-        double r = model->r_interp(z);
-        
-        // I've taken this denom parameter out, cause I don't know why it is
-        // in there to begin with
-        //double denom = (1+z)*(1+z);
-        double jl = model->sph_bessel_camb(l,k*r);
-        
-        return jl;
-    };
-
-    double integral = integrate_simps(integrand, nu_low, nu_high, nu_steps);
-    return integral*(1.0/0.2);//*1420 don't know why this factor was here.
-}
-
-double IntensityMapping::Cl_noise(int l, double nu1, double nu2)
+double HighZAnalysis::Cl_noise(int l, double nu1, double nu2)
 {
     //TODO: write this function
     return 0;   
 }
 
-
 //TODO: Review this, make sure it is the same as for tomography2D
-double IntensityMapping::Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values)
+double HighZAnalysis::Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values)
 {
     double I1 = 1-pow(log(nu1/nu2),2)/(2.0*pow(FG_param_values["extragal_ps_xi"],2));
     double I2 = 1-pow(log(nu1/nu2),2)/(2.0*pow(FG_param_values["extragal_ff_xi"],2));
@@ -155,7 +114,7 @@ double IntensityMapping::Cl_foreground(int l, double nu1, double nu2, map<string
     return CL;
 }
 
-double IntensityMapping::Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key)
+double HighZAnalysis::Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key)
 {
     double Cl_p;
     double nu_f = 130;
@@ -321,7 +280,7 @@ double IntensityMapping::Cl_FG_deriv_analytic(int l, double nu1, double nu2, str
     return Cl_p;
 }
 
-double IntensityMapping::P(double k, double z1, double z2, double Pk_index)
+double HighZAnalysis::P(double k, double z1, double z2, double Pk_index)
 {
     return sqrt(model->Pkz_interp(k,z1,Pk_index)*model->Pkz_interp(k,z2,Pk_index));
 }

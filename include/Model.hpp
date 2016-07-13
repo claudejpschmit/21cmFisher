@@ -118,7 +118,7 @@ class Model_Santos2006 : public ModelParent<Tb_interpolator_Santos> {
         ~Model_Santos2006(); 
         void set_Santos_params(double *alpha, double *beta,\
                 double *gamma, double *RLy, int Tb_index);
-
+        void writeTc(string name);
     private:
         void update_Pkz(map<string,double> params, int *Pk_index);
         void update_T21(map<string,double> params, int *Tb_index);

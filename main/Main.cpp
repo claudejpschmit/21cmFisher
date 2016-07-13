@@ -47,6 +47,7 @@ int main (int argc, char* argv[])
     string matrixPath = parser.giveMatrixPath();
     string fisherPath = parser.giveFisherPath();
     GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
+    cout << params["zmax"] << endl;
     bool ERROR = false;
     int Pk_index = 0;
     int Tb_index = 0;
@@ -87,6 +88,17 @@ int main (int argc, char* argv[])
             analysis = new Tomography2D(model);
             fisher = new Fisher_Santos(analysis, keys, matrixPath, fisherPath);
             break;
+        case intensitymapping:
+            analysis = new IntensityMapping(model);
+            fisher = new Fisher1(analysis, keys, matrixPath, fisherPath);
+            log<LOG_BASIC>("!!!!! Careful, Fisher has not been tested yet !!!!!");
+            break;
+        case highz:
+            analysis = new HighZAnalysis(model);
+            fisher = new Fisher1(analysis, keys, matrixPath, fisherPath);
+            log<LOG_BASIC>("!!!!! Careful, Fisher has not been tested yet !!!!!");
+            break;
+
         default:
             log<LOG_ERROR>("!!!!! Critical Error: No analysis was defined !!!!!");
             ERROR = true;
@@ -100,12 +112,38 @@ int main (int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        ofstream file("Cl_55.dat");
+        ofstream file("Cl_800_IM_2.dat");
+        ofstream file2("Cl_900_IM_2.dat");
+        ofstream file3("Cl_1000_IM_2.dat");
+        ofstream file4("Cl_1100_IM_2.dat");
+        ofstream file5("Cl_1200_IM_2.dat");
+        ofstream file6("Cl_1300_IM_2.dat");
+        ofstream file7("Cl_200_IM_2.dat");
+        ofstream file8("Cl_300_IM_2.dat");
+        ofstream file9("Cl_400_IM_2.dat");
+        ofstream file10("Cl_500_IM_2.dat");
+        ofstream file11("Cl_600_IM_2.dat");
+        ofstream file12("Cl_700_IM_2.dat");
+
         for (int i = 1; i < 100; i++)
         {
             int l = exp(i*0.1);
-            if (l< 10000)
-                file << l << " " << (l+1)*l*analysis->Cl(l,55,55,0,0,0)/(2.0*M_PI) << endl;; 
+            if (l < 10000)
+            {
+                file << l << " " << (l+1)*l*analysis->Cl(l,800,800,0,0,0)/(2.0*M_PI) << endl;
+                file2 << l << " " << (l+1)*l*analysis->Cl(l,900,900,0,0,0)/(2.0*M_PI) << endl;
+                file3 << l << " " << (l+1)*l*analysis->Cl(l,1000,1000,0,0,0)/(2.0*M_PI) << endl;
+                file4 << l << " " << (l+1)*l*analysis->Cl(l,1100,1100,0,0,0)/(2.0*M_PI) << endl;
+                file5 << l << " " << (l+1)*l*analysis->Cl(l,1200,1200,0,0,0)/(2.0*M_PI) << endl;
+                file6 << l << " " << (l+1)*l*analysis->Cl(l,1300,1300,0,0,0)/(2.0*M_PI) << endl;
+                file7 << l << " " << (l+1)*l*analysis->Cl(l,200,200,0,0,0)/(2.0*M_PI) << endl;
+                file8 << l << " " << (l+1)*l*analysis->Cl(l,300,300,0,0,0)/(2.0*M_PI) << endl;
+                file9 << l << " " << (l+1)*l*analysis->Cl(l,400,400,0,0,0)/(2.0*M_PI) << endl;
+                file10 << l << " " << (l+1)*l*analysis->Cl(l,500,500,0,0,0)/(2.0*M_PI) << endl;
+                file11 << l << " " << (l+1)*l*analysis->Cl(l,600,600,0,0,0)/(2.0*M_PI) << endl;
+                file12 << l << " " << (l+1)*l*analysis->Cl(l,700,700,0,0,0)/(2.0*M_PI) << endl;
+
+            }
         }
     }
 
