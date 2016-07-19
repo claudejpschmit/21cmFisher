@@ -4,7 +4,7 @@
 #include <fstream>
 #include "Log.hpp"
 #include <sstream>
-
+#include <math.h>
 ModelInterface::ModelInterface(map<string,double> params)
     :
         CosmoBasis(params)
@@ -1807,12 +1807,6 @@ Model_Intensity_Mapping::Model_Intensity_Mapping(map<string, double> params,\
 {
     //Changing fiducial values to the ones they have used.
     map<string, double> new_params = give_fiducial_params();
-    new_params["omch2"] = 0.1277;
-    new_params["ombh2"] = 0.02229;
-    new_params["hubble"] = 73.2;
-    new_params["n_s"] = 0.958;
-    new_params["A_s"] = 1.562e-9;
-    new_params["tau_reio"] = 0.089 ;
     set_fiducial_params(new_params);
     zmin_Ml = fiducial_params["zmin"];
     zmax_Ml = fiducial_params["zmax"];
@@ -1833,7 +1827,23 @@ Model_Intensity_Mapping::Model_Intensity_Mapping(map<string, double> params,\
     log<LOG_BASIC>("... precalculating 21cm interface ...");
     log<LOG_BASIC>("...  -> IM Model for 21cm signal ...");
     update_T21(fiducial_params, Tb_index);
-
+    /*update_hmf(fiducial_params);
+    double z = 0;
+    auto integrand = [&](double M)
+    {
+        return interp_dndm(M,z) * pow(M,0.6);
+    };
+    double M_low = 1E9;
+    double M_high = 1E12;
+    double stepsize = M_low/10;
+    int steps = (M_high-M_low)/stepsize;
+    double integral = integrate(integrand, M_low, M_high, steps, simpson());
+    // units of M_SUN/MPc^3
+    double rho_0 = 1.5*1E-7;
+    double Om_HI = 4.86*1E-4;
+    double hh = fiducial_params["hubble"]/100.0; 
+    M_normalization = rho_0 * Om_HI / (hh*hh*hh*hh*integral);
+    */
     log<LOG_BASIC>("... 21cm interface built ...");
     log<LOG_BASIC>("... Model_Intensity_Mapping built ...");
 }
@@ -1958,20 +1968,17 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
             interp.omega_lambda = params["omega_lambda"];
         }
         
-        double zmin_IM = params["zmin_IM"];
-        double zmax_IM = params["zmax_IM"];
+        double zmin_IM = params["IM_zlow"];
+        double zmax_IM = params["IM_zhigh"];
         double zbin_size = params["zbin_size"];
         int zsteps_IM = (zmax_IM - zmin_IM)/zbin_size;
-        
-        
-
 
         real_1d_array xs, dTb;
         xs.setlength(zsteps_IM+1);
         dTb.setlength(zsteps_IM+1);
-        double z;        
-        for (int n = 0; n <= zsteps_IM; ++n) {
-            z = zmin_Ml + n * zbin_size; 
+        double z;       
+        for (int n = 0; n <= zsteps_IM; n++) {
+            z = zmin_IM + n * zbin_size; 
             xs[n] = z;
             dTb[n] = Tb(z);
         }
@@ -1987,7 +1994,6 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
         log<LOG_VERBOSE>("T21 update done");
     }
 }
-
 
 void Model_Intensity_Mapping::update_q(map<string,double> params, int *q_index)
 {
@@ -2124,62 +2130,185 @@ double Model_Intensity_Mapping::Tb(double z)
     // at this redshift which is needed to compute Omega
     
     double OmHI = Omega_HI(z);
-    double h = 1;
+
+    double h = this->give_fiducial_params("hubble")/100.0;
     double H0 = Hf_interp(0);
     double H = Hf_interp(z);
 
-    return 566.0 * h * (H0/H) * (OmHI/0.003) * (1.0+z) * (1.0+z);
+
+    //formula is for micro Kelvin, so we multiply by 0.001 to get mK.
+    return 0.001 * 566.0 * h * (H0/H) * (OmHI/0.003) * (1.0+z) * (1.0+z);
+}
+double Model_Intensity_Mapping::M_HI(double M, double z)
+{
+    
+    return M_normalization * pow(M,0.6);
+    // values from table 1 in Padmanabhan 2016
+    /*double alpha;
+    if (z<1)
+        alpha = 0.15;
+    else if (z<1.5)
+        alpha = 0.15;
+    else if (z<2)
+        alpha = 0.3;
+    else if (z<2.3)
+        alpha = 0.3;
+    else if (z<3)
+        alpha = 0.3;
+    else if (z<4)
+        alpha = 0.3;
+    else 
+        alpha = 0.48;
+    // p497 of Loeb&Furlanetto has Yp = 0.24
+    double Yp = 0.24;
+    
+    double h = this->current_params["hubble"] / 100.0;
+    double O_b = this->current_params["ombh2"] / pow(h,2);
+    double O_cdm2 = this->current_params["omch2"] / pow(h,2);
+    double O_nu2 = this->current_params["omnuh2"] / pow(h,2);
+    double O_M = O_b + O_cdm2 + O_nu2;
+
+    double F_Hc = (1-Yp) * O_b / O_M;
+    
+    double v_M = 30.0 * sqrt(1+z) * pow(M/1E10, 1.0/3.0);
+    double v0 = 30;
+    double v1 = 200;
+
+    return alpha * F_Hc * M * exp(-pow(v0/v_M,3) - pow(v_M/v1,3));
+    */
 }
 
 double Model_Intensity_Mapping::Omega_HI(double z)
 {
-    update_hmf(z);
+    //TODO: I am right now just fitting a function to their figure,
+    // the code below uses hmf, but that is dependent on which fitting
+    // model the code hmf_for_LISW.py uses. 
+    //
+    // This function reproduces figure 20 from bull et al exactly
+    return (-0.000062667) * (z-3) * (z - 3) + 0.00105;
+
+    /*
     auto integrand = [&](double M)
     {
-        double alpha = 0.6;
-        return interp_dndm(M) * pow(M, alpha);
+        return interp_dndm(M,z) * M_HI(M,z);
     };
-    double Mmin = 10E10 * pow(1.0+z, -1.5);
-    double Mmax = 10E10 * pow(200.0/30.0,3) * pow(1.0+z, -1.5);
-    int steps = 100;
-    double rho_z = integrate(integrand, Mmin, Mmax, steps, simpson());
-    double rho_0 = 1;
-    return rho_z/(rho_0*pow(1.0+z,3));
+    // M_low and M_max are the M_range given through hmf_for_LISW.py
+    // we take 99% towards the edges so there is no interpolation issue
+    // Since the HMF is very steep it should be sufficient to just go up
+    // one order of magnitude in the integration. Most of the signal comes
+    // from the low M regime.
+    double M_low = 1E9;
+    double M_high = 1E12;
+    double stepsize = M_low/10;
+    int steps = (M_high-M_low)/stepsize;
+    double rho_z = integrate(integrand, M_low, M_high, steps, simpson());
+    // units of M_SUN/MPc^3
+    double rho_0 = 1.5*1E-7;
+    // need to multiply by h^4 to get the units right
+    double h = this->current_params["hubble"]/100.0;
+    double h4 = h*h*h*h;
+    return rho_z*h4/(rho_0);
+    */
 }
 
-void Model_Intensity_Mapping::update_hmf(double z)
+void Model_Intensity_Mapping::update_hmf(map<string,double> params)
 {
     //call a python function that calculates the hmf at the necessary z.
-    stringstream command;
-    command << "python hmf_for_LISW " << z;
-    
-    char* command_buff = new char[command.str().length() + 1];
-    strcpy(command_buff, command.str().c_str());
-    int r = system(command_buff);
-    (void)r;
-     
-    //read the data into container.
-    ifstream infile("hmf.dat");
-    vector<double> xs,ys;
-    double a,b;
-    while (infile >> a >> b)
+        
+    bool use_non_physical;
+    if (params.find("omega_lambda") == params.end()) {
+        use_non_physical = false;
+    }
+    else
     {
-        xs.push_back(a);
-        ys.push_back(b);
+        use_non_physical = true;
     }
 
-    //generate hmf interpolator
-    real_1d_array Ms, DNDMs;
-    Ms.setlength(xs.size());
-    DNDMs.setlength(ys.size());
+    // TODO: Do this in a way that works with parallelism....
+    // UPDATE D_C to use the above parameters.
+    double T_CMB2, H_02, h2, O_b2, O_cdm2, O_nu2, O_nu_rel2;
+    double O_gamma2, O_R2, O_k2, O_M2, O_Lambda, O_tot2;
+    T_CMB2 = params["T_CMB"];
+    H_02 = params["hubble"];
+    h2 = H_02 / 100.0;
+    O_b2 = params["ombh2"] / pow(h2,2);
+    O_cdm2 = params["omch2"] / pow(h2,2);
+    O_nu2 = params["omnuh2"] / pow(h2,2);
+    O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
+              (15.0*8.098*pow(10,-11)*pow(h2,2));
+    O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+    O_R2 = O_gamma2 + O_nu_rel2;
+    O_M2 = O_b2 + O_cdm2 + O_nu2;
 
-    // when I read them in, I should probably ignore the first few to make
-    // sure none are NaN's...
+    if (!use_non_physical){
+        O_k2 = params["omk"];
+        O_tot2 = 1.0 - O_k2;
+        O_Lambda = O_tot2 - O_M2 - O_R2;
+    }
+    else {
+        O_Lambda = params["omega_lambda"];
+        O_k2 = 1 - O_Lambda - O_R2 - O_M2;
+    }
+       
+    //contains M values
+    vector<double> vM;
+    vector<vector<double>> dndm_z;
+    int z_steps = 10;
+    double z_stepsize = abs(params["IM_zlow"] - params["IM_zhigh"])/((double)z_steps);
+    vector<double> vz, vdndm;
+    for (int i = 0; i < z_steps; i++)
+    {
+        // for each z run hmf and read in the file.
+        double z = params["IM_zlow"] + i * z_stepsize;
+        stringstream command;
+        command << "python hmf_for_LISW.py --omega_m_0 " << O_M2 << " --omega_b_0 " << O_b2 <<\
+        " --omega_l_0 " << O_Lambda << " --hubble_0 " << H_02 << " --cmb_temp_0 " << T_CMB2 <<\
+        " --redshift " << z << " --Mmin " << 5 << " --Mmax " << 16;
+        
+        char* command_buff = new char[command.str().length() + 1];
+        strcpy(command_buff, command.str().c_str());
+        int r = system(command_buff);
+        (void)r;
+        //read the data into container.
+        
+        ifstream infile("hmf.dat", ios::in);
+        vector<double> xs,ys;
+        double a,b;
+        while (infile >> a >> b)
+        {
+            if (i == 0)
+                xs.push_back(a);
+            ys.push_back(b);
+        }
+        if (i == 0)
+            vM = xs;
+        dndm_z.push_back(ys);
+    }
 
-    
+    for (unsigned int i = 0; i < dndm_z.size(); ++i) {
+        vz.push_back(params["IM_zlow"] + i * z_stepsize);
+        vdndm.insert(vdndm.end(), dndm_z[i].begin(), dndm_z[i].end());
+    }
+
+    real_1d_array dndm, zs, Ms;
+    Ms.setlength(vM.size());
+    zs.setlength(vz.size());
+    dndm.setlength(vdndm.size());
+    for (unsigned int i = 0; i < vM.size(); i++){
+        Ms[i] = vM[i];
+    }
+    for (unsigned int i = 0; i < vdndm.size(); i++){
+        dndm[i] = vdndm[i];
+    }
+    for (unsigned int i = 0; i < vz.size(); i++){
+        zs[i] = vz[i];
+    }
+
+    spline2dbuildbilinearv(Ms, vM.size(),zs, vz.size(), dndm, 1, interpolator_hmf);
 }
 
-double Model_Intensity_Mapping::interp_dndm(double M)
+double Model_Intensity_Mapping::interp_dndm(double M, double z)
 {
-    return spline1dcalc(interpolator_hmf, M); 
+    return spline2dcalc(interpolator_hmf, M, z); 
+   
 }

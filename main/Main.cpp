@@ -70,6 +70,10 @@ int main (int argc, char* argv[])
         case camb_g21:
             model = new Model_CAMB_G21(params, &Pk_index, &Tb_index, &q_index);
             break;
+        case camb_IM:
+            model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+            break;
+
         default:
             log<LOG_ERROR>("!!!!! Critical Error: No model was defined !!!!!");
             ERROR = true;
@@ -118,7 +122,6 @@ int main (int argc, char* argv[])
         ofstream file4("Cl_1100_IM_2.dat");
         ofstream file5("Cl_1200_IM_2.dat");
         ofstream file6("Cl_1300_IM_2.dat");
-        ofstream file7("Cl_200_IM_2.dat");
         ofstream file8("Cl_300_IM_2.dat");
         ofstream file9("Cl_400_IM_2.dat");
         ofstream file10("Cl_500_IM_2.dat");
@@ -136,7 +139,6 @@ int main (int argc, char* argv[])
                 file4 << l << " " << (l+1)*l*analysis->Cl(l,1100,1100,0,0,0)/(2.0*M_PI) << endl;
                 file5 << l << " " << (l+1)*l*analysis->Cl(l,1200,1200,0,0,0)/(2.0*M_PI) << endl;
                 file6 << l << " " << (l+1)*l*analysis->Cl(l,1300,1300,0,0,0)/(2.0*M_PI) << endl;
-                file7 << l << " " << (l+1)*l*analysis->Cl(l,200,200,0,0,0)/(2.0*M_PI) << endl;
                 file8 << l << " " << (l+1)*l*analysis->Cl(l,300,300,0,0,0)/(2.0*M_PI) << endl;
                 file9 << l << " " << (l+1)*l*analysis->Cl(l,400,400,0,0,0)/(2.0*M_PI) << endl;
                 file10 << l << " " << (l+1)*l*analysis->Cl(l,500,500,0,0,0)/(2.0*M_PI) << endl;

@@ -185,23 +185,28 @@ class Model_Intensity_Mapping : public ModelParent<Tb_interpolator_IM> {
                 int *Pk_index, int *Tb_index, int *q_index);
         ~Model_Intensity_Mapping(); 
         double Omega_HI(double z); 
+        
+        //should be private
+        double interp_dndm(double M, double z);
+        void update_hmf(map<string,double> params);
+
+        double Tb(double z);
     private:
         void update_Pkz(map<string,double> params, int *Pk_index);
         void update_T21(map<string,double> params, int *Tb_index);
         void update_q(map<string,double> params, int *q_index);
         
         /* Model specific functions */
-        double Tb(double z);
-        void update_hmf(double z);
-        double interp_dndm(double M);
-
+        double M_HI(double M, double z);
 
         
         /* Variables */
+        double M_normalization;
         CAMB_CALLER* CAMB;
-
+        // Contains the minimum/maximum Halomass that is used in the interpolation.
         double zmin_Ml, zmax_Ml, stepsize_Ml;
         int zsteps_Ml;
-        spline1dinterpolant interpolator_hmf;
+        spline2dinterpolant interpolator_hmf;
+        bool figfit;
 };
 

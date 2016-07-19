@@ -99,15 +99,26 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
+
+        /*Model_Intensity_Mapping model1(params, &Pk_index, &Tb_index, &q_index);
         ofstream file("test3.dat");
+        ofstream file2("dTb_bull2.dat");
+        ofstream file3("dTb_bull3.dat");
         
-        for (int i = 1; i < 10000; ++i)
-        {
-            double z = i*0.1;
-            file << z << " " << model->T21_interp(z,0)  << endl; 
+        for (int i = 0; i < 70; ++i)
+        {   
+            double M = pow(10, 8 + i*0.1); 
+            double z = 3.0;
+            file << M << " " << model1.interp_dndm(M, z) << endl; 
         }
-                
-        
+        for (int i = 0; i < 100; ++i)
+        {   
+            double z = 0 + i * 0.05;
+            file << z << " " << 1000.0 * model1.Omega_HI(z) << endl; 
+            file2 << z << " " << model1.Tb(z) << endl;
+            file3 << z << " " << model1.T21_interp(z,0) << endl;
+        }*/
+
         /*Bispectrum BS(analysis);
         cout << BS.Gamma_integral(10) << endl;
 

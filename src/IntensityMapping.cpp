@@ -47,10 +47,10 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
     //This determines the upper bound of the kappa integral
     // set the interval size to constant 0.8 after inspection.
     // This is good for l about 10000.
-    double higher_kappa_bound = lower_kappa_bound + 2.0;
+    double higher_kappa_bound = lower_kappa_bound + 1.0;
     if (z1 < 1 or z2 < 1)
     {
-        higher_kappa_bound = lower_kappa_bound + 5;
+        higher_kappa_bound = lower_kappa_bound + 2;
     }
     // The stepsize needs to be at least 0.0001 for good coverage. 
     int steps = (int)(abs(higher_kappa_bound - lower_kappa_bound)/0.0001);
@@ -66,12 +66,12 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
     double dTb2 = model->T21_interp(z2, Tb_index);
     auto integrand = [&](double k)
     {
-        //double r1 = model->q_interp(z1,q_index);
-        //double r2 = model->q_interp(z2,q_index);
+        double r1 = model->q_interp(z1,q_index);
+        double r2 = model->q_interp(z2,q_index);
 
         //TODO: I should probably put the window function in here instead of simply jl
-        double jl1 = I(l,k, nu1);//model->sph_bessel_camb(l,k*r1);
-        double jl2 = I(l,k, nu2);//model->sph_bessel_camb(l,k*r2);
+        double jl1 = model->sph_bessel_camb(l,k*r1);//I(l, k, nu1)
+        double jl2 = model->sph_bessel_camb(l,k*r2);//I(l, k, nu2)
        
         double Pdd = P(k,z1,z2, Pk_index);
         
@@ -105,6 +105,7 @@ double IntensityMapping::I(int l, double k, double nu_0)
     };
 
     double integral = integrate_simps(integrand, nu_low, nu_high, nu_steps);
+    // the factor of 1/delta\nu is due to the normalization of the window function.
     return integral*(1.0/0.2);//*1420 don't know why this factor was here.
 }
 
