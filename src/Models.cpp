@@ -2185,7 +2185,7 @@ double Model_Intensity_Mapping::Omega_HI(double z)
     // model the code hmf_for_LISW.py uses. 
     //
     // This function reproduces figure 20 from bull et al exactly
-    return (-0.000062667) * (z-3) * (z - 3) + 0.00105;
+    return (-0.000062667) * (z-3) * (z-3) + 0.00105;
 
     /*
     auto integrand = [&](double M)

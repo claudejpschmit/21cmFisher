@@ -105,12 +105,12 @@ int main(int argc, char* argv[])
         ofstream file2("dTb_bull2.dat");
         ofstream file3("dTb_bull3.dat");
         
-        for (int i = 0; i < 70; ++i)
+        *for (int i = 0; i < 70; ++i)
         {   
             double M = pow(10, 8 + i*0.1); 
             double z = 3.0;
             file << M << " " << model1.interp_dndm(M, z) << endl; 
-        }
+        }*
         for (int i = 0; i < 100; ++i)
         {   
             double z = 0 + i * 0.05;
@@ -158,27 +158,14 @@ int main(int argc, char* argv[])
         for (int z = 300; z < 1000; z++)
             file3 << 0.1*z << " " << BS.f1b(0.1*z) << endl;
         */
-       /*
-        Model_Intensity_Mapping Model_IM(params, &Pk_index, &Tb_index, &q_index);
-        ofstream file("Omega_HI.dat");
-        double zmin = params["zmin_IM"];
-        double zmax = params["zmax_IM"];
-        double zbin_size = params["zbin_size"];
-        int zsteps = (zmax-zmin)/zbin_size;
-
-        for (int i = 0; i < zsteps; i++)
-        {
-            double z = zmin + i * zbin_size;
-            file << z << " " << Model_IM.Omega_HI(z) << endl;
-        }
-    */
-
-        //Bispectrum_LISW LISW(analysis);
+       
+        Bispectrum_LISW LISW(analysis);
         //LISW.test_MC();
         //cout << LISW.calc_angular_Blll_all_config(20,20,20, 50.0, 50.0, 50.0) << endl;
-        //LISW.detection_SN_sparse(20, 80, 20, 3, 50.0, -1,"SN_new.dat");
+        //LISW.detection_SN_sparse(20, 10000, 2, 0, 1.0, -1,"SN_new3.dat");
+        //LISW.detection_SN_sparse_fast(20,10000,20,2,1.0,-1,"SN_FASTer_20-10000.dat");
         //LISW.detection_SN_MC(20,50.0);
-        //LISW.detection_SN(20,1000, 2,50.0, "SN_20-1000_delta2.dat");
+        LISW.detection_SN(20,10000, 20,1.0, "SN_all.dat");
         //LISW.detection_SN_sparse(20, 10000, 20, 3, 50.0, -1, "SN_20-10000_sparse_3.dat");
         /*vector<vector<double>> triangle = LISW.build_triangle_sparse(40, 1,1,50.0,"test_sparse.dat",true);
         double SN = 0;
@@ -236,9 +223,9 @@ int main(int argc, char* argv[])
             file_bispectrum << endl;
         }
         */
-        //Bispectrum BS(analysis);
-        //ofstream file2("Blll_squeezed.dat");
-        /*vector<int> l_list;
+        /*Bispectrum_LISW LISW(analysis);
+        ofstream file1("Blll.dat");
+        vector<int> l_list;
         l_list.push_back(0);
         for (int i = 10; i < 200; i++)
         {
@@ -258,8 +245,8 @@ int main(int argc, char* argv[])
             {
                 l_list.push_back(l);
                 //double B = BS.calc_Blll(l, l, 2);
-                double BLISW = LISW.calc_angular_Blll_all_config(l,l,l, 50.0, 50.0, 50.0);
-                double BLISW2 = LISW.calc_angular_Blll(l, 50.0, 50.0, 50.0);
+                double BLISW = LISW.calc_angular_Blll_all_config(l,l,l, 1.0, 1.0, 1.0);
+                double BLISW2 = LISW.calc_angular_Blll(l, 1.0, 1.0, 1.0);
 
                 //cout << "l = " << l << ", Bll2 = " << B << endl;
                 cout << "l = " << l << ", LISW_ll2 = " << BLISW << " and " << BLISW2 << endl;

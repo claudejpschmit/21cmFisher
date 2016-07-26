@@ -37,12 +37,13 @@ class Bispectrum_LISW {
     private:
         double W_lll_mmm(int l1, int l2, int l3, int m1, int m2, int m3);
         double L_lll(int l1, int l2, int l3);
-
+        vector<double> Cls, Qls, Cls_noise;
         double P_phi(double k, double z);
         //AnalysisInterface is the general interface which calculates the Cls.
         AnalysisInterface* analysis;
         double pi = M_PI;
         double redshift_z;
         int lmax_calculated;
+        bool SN_calculation;
 
 };

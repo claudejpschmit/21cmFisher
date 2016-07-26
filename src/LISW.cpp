@@ -38,6 +38,7 @@
 Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
 {
     this->analysis = analysis;
+    SN_calculation = false;
 }
 
 Bispectrum_LISW::~Bispectrum_LISW()
@@ -91,49 +92,122 @@ double Bispectrum_LISW::W_lll_mmm(int l1, int l2, int l3, int m1, int m2, int m3
 double Bispectrum_LISW::Cl(int l, double nu1, double nu2)
 {
     //cout << "Calculating Cl" << endl;
-    return analysis->Cl(l,nu1,nu2,0,0,0);
+    // We'll only compute each one of these once and then store them
+    if (SN_calculation)
+    {
+        if (Cls[l] == -1)
+        {
+            //cout << "Calculating Cl for l = " << l << endl;
+            Cls[l] = analysis->Cl(l,nu1,nu2,0,0,0);
+            return Cls[l];
+        }
+        else
+        {
+            return Cls[l];
+        }
+    }
+    else
+    {
+        return analysis->Cl(l,nu1,nu2,0,0,0);
+    }
 }
 
 double Bispectrum_LISW::Ql(int l, double z)
 {
-    //cout << "Calculating Ql" << endl;
-    double r = analysis->model->r_interp(z);
-    double h = 0.001;
-    double dTbdz = analysis->model->T21_interp(z+h,0) - analysis->model->T21_interp(z,0);
-    dTbdz /= h;
-    double eta =1; //-(1.0+z) * dTbdz;
-    auto integrand = [&](double zp)
+    if (SN_calculation)
     {
-        double rzp = analysis->model->r_interp(zp);
-        double pre = (r - rzp)/(r*pow(rzp,3));
+        if (Qls[l] == -1)
+        {
+            //cout << "Calculating Ql for l = " << l << endl;
+            double r = analysis->model->r_interp(z);
+            double h = 0.001;
+            double dTbdz = analysis->model->T21_interp(z+h,0) - analysis->model->T21_interp(z,0);
+            dTbdz /= h;
+            //TODO: is this supposed to be 1?
+            double eta =-(1.0+z) * dTbdz;
+            auto integrand = [&](double zp)
+            {
+                double rzp = analysis->model->r_interp(zp);
+                double pre = (r - rzp)/(r*pow(rzp,3));
     
-        /*double h = 0.01;
-        double deriv = (P_phi(l/rzp,z + h) - P_phi(l/rzp, z))/h;
-        */
-        double k = l/analysis->model->r_interp(zp);
-        double Omega_M = analysis->model->Omega_M(0);
-        double H_0 = analysis->model->give_fiducial_params()["hubble"]*1000.0;    
-        double pre2 = pow(3.0 * Omega_M/2.0,2) * pow(H_0/(k* analysis->model->c),4);
-        double h2 = 0.01;
-        double P0 = analysis->model->Pkz_interp(k,zp,0);
-        double P1 = analysis->model->Pkz_interp(k,zp+h2,0);
+                /*double h = 0.01;
+                double deriv = (P_phi(l/rzp,z + h) - P_phi(l/rzp, z))/h;
+                */
+                double k = l/analysis->model->r_interp(zp);
+                double Omega_M = analysis->model->Omega_M(0);
+                double H_0 = analysis->model->give_fiducial_params()["hubble"]*1000.0;    
+                double pre2 = pow(3.0 * Omega_M/2.0,2) * pow(H_0/(k* analysis->model->c),4);
+                double h2 = 0.01;
+                double P0 = analysis->model->Pkz_interp(k,zp,0);
+                double P1 = analysis->model->Pkz_interp(k,zp+h2,0);
         
-        double deriv = pre2 * (2 * (1.0+zp) * P0 + pow(1.0+zp,2) * (P1-P0)/h);
-        //if (z < 0.5)
-        //    cout << k << endl;
-        return pre*deriv;//analysis->model->Pkz_interp(k, z,0);//*pre;
-        /*
-        double rzp = analysis->model->r_interp(zp);
-        double pre = (r - rzp)/(r*pow(rzp,3));
-        double h2 = 0.01;
-        double deriv = (P_phi(l/rzp,zp + h2) - P_phi(l/rzp, zp))/h2;
+                double deriv = pre2 * (2 * (1.0+zp) * P0 + pow(1.0+zp,2) * (P1-P0)/h);
+                //if (z < 0.5)
+                //    cout << k << endl;
+                return pre*deriv;//analysis->model->Pkz_interp(k, z,0);//*pre;
+                /*
+                double rzp = analysis->model->r_interp(zp);
+                double pre = (r - rzp)/(r*pow(rzp,3));
+                double h2 = 0.01;
+                double deriv = (P_phi(l/rzp,zp + h2) - P_phi(l/rzp, zp))/h2;
 
-        return pre*deriv;
-        */
-    };
+                return pre*deriv;
+                */
+            };
 
-    double integral = integrate(integrand, 0.001, z, 10000, simpson());
-    return 2.0*eta*integral;
+            double integral = integrate(integrand, 0.001, z, 10000, simpson());
+            Qls[l] = 2.0*eta*integral;
+            return Qls[l];
+        }
+        else
+        {
+            return Qls[l];
+        }
+    }
+    else
+    {
+        //cout << "Calculating Ql" << endl;
+        double r = analysis->model->r_interp(z);
+        double h = 0.001;
+        double dTbdz = analysis->model->T21_interp(z+h,0) - analysis->model->T21_interp(z,0);
+        dTbdz /= h;
+        //TODO: is this supposed to be 1?
+        double eta =-(1.0+z) * dTbdz;
+        auto integrand = [&](double zp)
+        {
+            double rzp = analysis->model->r_interp(zp);
+            double pre = (r - rzp)/(r*pow(rzp,3));
+    
+            /*double h = 0.01;
+            double deriv = (P_phi(l/rzp,z + h) - P_phi(l/rzp, z))/h;
+            */
+            double k = l/analysis->model->r_interp(zp);
+            double Omega_M = analysis->model->Omega_M(0);
+            double H_0 = analysis->model->give_fiducial_params()["hubble"]*1000.0;    
+            double pre2 = pow(3.0 * Omega_M/2.0,2) * pow(H_0/(k* analysis->model->c),4);
+            double h2 = 0.01;
+            double P0 = analysis->model->Pkz_interp(k,zp,0);
+            double P1 = analysis->model->Pkz_interp(k,zp+h2,0);
+        
+            double deriv = pre2 * (2 * (1.0+zp) * P0 + pow(1.0+zp,2) * (P1-P0)/h);
+            //if (z < 0.5)
+            //    cout << k << endl;
+            return pre*deriv;//analysis->model->Pkz_interp(k, z,0);//*pre;
+            /*
+            double rzp = analysis->model->r_interp(zp);
+            double pre = (r - rzp)/(r*pow(rzp,3));
+            double h2 = 0.01;
+            double deriv = (P_phi(l/rzp,zp + h2) - P_phi(l/rzp, zp))/h2;
+
+            return pre*deriv;
+            */
+        };
+
+        double integral = integrate(integrand, 0.001, z, 10000, simpson());
+        return 2.0*eta*integral;
+       
+    }
+
 }
 
 double Bispectrum_LISW::P_phi(double k, double z)
@@ -202,7 +276,8 @@ double Bispectrum_LISW::calc_angular_Blll(int l, double z1, double z2, double z3
 }
 
 
-double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, double z1, double z2, double z3)
+double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, double z1,\
+        double z2, double z3)
 {
     double min_z1z2, min_z1z3, min_z2z3;
     min_z1z2 = z1;
@@ -239,7 +314,7 @@ double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, dou
             L_lll(l2,l3,l1)*(term3+term4)+\
             L_lll(l3,l1,l2)*(term5+term6));
     
-    cout << "B = " << result << ", l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << l3 << endl;
+    //cout << "B = " << result << ", l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << l3 << endl;
     return result;
 }
 
@@ -250,7 +325,23 @@ double Bispectrum_LISW::L_lll(int l1, int l2, int l3)
 
 double Bispectrum_LISW::Cl_noise(int l, double nu1, double nu2)
 {
-    return analysis->Cl_noise(l, nu1, nu2);
+    // We'll only compute each one of these once and then store them
+    if (SN_calculation)
+    {
+        if (Cls_noise[l] == -1)
+        {
+            Cls_noise[l] = analysis->Cl_noise(l, nu1, nu2);
+            return Cls_noise[l];
+        }
+        else
+        {
+            return Cls_noise[l];
+        }
+    }
+    else
+    {
+        return analysis->Cl_noise(l,nu1,nu2);
+    }
 }
 
 double Bispectrum_LISW::sigma_squared_a(int l1, int l2, int l3, double z1, double z2, double z3)
@@ -277,7 +368,10 @@ double Bispectrum_LISW::sigma_squared_a(int l1, int l2, int l3, double z1, doubl
 vector<vector<double>> Bispectrum_LISW::build_triangle(int lmax, double z,\
         string filename, bool variance_included)
 {
+    cout << "Triangle called for l = " << lmax << endl;
+
     vector<vector<double>> result;
+    bool debug = true;
     int l1, l2, l3;
     l1 = lmax;
     int lmin = l1/2;
@@ -286,7 +380,7 @@ vector<vector<double>> Bispectrum_LISW::build_triangle(int lmax, double z,\
     stringstream name;
     name << "output/Bispectrum/Triangle_plots/SN/" << filename;
     ifstream infile(name.str());
-    if (infile.good()){
+    if (infile.good() && !debug){
         cout << "Reading file " << name.str() << endl;
         string line;
         while (getline(infile,line))
@@ -343,6 +437,19 @@ vector<vector<double>> Bispectrum_LISW::build_triangle(int lmax, double z,\
 
 void Bispectrum_LISW::detection_SN(int lmin, int lmax, int delta_l, double z, string SN_filename)
 {
+    SN_calculation = true;
+    // Preparing the Cls container 
+    // I create a vector with length lmax that is filled with -1's.
+    // Then later on I'll fill them in later, as required.
+    for (int i = 0; i < lmax; i++)
+    {
+        Cls.push_back(-1);
+        Qls.push_back(-1);
+        Cls_noise.push_back(-1);
+    }
+
+    //
+
     ofstream file(SN_filename);
     string name_base = "LISW_SN_triangle_l"; 
     double mult_fact = delta_l/2.0;
@@ -354,6 +461,14 @@ void Bispectrum_LISW::detection_SN(int lmin, int lmax, int delta_l, double z, st
         vector<vector<double>> triangle = build_triangle(l, z, name.str(),true);
         for (int i = 0; i < triangle.size(); i++)
         {
+            // This should assure that the starting point is independent of the delta_l
+            // and everything is backward interpolated, this surely means I overestimate...
+            //
+            
+            if (l == lmin)
+                mult_fact = lmin/2.0;
+            else
+                mult_fact = delta_l/2.0;
             for (int j = 0; j < triangle[0].size(); j++)
             {
                 SN += mult_fact*triangle[i][j];
@@ -369,7 +484,8 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
 {
     //This function only computes the modes if the file doesn't exist yet, otherwise it will read
     //in the file.
-    cout << "Sparse triangle called with xgap = " << ngaps_x << " and ygap = " << ngaps_y << endl;
+    cout << "Sparse triangle called for l = " << lmax << " with xgap = " <<\
+        ngaps_x << " and ygap = " << ngaps_y << endl;
     bool debug = true;
     vector<vector<double>> result;
     int l1, l2, l3;
@@ -411,7 +527,7 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
         }
     }
     
-    for (int i = 0; i < xmodes.size(); i++)
+    /*for (int i = 0; i < xmodes.size(); i++)
     {
         cout << xmodes[i] << " " ;
     }
@@ -421,6 +537,7 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
         cout << ymodes[i] << " " ;
     }
     cout << endl;
+    */
     //I think this way of is now working right... 
     //So debug is true until I fix this
     if (infile.good() && !debug){
@@ -494,8 +611,8 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
                     }
                     file_bispectrum << B/sigma << " ";
                     row.push_back(B/sigma);
-                    cout << "B/sigma = " << B/sigma << endl;
-                    cout << B << " " << sigma << endl;
+                    //cout << "B/sigma = " << B/sigma << endl;
+                    //cout << B << " " << sigma << endl;
                 }
             }
             else
@@ -516,6 +633,19 @@ vector<vector<double>> Bispectrum_LISW::build_triangle_sparse(int lmax, int ngap
 void Bispectrum_LISW::detection_SN_sparse(int lmin, int lmax, int delta_l, int gaps,\
         double z, double IniValue,string SN_filename)
 {
+    SN_calculation = true;
+    // Preparing the Cls container 
+    // I create a vector with length lmax that is filled with -1's.
+    // Then later on I'll fill them in later, as required.
+    for (int i = 0; i < lmax; i++)
+    {
+        Cls.push_back(-1);
+        Qls.push_back(-1);
+        Cls_noise.push_back(-1);
+
+    }
+
+    //
     ofstream file(SN_filename);
     string name_base = "LISW_SN_triangle_l"; 
     double mult_fact = delta_l/2.0;
@@ -538,6 +668,14 @@ void Bispectrum_LISW::detection_SN_sparse(int lmin, int lmax, int delta_l, int g
         vector<vector<double>> triangle = build_triangle_sparse(l, gaps_y, gaps_y, z, name.str(),true);
         for (int i = 0; i < triangle.size(); i++)
         {
+            // This should assure that the starting point is independent of the delta_l
+            // and everything is backward interpolated, this surely means I overestimate...
+            //
+            
+            if (l == lmin)
+                mult_fact = lmin/2.0;
+            else
+                mult_fact = delta_l/2.0;
             for (int j = 0; j < triangle[0].size(); j++)
             {
                 SN += mult_fact*(gaps+1)*(gaps+1)*triangle[i][j];
@@ -619,6 +757,18 @@ double Bispectrum_LISW::f(double sum, double sigma, int n)
 void Bispectrum_LISW::detection_SN_sparse_fast(int lmin, int lmax, int delta_l, int gaps,\
                 double z, double IniValue, string SN_filename)
 {
+    SN_calculation = true;
+    // Preparing the Cls container 
+    // I create a vector with length lmax that is filled with -1's.
+    // Then later on I'll fill them in later, as required.
+    for (int i = 0; i < lmax; i++)
+    {
+        Cls.push_back(-1);
+        Qls.push_back(-1);
+        Cls_noise.push_back(-1);
+
+    }
+
     ofstream file(SN_filename);
     string name_base = "LISW_SN_triangle_l"; 
     double mult_fact = delta_l/2.0;
@@ -640,7 +790,7 @@ void Bispectrum_LISW::detection_SN_sparse_fast(int lmin, int lmax, int delta_l, 
         
         // Here I change the gapsize as l increases, so that the time taken to compute the 
         // triangles does not increase as l^2 but slower.
-        new_gaps = (int)(gaps * sqrt((double)l/(double)lmin));
+        new_gaps = (int)(gaps * sqrt(pow(l,1.5)/(double)lmin));
         
         // Here I check if the gapsize I impose is larger than the maximum. If it is,
         // it will just be set to the maximum.
@@ -655,7 +805,7 @@ void Bispectrum_LISW::detection_SN_sparse_fast(int lmin, int lmax, int delta_l, 
             for (int j = 0; j < triangle[0].size(); j++)
             {
                 SN += mult_fact*(gaps_y+1)*(gaps_y+1)*triangle[i][j];
-                cout << SN <<" "<< mult_fact << " " << gaps_y << " " << triangle[i][j] << endl;
+                //cout << SN <<" "<< mult_fact << " " << gaps_y << " " << triangle[i][j] << endl;
             }
         }
         file << l << " " << sqrt(SN) << endl;

@@ -79,7 +79,7 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
     };
     //TODO: set bias
     double BIAS_squared = 1.0;
-    cout << lower_kappa_bound << " " << higher_kappa_bound << endl;
+    //cout << lower_kappa_bound << " " << higher_kappa_bound << endl;
     double integral = integrate_simps(integrand, lower_kappa_bound, higher_kappa_bound, steps);
     return 2.0/(model->pi) * dTb1 * dTb2 * BIAS_squared * integral;
 }
@@ -112,7 +112,22 @@ double IntensityMapping::I(int l, double k, double nu_0)
 double IntensityMapping::Cl_noise(int l, double nu1, double nu2)
 {
     //TODO: write this function
-    return 0;   
+    //      currently I have just taken the same noise function as 
+    //      Tomography2D as I don't know how to get this for IM
+    if (nu1==nu2) {
+        // in mK
+        double Tsys = model->give_fiducial_params("Tsys");
+        double fcover = model->give_fiducial_params("fcover");
+        double lmax = model->give_fiducial_params("lmax_noise");
+        // in seconds
+        double t0 = model->give_fiducial_params("tau_noise");
+        double res = pow(2.0*model->pi,3) * Tsys*Tsys/(fcover*fcover *\
+                model->give_fiducial_params("df") * lmax * lmax * t0);
+        return res;
+    } else {
+        return 0.0;
+    }
+ 
 }
 
 
