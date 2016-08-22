@@ -376,6 +376,10 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("IM_zlow",0.1));
     basicParams.insert(pair<string,double>("IM_zhigh",5.0));
     basicParams.insert(pair<string,double>("zbin_size",0.01));
+    basicParams.insert(pair<string,double>("interp_Cls",0));
+    basicParams.insert(pair<string,double>("lmax_Fisher_Bispectrum",100));
+    basicParams.insert(pair<string,double>("Bispectrum_numin",500));
+    basicParams.insert(pair<string,double>("Bispectrum_numax",800));
 }
 
 /////////////////////////////

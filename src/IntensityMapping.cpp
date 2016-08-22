@@ -6,11 +6,173 @@
 IntensityMapping::IntensityMapping(ModelInterface* model)
 {
     this->model = model;
+    
     log<LOG_DEBUG>("-> You better be using camb_ares_2D or camb_ares as your model!");
     analysisID = "IntensityMapping_analysis";
+    if (model->give_fiducial_params("interp_Cls") == 0)
+        this->interpolating = false;
+    else
+        this->interpolating = true;
+    interpolate_large = false;
+    if (interpolating)
+    {
+        int lmin = 0;
+        int lmax = model->give_fiducial_params("lmax_Fisher_Bispectrum");
+        double nu_min = model->give_fiducial_params("Bispectrum_numin");
+        double nu_max = model->give_fiducial_params("Bispectrum_numax");
+        int nu_steps = 10;
+        log<LOG_BASIC>("Cls are being interpolated");
+        log<LOG_BASIC>("Parameters are: lmin = %1%, lmax = %2%, nu_min = %3%, nu_max = %4%, nu_steps = %5%.") %\
+            lmin % lmax % nu_min % nu_max % nu_steps;
+        make_Cl_interps(lmin, lmax, nu_min, nu_max, nu_steps);
+    }
+    else
+        log<LOG_BASIC>("Cls are NOT interpolated");
+    // Here I could include a code that precomputes the Cls between some lmin and lmax,
+    // and nu_min and nu_max, then it stores this in a 2D interpolator.
+    // I need to then create another function so that Cl(...) just returns the interpolated values.
+    
 }
 
-double IntensityMapping::Cl(int l, double nu1, double nu2,\
+IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
+{
+    this->model = model;
+    
+    log<LOG_DEBUG>("-> You better be using camb_ares_2D or camb_ares as your model!");
+    analysisID = "IntensityMapping_analysis";
+    if (model->give_fiducial_params("interp_Cls") == 0)
+        this->interpolating = false;
+    else
+        this->interpolating = true;
+    interpolate_large = true;
+    lmin_CLASS = 0;
+    lmax_CLASS = model->give_fiducial_params("lmax_Fisher_Bispectrum");
+    numin_CLASS = model->give_fiducial_params("Bispectrum_numin");
+    numax_CLASS = model->give_fiducial_params("Bispectrum_numax");
+    nu_steps_CLASS = 10;
+    
+    if (interpolating)
+    {
+                
+        this->num_params = num_params;
+        // num_deriv is the number of non_fiducial points calculated for the fisher derivative.
+        int num_deriv = 1;
+        int num_indecies = num_params * num_deriv + 1;
+
+        boost::array<Interpol_Array::index,4> dims = {{lmax_CLASS+1,num_indecies,\
+            num_indecies,num_indecies}};
+        Cls_interpolators_large = new boost::multi_array<Interpol,4>(dims);
+        for (int l = 0; l < lmax_CLASS+1; l++)
+        {
+            for (int i = 0; i < num_indecies; i++)
+            {
+                for (int j = 0; j < num_indecies; j++)
+                {
+                    for (int k = 0; k < num_indecies; k++)
+                    {    
+                        cout << l << " " << i << " " << j << " " << k << endl;
+                        (*Cls_interpolators_large)[l][i][j][k].computed = false;
+                    }
+                }
+            }
+        }
+
+
+        log<LOG_BASIC>("Cls are being interpolated");
+        log<LOG_BASIC>("Parameters are: lmin = %1%, lmax = %2%,\
+                nu_min = %3%, nu_max = %4%, nu_steps = %5%.") %\
+            lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
+        make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS, nu_steps_CLASS,0,0,0);
+    }
+    else
+        log<LOG_BASIC>("Cls are NOT interpolated");
+    // Here I could include a code that precomputes the Cls between some lmin and lmax,
+    // and nu_min and nu_max, then it stores this in a 2D interpolator.
+    // I need to then create another function so that Cl(...) just returns the interpolated values.
+    
+}
+
+void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps)
+{
+    double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
+    for (int l = lmin; l <= lmax; l++)
+    {
+        vector<double> vnu, vCl;
+        for (int i = 0; i <= nu_steps; i++)
+        {
+            double nu = nu_min + i*nu_stepsize;
+            vCl.push_back(this->calc_Cl(l,nu,nu,0,0,0));
+            vnu.push_back(nu);
+        }
+        
+        real_1d_array nu_arr, Cl_arr;
+        nu_arr.setlength(vnu.size());
+        Cl_arr.setlength(vCl.size());
+
+        for (unsigned int i = 0; i < vnu.size(); i++){
+            nu_arr[i] = vnu[i];
+        }
+        for (unsigned int i = 0; i < vCl.size(); i++){
+            Cl_arr[i] = vCl[i];
+        }
+
+        spline1dinterpolant interpolator;
+        spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
+
+        Clnu_interpolators.push_back(interpolator);
+        cout << "Cl for l = " << l << " is interpolated." << endl;
+    }
+}
+
+void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
+        int Pk_index, int Tb_index, int q_index)
+{
+    if ((*Cls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
+    {   
+
+        double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
+        for (int l = lmin; l <= lmax; l++)
+        {
+            vector<double> vnu, vCl;
+            for (int i = 0; i <= nu_steps; i++)
+            {
+                double nu = nu_min + i*nu_stepsize;
+                vCl.push_back(this->calc_Cl(l,nu,nu,0,0,0));
+                vnu.push_back(nu);
+            }
+        
+            real_1d_array nu_arr, Cl_arr;
+            nu_arr.setlength(vnu.size());
+            Cl_arr.setlength(vCl.size());
+
+            for (unsigned int i = 0; i < vnu.size(); i++){
+                nu_arr[i] = vnu[i];
+            }
+            for (unsigned int i = 0; i < vCl.size(); i++){
+                Cl_arr[i] = vCl[i];
+            }
+
+            spline1dinterpolant interpolator;
+            spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
+
+            (*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator = interpolator;
+            (*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed = true;
+            //cout << "Cl for l = " << l << " is interpolated." << endl;
+        }
+    }
+}
+
+double IntensityMapping::Cl_interp(int l,double nu1)
+{
+    return spline1dcalc(Clnu_interpolators[l], nu1);
+}
+
+double IntensityMapping::Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index)
+{
+    return spline1dcalc((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator, nu1);
+}
+
+double IntensityMapping::calc_Cl(int l, double nu1, double nu2,\
         int Pk_index, int Tb_index, int q_index)
 {
     //This determines the lower bound of the kappa integral
@@ -78,11 +240,39 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
         return k*k*Pdd*jl1*jl2;
     };
     //TODO: set bias
-    double BIAS_squared = 1.0;
+    //      b = 2 (b^2 = 4) as in Hall et al. 2013
+    double BIAS_squared = 4.0;
     //cout << lower_kappa_bound << " " << higher_kappa_bound << endl;
     double integral = integrate_simps(integrand, lower_kappa_bound, higher_kappa_bound, steps);
     return 2.0/(model->pi) * dTb1 * dTb2 * BIAS_squared * integral;
+
 }
+
+double IntensityMapping::Cl(int l, double nu1, double nu2,\
+        int Pk_index, int Tb_index, int q_index)
+{
+    if (interpolating && interpolate_large)
+    {
+        if ((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed == false)
+            make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS,\
+                    nu_steps_CLASS, Pk_index, Tb_index, q_index);
+
+        // The make_... function doesn't do anything if the interpolator already exists, 
+        // so this should be fine.
+        //make_Ql_interps(lmax_CLASS,numin_CLASS,numax_CLASS,Pk_index,Tb_index,q_index);
+        return Cl_interp(l, nu1, Pk_index, Tb_index, q_index); 
+
+    }
+    else if (interpolating && Pk_index == 0 && Tb_index == 0 && q_index == 0)
+    {
+        return Cl_interp(l,nu1);
+    }
+    else
+    {
+        return calc_Cl(l, nu1, nu2, Pk_index, Tb_index, q_index);
+    }
+}
+
 
 double IntensityMapping::I(int l, double k, double nu_0)
 {

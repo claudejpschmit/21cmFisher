@@ -190,7 +190,7 @@ class Model_Intensity_Mapping : public ModelParent<Tb_interpolator_IM> {
         double interp_dndm(double M, double z);
         void update_hmf(map<string,double> params);
 
-        double Tb(double z);
+        double Tb(map<string,double> params, double z);
     private:
         void update_Pkz(map<string,double> params, int *Pk_index);
         void update_T21(map<string,double> params, int *Tb_index);

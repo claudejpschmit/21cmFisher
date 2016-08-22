@@ -12,13 +12,16 @@ class Bispectrum {
     public:
         Bispectrum(AnalysisInterface *analysis);
         ~Bispectrum();
+        void build_signal_triangles(int lmin, int lmax, int delta_l, double z);
+        vector<vector<double>> build_triangle(int lmax, string filename);
+
         
         double calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3);
         double D_Growth_interp(double z);
         double calc_Blll(int l1, int l2, int l3);
         double g1(double z);
         AnalysisInterface* analysis;
-        double Wnu(double r);
+        double Wnu(double r, double z_centre, double delta_z);
         double f1(double z);
         double f1T(double z);
         double f1b(double z);
@@ -51,12 +54,16 @@ class Bispectrum {
         double x_bar(double z);
         dcomp B_ll(int la, int lb, int lc);
         dcomp B_ll_direct(int la, int lb, int lc);
+        
+        double z_centre_CLASS;
+        double delta_z_CLASS;
+
 
         double sph_bessel_camb(int l, double x);
-        double theta(int li, int lj, double z, int q);
+        double theta(int li, int lj, double z, int q, double z_centre, double delta_z);
         double F(double z);
         double D_Growth(double z);
-        double alpha(int l, double k);
+        double alpha(int l, double k, double z_centre, double delta_z);
         double f0(double z);
         double S(double z);
         double C(double z);
@@ -70,6 +77,7 @@ class Bispectrum {
         double Growth_function_norm;
         double g1_interp(double z);
         CollisionRates CollisionKappa;
-        spline1dinterpolant Growth_function_interpolator, g1_interpolator;
-    
+        spline1dinterpolant Growth_function_interpolator, g1_interpolator; 
+        
+        vector<vector<double>> thetas;
 };

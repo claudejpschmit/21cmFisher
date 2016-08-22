@@ -14,7 +14,7 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
     this->analysis = analysis;
 
     log<LOG_BASIC>("Precalculating Growth function for fast integrations");
-
+    log<LOG_BASIC>("Growth function is precalculated between %1% and %2% using %3% points.") % 0 % 100 % 1000;
     auto integrand = [&](double z)
     {
         double H3 = this->analysis->model->Hf_interp(z);
@@ -29,12 +29,12 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
 
     // Should precalculate to at least z = 10000. 
     // Although this takes 20 seconds each run, which is annoying.
-    zs_v.resize(10000);
-    D_v.resize(10000);
+    zs_v.resize(1000);
+    D_v.resize(1000);
 #pragma omp parallel for
-    for (int i = 0; i < 10000; i++)
+    for (int i = 0; i < 1000; i++)
     {
-        double z = i*1;
+        double z = i*0.1;
         double D = D_Growth(z);
 
         zs_v[i] = z;
@@ -55,7 +55,7 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
 
     log<LOG_BASIC>("Writing Growth function to file...");
     ofstream file("Growing_mode.dat");
-    for (int i = 0; i < 100000; i++)
+    for (int i = 0; i < 1000; i++)
     {
         double z = i*0.1;
         file << z << " " << spline1dcalc(Growth_function_interpolator, z) << endl;
@@ -99,15 +99,23 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
     }
 
     // precalculating Window function normalization
+    z_centre_CLASS = 1;
+    delta_z_CLASS = 0.1;
+    double z_centre = z_centre_CLASS;
+    double delta_z = delta_z_CLASS;
     auto integrand3 = [&] (double r)
     {
-        double res = Wnu(r);
+        double res = Wnu(r,z_centre,delta_z);
         //double cc = 3.0*pow(10,8);
         //double Hz = 1000.0 * analysis->model->Hf_interp(z);
 
         return res;//cc*res/Hz;
-    }; 
-    double I2 = integrate(integrand3, 11500.0, 11700.0, 1000, simpson());
+    };
+    //cout << "r(z=0.9) = " << analysis->model->r_interp(0.9) << endl;
+    //cout << "r(z=1.1) = " << analysis->model->r_interp(1.1) << endl;
+
+    // Make sure that the integration bounds envelope the peak of r(z_c).
+    double I2 = integrate(integrand3, 2000.0, 5000.0, 3000, simpson());
     cout << "Window function integral = " << I2 << endl;
     cout << "... Bispectrum Class initialized ..." << endl;
 }
@@ -148,9 +156,13 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
     dcomp B0abc, B1abc, B2abc;
     // Integration params:
     // TODO
-    double zmin, zmax;
-    zmin = 49.5;
-    zmax = 50.5;
+    double zmin, zmax, delta_z, z_centre;
+    //zmin = 49.5;
+    //zmax = 50.5;
+    delta_z = delta_z_CLASS;
+    z_centre = z_centre_CLASS;
+    zmin = z_centre-delta_z;
+    zmax = z_centre+delta_z;
     int steps = 100;
 
     /*
@@ -180,16 +192,16 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
             double r = analysis->model->r_interp(z);
             // 1000 factor is necessary to convert km into m.
             double hub = analysis->model->Hf_interp(z)*1000.0;
-            double Fz = (analysis->model->c/hub)*D*D*f1(z)*Wnu(r);
+            double Fz = (analysis->model->c/hub)*D*D*f1(z)*Wnu(r, z_centre, delta_z);
             double THETA1, THETA2;
-            THETA1 = theta(la,la,z,0);
+            THETA1 = theta(la,la,z,0, z_centre, delta_z);
             if (la == lb) 
             {
                 THETA2 = THETA1;
             }
             else 
             {
-                THETA2 = theta(lb,lb,z,0);
+                THETA2 = theta(lb,lb,z,0, z_centre, delta_z);
             }
             //cout << "Thetas = " << THETA1 << " " << THETA2 << ", la = " <<\
                 la << ", lb = " << lb << ", z = " << z << ", Fz = " << Fz << endl;
@@ -228,18 +240,18 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
                     double r = analysis->model->r_interp(z);
                     // 1000 factor is necessary to convert km into m.
                     double hub = analysis->model->Hf_interp(z)*1000.0;
-                    double Fz = (analysis->model->c/hub)*D*D*f1(z)*Wnu(r);
+                    double Fz = (analysis->model->c/hub)*D*D*f1(z)*Wnu(r,z_centre,delta_z);
                     double THETA1, THETA2, THETA3, THETA4;
-                    THETA1 = theta(la,l6,z,-1);
-                    THETA2 = theta(lb,l7,z,1);
+                    THETA1 = theta(la,l6,z,-1,z_centre,delta_z);
+                    THETA2 = theta(lb,l7,z,1,z_centre,delta_z);
                     if (la == lb and l6 == l7)
                     {
                         THETA3 = THETA2;
                         THETA4 = THETA1;
                     }
                     else{
-                        THETA3 = theta(la,l6,z,1);
-                        THETA4 = theta(lb,l7,z,-1);
+                        THETA3 = theta(la,l6,z,1,z_centre,delta_z);
+                        THETA4 = theta(lb,l7,z,-1,z_centre,delta_z);
                     }
 
                     return Fz * (THETA1 * THETA2 + THETA3 * THETA4);
@@ -289,13 +301,13 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
                     double r = analysis->model->r_interp(z);
                     // 1000 factor is necessary to convert km into m.
                     double hub = analysis->model->Hf_interp(z)*1000.0;
-                    double Fz = (analysis->model->c/hub)*D*D*f1(z)*Wnu(r);
+                    double Fz = (analysis->model->c/hub)*D*D*f1(z)*Wnu(r,z_centre,delta_z);
                     double THETA2;
-                    double THETA1 = theta(la,l6,z,0);
+                    double THETA1 = theta(la,l6,z,0,z_centre,delta_z);
                     if (la == lb and l6 == l7)
                         THETA2 = THETA1;
                     else
-                        THETA2 = theta(lb,l7,z,0);
+                        THETA2 = theta(lb,l7,z,0,z_centre,delta_z);
 
                     return Fz * THETA1 * THETA2;
                 };
@@ -322,8 +334,8 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
     double FpiC = pow(4.0*pi,3);
     double SoPi = 16.0/pi;
     double prefactor = SoPi * sqrt(lss/FpiC);
-    cout << lss << " " << FpiC << " " << SoPi << endl;
-    cout << Babc << " " << prefactor << endl;
+    //cout << lss << " " << FpiC << " " << SoPi << endl;
+    //cout << Babc << " " << prefactor << endl;
     return Babc * prefactor;
 
 }
@@ -336,12 +348,14 @@ dcomp Bispectrum::B_ll_direct(int la, int lb, int lc)
 
 double Bispectrum::F(double z)
 {
+    double z_centre = z_centre_CLASS;
+    double delta_z = delta_z_CLASS;
     double res = analysis->model->c / (analysis->model->Hf_interp(z) * 1000.0);
     double D = D_Growth_interp(z);
     res *= D*D;
     double f = f1(z);
     double r = analysis->model->r_interp(z);
-    double W = Wnu(r);
+    double W = Wnu(r,z_centre,delta_z);
     res *= f * W;
     return res;
 }
@@ -353,44 +367,59 @@ double Bispectrum::x_bar(double z)
     return 1.0/(1.0+exp((z-z0)/deltaZ));
 }
 
-double Bispectrum::theta(int li, int lj, double z, int q)
+double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, double delta_z)
 {
-    double r = analysis->model->r_interp(z);
-    auto integrand = [&](double k)
+    // This if statement is only relevant when we ignore B1 and B2
+    double zmin = z_centre-delta_z;
+    int z_index = 50.0*(z-zmin)/delta_z;
+    if (thetas[li][z_index] == -1)
     {
-        double res = pow(k, 2+q) * alpha(li, k);
-        double P = power(k);
-        double jl = sph_bessel_camb(lj, k*r);
-        res *= P*jl;
-        return res;
-    };
+        //do calc
+        double r = analysis->model->r_interp(z);
+        auto integrand = [&](double k)
+        {
+            double res = pow(k, 2+q) * alpha(li, k, z_centre, delta_z);
+            double P = power(k);
+            double jl = sph_bessel_camb(lj, k*r);
+            res *= P*jl;
+            return res;
+        };
     
-    /////////////
-    //This determines the lower bound of the kappa integral
-    double low;
-    if (li < 50){
-        low = 0.0001;
-    } else if (li < 1000){
-        low = (double)li/(2.0*10000.0);
-    } else {
-        low = (double)li/(2.0*10000.0);
-    }
-    double lower_k_bound;// = k_low;
-    if (low > 0.0001)
-        lower_k_bound = low;
-    else
-        lower_k_bound = 0.0001;
+        /////////////
+        //This determines the lower bound of the kappa integral
+        double low;
+        if (li < 50){
+            low = 0.0001;
+        } else if (li < 1000){
+            low = (double)li/(2.0*10000.0);
+        } else {
+            low = (double)li/(2.0*10000.0);
+        }
+        double lower_k_bound;// = k_low;
+        if (low > 0.0001)
+            lower_k_bound = low;
+        else
+            lower_k_bound = 0.0001;
     
-    //This determines the upper bound of the kappa integral
-    double higher_k_bound = lower_k_bound + 0.5;
-    /////////////
+        //This determines the upper bound of the kappa integral
+        double higher_k_bound = lower_k_bound + 0.5;
+        /////////////
     
-    double I = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
+        double I = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
+        
+        // Adding the calculated value to the list of precomputed values.
+        thetas[li][z_index] = I;
+        return I;
 
-    return I;
+    }
+    else
+    {
+        //cout << "lookup " << li << " " << z_index << " " <<  thetas[li][z_index]<< endl;
+        return thetas[li][z_index];
+    }
 }
 
-double Bispectrum::alpha(int l, double k)
+double Bispectrum::alpha(int l, double k, double z_centre, double delta_z)
 {
     auto integrand = [&](double zp)
     {
@@ -400,10 +429,10 @@ double Bispectrum::alpha(int l, double k)
         double hub = analysis->model->Hf_interp(zp)*1000.0;
         double D = D_Growth_interp(zp);
 
-        return (analysis->model->c / hub) * jl * D * f1(zp) * Wnu(r);
+        return (analysis->model->c / hub) * jl * D * f1(zp) * Wnu(r, z_centre, delta_z);
     };
-    double zmin = 49.5;
-    double zmax = 50.5;
+    double zmin = z_centre - delta_z;
+    double zmax = z_centre + delta_z;
     double I = integrate(integrand, zmin, zmax, 100, simpson());
     return I;
 }
@@ -437,7 +466,10 @@ double Bispectrum::f1(double z)
     //double ffT = f1T(z);
     //return ffb + gg*ffT;
     
-    return -50.0;
+   
+    // return -50.0;
+    double bias = 2;
+    return bias*analysis->model->T21_interp(z,0);
 }
 
 double Bispectrum::f1b(double z)
@@ -531,12 +563,13 @@ double Bispectrum::f1T(double z)
 // a frequency bandwidth of 0.1 MHz.
 // Units are MPc^-1.
 // This function integrates to 1 (over r).
-double Bispectrum::Wnu(double r)
+double Bispectrum::Wnu(double r, double z_centre, double delta_z)
 {
-    double nu50 = 1420.4/51.0;
-    double zup = 1420.4/(nu50+0.1) - 1; 
-    double zdown = 1420.4/(nu50-0.1) - 1;
-    double z_centre = 50.0;
+    //double nu_centre = 1420.4/(z_centre+1.0);
+    double zup = z_centre + delta_z;//1420.4/(nu50+0.1) - 1; 
+    double zdown = z_centre - delta_z;//1420.4/(nu50-0.1) - 1;
+    //double z_centre = 50.0;
+    
     double rup = analysis->model->r_interp(zup);
     double rdown = analysis->model->r_interp(zdown);
     double r_centre = analysis->model->r_interp(z_centre);
@@ -679,12 +712,14 @@ double Bispectrum::sph_bessel_camb(int l, double x)
 
 double Bispectrum::zprime_integrand(int l, double k, double zp)
 {
+    double z_centre = z_centre_CLASS;
+    double delta_z = delta_z_CLASS;
     double r = analysis->model->r_interp(zp);
     double jl = analysis->model->sph_bessel_camb(l,k*r);
     // 1000 factor is necessary to convert km into m.
     double hub = analysis->model->Hf_interp(zp)*1000.0;
     double D = D_Growth_interp(zp);
-    return (analysis->model->c / hub) * jl * D * f1(zp) * Wnu(r);
+    return (analysis->model->c / hub) * jl * D * f1(zp) * Wnu(r,z_centre,delta_z);
 }
 
 double Bispectrum::k_integrand(int l, double z, double k)
@@ -702,10 +737,12 @@ double Bispectrum::k_integrand(int l, double z, double k)
 
 double Bispectrum::k_integrand2(int l, double z, double k)
 {
+    double z_centre = z_centre_CLASS;
+    double delta_z = delta_z_CLASS;
     double r = analysis->model->r_interp(z);
     double jl = analysis->model->sph_bessel_camb(l,k*r);
     double P0 = power(k);
-    double I = alpha(l,k);
+    double I = alpha(l,k,z_centre,delta_z);
     return k*k*P0*jl*I;
 }
 
@@ -713,6 +750,8 @@ double Bispectrum::k_integrand2(int l, double z, double k)
 
 double Bispectrum::z_integrand(int l, double z)
 {
+    double z_centre = z_centre_CLASS;
+    double delta_z = delta_z_CLASS;
     auto integrand = [&](double k)
     {
         return k_integrand(l,z,k);
@@ -742,7 +781,7 @@ double Bispectrum::z_integrand(int l, double z)
     double r = analysis->model->r_interp(z);
     double hub = analysis->model->Hf_interp(z)*1000.0;
     double D = D_Growth_interp(z);
-    return (analysis->model->c / hub) * D * D * f1(z) * Wnu(r) * I * I;
+    return (analysis->model->c / hub) * D * D * f1(z) * Wnu(r,z_centre,delta_z) * I * I;
 
 }
 
@@ -969,10 +1008,12 @@ double Bispectrum::Blll_PNG_integrand(int la, int lb, int lc, double r)
 
 double Bispectrum::beta_l_integrand(int l, double r, double k)
 {
+    double z_centre = z_centre_CLASS;
+    double delta_z = delta_z_CLASS;
     double P0 = power(k);
     //TODO
     double Tk = transfer(k);
-    double a = alpha(l, k);
+    double a = alpha(l, k,z_centre,delta_z);
     double jl = sph_bessel_camb(l, k*r);
     return (P0/Tk) * a * jl;
   
@@ -1117,10 +1158,12 @@ double Bispectrum::Gamma_l_z(int l, double z)
 
 double Bispectrum::epsilon_l_integrand(int l, double k, double z)
 {
+    double z_centre = z_centre_CLASS;
+    double delta_z = delta_z_CLASS;
     double D = D_Growth_interp(z);
     double r = analysis->model->r_interp(z);
     double hub = analysis->model->Hf_interp(z)*1000.0;
-    double W = Wnu(r); 
+    double W = Wnu(r,z_centre,delta_z); 
     double jl = sph_bessel_camb(l, k*r);
     //TODO: Currently just taking these as constants which makes life a little easier.
     double hub0 = analysis->model->Hf_interp(0)*1000.0;
@@ -1153,3 +1196,97 @@ double Bispectrum::transfer(double k)
     return log(1.0 + 2.34 * q)/(2.34 * q) *\
         pow(1.0 + 3.89 * q + pow(16.1*q,2) + pow(5.46*q,3) + pow(6.71*q,4),-0.25);
 }
+
+
+
+
+void Bispectrum::build_signal_triangles(int lmin, int lmax, int delta_l, double z)
+{
+    // Preparing the Cls container 
+    // I create a vector with length lmax that is filled with -1's.
+    // Then later on I'll fill them in later, as required.
+
+    for (int l = 0; l < lmax; l++)
+    {
+        vector<double> row;
+        for (int j = 0; j <= 100; j++)
+        {
+            row.push_back(-1);
+        }
+        thetas.push_back(row);
+    }
+
+
+    string name_base = "NLG_signal_triangle_l"; 
+    for (int l = lmin; l < lmax; l+=delta_l)
+    {
+        stringstream name;
+        name << name_base << l << ".dat";
+        vector<vector<double>> triangle = build_triangle(l, name.str());
+    }
+}
+
+vector<vector<double>> Bispectrum::build_triangle(int lmax, string filename)
+{
+    cout << "Triangle called for l = " << lmax << endl;
+
+    vector<vector<double>> result;
+    bool debug = true;
+    int l1, l2, l3;
+    l1 = lmax;
+    int lmin = l1/2;
+    stringstream name;
+    name << "output/Bispectrum/Triangle_plots/NLG_2/" << filename;
+    ifstream infile(name.str());
+    if (infile.good() && !debug){
+        cout << "Reading file " << name.str() << endl;
+        string line;
+        while (getline(infile,line))
+        {
+            istringstream iss(line);
+            double val;
+            vector<double> row;
+            while (iss >> val)
+            {
+                row.push_back(val);
+            }
+            result.push_back(row);
+        }
+    }
+    else {    
+        infile.close();
+        ofstream file_bispectrum(name.str());
+        for (l2 = lmin; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                double sigma = 1.0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {
+                    //do stuff
+                    //cout << l1 << " " << l2 << " " << l3 << endl;
+                    B = abs(calc_Blll(l1, l2, l3));
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+
+                }
+                else
+                {
+                    //enter 0
+                    B = 0;
+                    sigma = 1.0;
+                }
+                file_bispectrum << B/sigma << " ";
+                row.push_back(B/sigma);
+            }
+            file_bispectrum << endl;
+            result.push_back(row);
+        }
+    }
+    return result;
+}
+

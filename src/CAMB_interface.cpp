@@ -79,6 +79,7 @@ CAMB_CALLER::~CAMB_CALLER()
 //corresponding parameter values that were used to calculate it.
 void CAMB_CALLER::call(map<string, double> params)
 {
+
     update_params_ini(params);
 
     //call camb with new_params.ini
@@ -103,6 +104,7 @@ void CAMB_CALLER::call_full(map<string, double> params)
 
 void CAMB_CALLER::update_params_ini_full(map<string, double> params)
 {
+
     int n_redshifts = params["zmax_interp"] + 1;
     double zmin = 0;
     double zmax = params["zmax_interp"];

@@ -1,5 +1,6 @@
 #pragma once
 #include "Model.hpp"
+#include "boost/multi_array.hpp"
 
 class AnalysisInterface {
     public:
@@ -106,6 +107,7 @@ class Tomography2D : public AnalysisInterface {
 class IntensityMapping : public AnalysisInterface {
     public:
         IntensityMapping(ModelInterface* model);
+        IntensityMapping(ModelInterface* model, int num_params);
         
         double Cl(int l, double nu1, double nu2,\
                 int Pk_index, int Tb_index, int q_index);
@@ -113,8 +115,30 @@ class IntensityMapping : public AnalysisInterface {
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
     private:
+        void make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps);
+        void make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
+                int Pk_index, int Tb_index, int q_index);
         double P(double k, double z1, double z2, double Pk_index);
         double I(int l, double k, double nu_0);
+        double Cl_interp(int l,double nu1);
+        double Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index);
+
+        bool interpolating, interpolate_large;
+        double calc_Cl(int l, double nu1, double nu2,\
+                int Pk_index, int Tb_index, int q_index);
+        vector<spline1dinterpolant> Clnu_interpolators;
+        
+        struct Interpol{
+            bool computed;
+            spline1dinterpolant interpolator;
+        };
+
+        typedef boost::multi_array<Interpol,4> Interpol_Array;
+        //boost::array<Interpol_Array::index,4> shape = {{1,1,1,1}};
+        Interpol_Array* Cls_interpolators_large;
+        int num_params;
+        int lmax_CLASS,lmin_CLASS, nu_steps_CLASS;
+        double numax_CLASS,numin_CLASS;
 
 };
 

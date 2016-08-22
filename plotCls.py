@@ -17,11 +17,11 @@ ys4 = []
 xs5 = []
 ys5 = []
 
-filename1 = "Cls_140_logscale.dat"
-filename2 = "Cl_FG_extragalactic_ff.dat"
-filename3 = "Cl_FG_extragalactic_ps.dat"
-filename4 = "Cl_FG_gal_ff.dat"
-filename5 = "Cl_FG_gal_synch.dat"
+filename1 = "Cl_400_IM.dat"#"Cls_140_logscale.dat"
+filename2 = "Cl_600_IM.dat"#"Cl_FG_extragalactic_ff.dat"
+filename3 = "Cl_800_IM.dat"#"Cl_FG_extragalactic_ps.dat"
+filename4 = "Cl_1000_IM.dat"#"Cl_FG_gal_ff.dat"
+filename5 = "Cl_1200_IM.dat"#"Cl_FG_gal_synch.dat"
 f1 = file(filename1)
 f2 = file(filename2)
 f3 = file(filename3)
@@ -36,8 +36,8 @@ data5 = np.loadtxt(f5)
 ax.set_xscale('log')
 ax.set_yscale('log')
 
-plt.xlim([10,10000])
-plt.ylim([10E-3,10E8])
+#plt.xlim([10,10000])
+#plt.ylim([10E-3,10E8])
 
 print data1[0][0]
 print data1[0][1]
@@ -57,13 +57,13 @@ for i in range(0, len(data5)):
     xs5.append(data5[i][0])
     ys5.append(data5[i][1])
 
-plt.plot(xs1,ys1, label = '21cm Power Spectrum', linewidth = 2)
-plt.plot(xs2,ys2, label = 'Extragalactic free-free', linewidth = 2, linestyle = ':')
-plt.plot(xs3,ys3, label = 'Extragalactic Point Sources', linewidth = 2, linestyle = '-.')
-plt.plot(xs4,ys4, label = 'Galactic free-free', linewidth = 2, linestyle = '--')
-plt.plot(xs5,ys5, label = 'Galactic synchrotron', linewidth = 2, linestyle = '-')
+plt.plot(xs1,ys1, label = r'$\nu$ = 400 MHz', linewidth = 2)
+plt.plot(xs2,ys2, label = r'$\nu$ = 600 MHz', linewidth = 2)
+plt.plot(xs3,ys3, label = r'$\nu$ = 800 MHz', linewidth = 2)
+plt.plot(xs4,ys4, label = r'$\nu$ = 1000 MHz', linewidth = 2)
+plt.plot(xs5,ys5, label = r'$\nu$ = 1200 MHz', linewidth = 2)
 plt.legend(loc = 4)
 plt.xlabel(r'$l$', fontsize=18)
 plt.ylabel(r'$l(l+1)C_l/(2\pi)$ (mK$^2$)', fontsize=18)
-plt.title(r'Angular power and foregrounds at $140 MHz$ $(z = 9.2)$')
+#plt.title(r'Angular power and foregrounds at $140 MHz$ $(z = 9.2)$')
 plt.show()

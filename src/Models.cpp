@@ -1892,10 +1892,16 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
         else
             interp.omega_lambda = params["omega_lambda"];
 
+        /*typedef map<string, double>::const_iterator Iter;
+        for (Iter i = params.begin(); i != params.end();i++)
+        {
+            cout << "key: " << i->first << endl;
+            cout << "value: " << i->second << endl;
+        }*/
         CAMB->call(params);    
         vector<double> vk = CAMB->get_k_values();
         vector<vector<double>> Pz = CAMB->get_Pz_values();
-
+        
         double z_stepsize = (params["zmax"] - params["zmin"])/(params["Pk_steps"] - 1);
         vector<double> vz, vP;
         for (unsigned int i = 0; i < Pz.size(); ++i) {
@@ -1980,11 +1986,10 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
         for (int n = 0; n <= zsteps_IM; n++) {
             z = zmin_IM + n * zbin_size; 
             xs[n] = z;
-            dTb[n] = Tb(z);
+            dTb[n] = Tb(params, z);
         }
         spline1dinterpolant interpolator;
         spline1dbuildlinear(xs,dTb,interpolator);
-
         // If limber == false, the qp_interpolator will just be empty but that
         // is fine because it won't be used in that case.
         interp.interpolator = interpolator;
@@ -2123,17 +2128,63 @@ void Model_Intensity_Mapping::update_q(map<string,double> params, int *q_index)
 }
 
 //in micro_K
-double Model_Intensity_Mapping::Tb(double z)
+double Model_Intensity_Mapping::Tb(map<string,double> params, double z)
 {
+    bool use_non_physical;
+    if (params.find("omega_lambda") == params.end()) {
+        use_non_physical = false;
+    }
+    else
+    {
+        use_non_physical = true;
+    }
+
+    // TODO: Do this in a way that works with parallelism....
+    // UPDATE D_C to use the above parameters.
+    double T_CMB2, H_02, h2, O_b2, O_cdm2, O_nu2, O_nu_rel2;
+    double O_gamma2, O_R2, O_k2, O_M2, O_Lambda, O_tot2;
+    T_CMB2 = params["T_CMB"];
+    H_02 = params["hubble"];
+    h2 = H_02 / 100.0;
+    O_b2 = params["ombh2"] / pow(h2,2);
+    O_cdm2 = params["omch2"] / pow(h2,2);
+    O_nu2 = params["omnuh2"] / pow(h2,2);
+    O_gamma2 = pow(pi,2) * pow(T_CMB2/11605.0,4) /\
+              (15.0*8.098*pow(10,-11)*pow(h2,2));
+    O_nu_rel2 = O_gamma2 * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+    O_R2 = O_gamma2 + O_nu_rel2;
+    O_M2 = O_b2 + O_cdm2 + O_nu2;
+
+    if (!use_non_physical){
+        O_k2 = params["omk"];
+        O_tot2 = 1.0 - O_k2;
+        O_Lambda = O_tot2 - O_M2 - O_R2;
+    }
+    else {
+        O_Lambda = params["omega_lambda"];
+        O_k2 = 1 - O_Lambda - O_R2 - O_M2;
+    }
+
+    double w2 = params["w_DE"];
+    
+    double Hz = H_02 * sqrt(O_Lambda * pow(1+z,3*(1+w2)) + O_R2 * pow(1+z,4) +\
+            O_M2 * pow(1+z,3) + O_k2 * pow(1+z,2));
+    
+
+    //
+    //TODO: need to make Omega_Hi dependent on the cosmo_params. Currently it is not
+    //
+    //this->update_hmf(params);
+    //
     //TODO
     // Update some container that that holds the halo mass function
     // at this redshift which is needed to compute Omega
     
     double OmHI = Omega_HI(z);
 
-    double h = this->give_fiducial_params("hubble")/100.0;
-    double H0 = Hf_interp(0);
-    double H = Hf_interp(z);
+    double h = h2;// this->give_fiducial_params("hubble")/100.0;
+    double H0 = H_02;//Hf_interp(0);
+    double H = Hz;//Hf_interp(z);
 
 
     //formula is for micro Kelvin, so we multiply by 0.001 to get mK.
@@ -2187,6 +2238,8 @@ double Model_Intensity_Mapping::Omega_HI(double z)
     // This function reproduces figure 20 from bull et al exactly
     return (-0.000062667) * (z-3) * (z-3) + 0.00105;
 
+    //TODO: need to make Omega_Hi dependent on the cosmo_params. Currently it is not
+    
     /*
     auto integrand = [&](double M)
     {
