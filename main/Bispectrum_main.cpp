@@ -103,7 +103,6 @@ int main(int argc, char* argv[])
         Bispectrum* NLG;
         NLG = new Bispectrum(analysis);
         
-        
         Bispectrum_LISW* LISW;
         LISW = new Bispectrum_LISW(analysis, keys.size());
         
@@ -111,11 +110,11 @@ int main(int argc, char* argv[])
         double nu_min = 650;
         //nu_max = 790, so between z = 0.8 and z = 1.2
         double nu_stepsize = 10;
-        int n_points_per_thread = 2;
+        int n_points_per_thread = 15;
         int n_threads = 1;
          
         fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads);
     }
- 
+
     return 0;
 }

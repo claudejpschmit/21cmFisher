@@ -44,7 +44,8 @@ INCLUDES += -I../$(LIBRARIES)GLOBAL21CM_include
 INCLUDES += -I../$(LIBRARIES)ODE_include
 
 INCLUDES += -I/usr/include/boost
-BOOSTFLAGS = -lboost_filesystem -lboost_system
+BOOSTFLAGS = -lboost_filesystem -lboost_system 
+BOOSTTESTFLAGS = -lboost_unit_test_framework
 
 # Including GSL
 INCLUDES += -I/usr/include
@@ -66,11 +67,13 @@ SOURCE = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o\
 		 IntensityMapping.o HighZAnalysis.o Fisher.o Fisher1.o Fisher_Santos.o Integrator.o\
 		 CAMB_interface.o ARES_interface.o Global21cmInterface.o Zygelman.o
 ODE = ODEs.o ODE_Solver.o
-BISPECTRUM = Bispectrum_main.o Bispectrum.o LISW.o Bispectrum_Fisher.o
+BISPECTRUM = Bispectrum.o LISW.o Bispectrum_Fisher.o
+BISPECTRUM_MAIN = Bispectrum_main.o
+TEST = test_suite.o
 
 # ---------------------------------------------------------------------------------------------------------------#
 
-all: calc analyse sortFiles bispectrum 
+all: calc analyse sortFiles bispectrum test
 
 analyse: $(ALGLIB) $(INIREADER) $(ANALYSE) 
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
@@ -84,10 +87,13 @@ sortFiles: $(SORTING)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o sortFiles $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 
-bispectrum: $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM) $(ODE)
+bispectrum: $(BISPECTRUM_MAIN) $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM) $(ODE)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(CUBAFLAGS) $(BOOSTFLAGS)
 
+test: $(TEST) $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM) $(ODE)
+	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
+		-o test $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(CUBAFLAGS) $(BOOSTFLAGS) $(BOOSTTESTFLAGS)
 
 clean: .base
 	rm -rf $(WRKDIR);
@@ -95,4 +101,4 @@ clean: .base
 	rm analyse;
 	rm sortFiles;
 	rm bispectrum;
-
+	rm test;

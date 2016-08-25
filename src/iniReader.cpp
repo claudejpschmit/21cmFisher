@@ -302,6 +302,12 @@ string IniReader::determineFisherPath()
 
 void IniReader::setBasicParams()
 {
+    /*currently this one is not in the .ini file...*/
+    // This parameter is only used by the full functions in CAMB
+    // CALLER, which I am not using atm.
+    basicParams.insert(pair<string,double>("zmax_interp",10));
+
+
     basicParams.insert(pair<string,double>("ombh2",0.0226));
     basicParams.insert(pair<string,double>("omch2",0.112));
     basicParams.insert(pair<string,double>("omnuh2",0.00064));
@@ -315,7 +321,6 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("k_stepsize",0.0001));
     basicParams.insert(pair<string,double>("kmin",0.0001));
     basicParams.insert(pair<string,double>("kmax",2));
-    basicParams.insert(pair<string,double>("zmax_interp",10));
     basicParams.insert(pair<string,double>("w_DE",-1));
     basicParams.insert(pair<string,double>("omega_lambda",0.76));
 

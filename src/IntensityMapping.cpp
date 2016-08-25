@@ -9,6 +9,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model)
     
     log<LOG_DEBUG>("-> You better be using camb_ares_2D or camb_ares as your model!");
     analysisID = "IntensityMapping_analysis";
+    Cls_interpolators_large = NULL;
     if (model->give_fiducial_params("interp_Cls") == 0)
         this->interpolating = false;
     else
@@ -56,6 +57,8 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
                 
         this->num_params = num_params;
         // num_deriv is the number of non_fiducial points calculated for the fisher derivative.
+        // 1 for normal derivative,
+        // 4 for 5 point stencil.
         int num_deriv = 1;
         int num_indecies = num_params * num_deriv + 1;
 
@@ -70,7 +73,6 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
                 {
                     for (int k = 0; k < num_indecies; k++)
                     {    
-                        cout << l << " " << i << " " << j << " " << k << endl;
                         (*Cls_interpolators_large)[l][i][j][k].computed = false;
                     }
                 }
@@ -79,8 +81,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
 
 
         log<LOG_BASIC>("Cls are being interpolated");
-        log<LOG_BASIC>("Parameters are: lmin = %1%, lmax = %2%,\
-                nu_min = %3%, nu_max = %4%, nu_steps = %5%.") %\
+        log<LOG_BASIC>("Parameters are: lmin = %1%, lmax = %2%, nu_min = %3%, nu_max = %4%, nu_steps = %5%.") %\
             lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
         make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS, nu_steps_CLASS,0,0,0);
     }
@@ -88,8 +89,12 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
         log<LOG_BASIC>("Cls are NOT interpolated");
     // Here I could include a code that precomputes the Cls between some lmin and lmax,
     // and nu_min and nu_max, then it stores this in a 2D interpolator.
-    // I need to then create another function so that Cl(...) just returns the interpolated values.
-    
+    // I need to then create another function so that Cl(...) just returns the interpolated values.  
+}
+
+IntensityMapping::~IntensityMapping()
+{
+    delete Cls_interpolators_large;
 }
 
 void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps)
@@ -131,6 +136,8 @@ void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double
     {   
 
         double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
+        
+        #pragma omp parallel for
         for (int l = lmin; l <= lmax; l++)
         {
             vector<double> vnu, vCl;

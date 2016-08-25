@@ -108,13 +108,14 @@ class IntensityMapping : public AnalysisInterface {
     public:
         IntensityMapping(ModelInterface* model);
         IntensityMapping(ModelInterface* model, int num_params);
+        ~IntensityMapping();
         
         double Cl(int l, double nu1, double nu2,\
                 int Pk_index, int Tb_index, int q_index);
         double Cl_noise(int l, double nu1, double nu2);
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
-    private:
+    protected:
         void make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps);
         void make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
                 int Pk_index, int Tb_index, int q_index);
@@ -154,4 +155,15 @@ class HighZAnalysis : public AnalysisInterface {
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
     private:
         double P(double k, double z1, double z2, double Pk_index);
+};
+
+/**     Model TEST classes      **/
+
+class TEST_IntensityMapping : public IntensityMapping {
+    public:
+        TEST_IntensityMapping(ModelInterface* model);
+        TEST_IntensityMapping(ModelInterface* model, int num_params);
+        
+        ~TEST_IntensityMapping();
+
 };

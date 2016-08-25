@@ -45,6 +45,7 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
     SN_calculation = false;
     ql_interpolated = false;
     interpolate_large = false;
+    Qls_interpolators_large = NULL;
     if (analysis->model->give_fiducial_params("interp_Cls") == 1)
     {
         double numin = analysis->model->give_fiducial_params("Bispectrum_numin");
@@ -61,6 +62,8 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
 {
 
     log<LOG_BASIC>("... Beginning LISW constructor ...");
+
+
     this->analysis = analysis;
     SN_calculation = false;
     ql_interpolated = false;
@@ -82,7 +85,6 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
             {
                 for (int k = 0; k < num_indecies; k++)
                 {   
-                    cout << l << " " << i << " " << j << " " << k << endl;
                     (*Qls_interpolators_large)[l][i][j][k].computed = false;
                 }
             }
@@ -100,7 +102,9 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
 }
 
 Bispectrum_LISW::~Bispectrum_LISW()
-{}
+{
+    delete Qls_interpolators_large; 
+}
 
 double Bispectrum_LISW::calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3,\
         double z1, double z2, double z3)
@@ -310,13 +314,12 @@ void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax)
 
     ql_interpolated = true;
 }
-//working...
+
 void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax,\
         int Pk_index, int Tb_index, int q_index)
 {
     if ((*Qls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
     {   
-        cout << Pk_index << " " << Tb_index << " " << q_index << endl;
         // I could make this use parallellism...
         double z_min, z_max, z_stepsize;
         int z_steps;
@@ -324,6 +327,8 @@ void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax,\
         z_max = 1420.4/numin - 1.0;
         z_steps = 10;
         z_stepsize = abs(z_max - z_min)/(double)z_steps;
+
+#pragma omp parallel for
         for (int l = 0; l <= lmax; l++)
         {
             vector<double> vz, vQl;
@@ -355,6 +360,52 @@ void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax,\
         interpolate_large = true;
     }
 }
+
+/* Unaltered version
+ *
+ * void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax,\
+ int Pk_index, int Tb_index, int q_index)
+ {
+ if ((*Qls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
+ {   
+// I could make this use parallellism...
+double z_min, z_max, z_stepsize;
+int z_steps;
+z_min = 1420.4/numax - 1.0;
+z_max = 1420.4/numin - 1.0;
+z_steps = 10;
+z_stepsize = abs(z_max - z_min)/(double)z_steps;
+for (int l = 0; l <= lmax; l++)
+{
+vector<double> vz, vQl;
+for (int i = 0; i <= z_steps; i++)
+{
+double z = z_min + i*z_stepsize;
+vQl.push_back(this->Ql_calc(l,z,Pk_index,Tb_index,q_index));
+vz.push_back(z);
+}
+
+real_1d_array z_arr, Ql_arr;
+z_arr.setlength(vz.size());
+Ql_arr.setlength(vQl.size());
+
+for (unsigned int i = 0; i < vz.size(); i++){
+z_arr[i] = vz[i];
+}
+for (unsigned int i = 0; i < vQl.size(); i++){
+Ql_arr[i] = vQl[i];
+}
+spline1dinterpolant interpolator;
+spline1dbuildcubic(z_arr, Ql_arr, interpolator);
+
+(*Qls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator = interpolator;
+(*Qls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed = true;
+//cout << "Ql for l = " << l << " is interpolated." << endl;
+}
+ql_interpolated = true;
+interpolate_large = true;
+}
+}*/
 
 
 double Bispectrum_LISW::interp_Ql(int l, double z)

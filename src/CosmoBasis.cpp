@@ -16,10 +16,25 @@ CosmoBasis::CosmoBasis(map<string, double> params)
 
     log<LOG_BASIC>("... CosmoBasis built ...");
 }
+
 CosmoBasis::~CosmoBasis()
 {}
+
 void CosmoBasis::generate_params(map<string,double> params)
 {
+    bool use_non_physical = false;
+    if (params.find("omega_lambda") == params.end()) {
+            use_non_physical = false;
+            O_k = params["omk"];
+            O_V = 0;
+        }
+        else
+        {
+            use_non_physical = true;
+            O_k = 0;
+            O_V = params["omega_lambda"];
+        }
+
     T_CMB = params["T_CMB"];
     T_gamma = T_CMB;
     H_0 = params["hubble"];
@@ -30,10 +45,18 @@ void CosmoBasis::generate_params(map<string,double> params)
     O_gamma = pow(pi,2) * pow(T_CMB/11605.0,4) / (15.0*8.098*pow(10,-11)*pow(h,2));
     O_nu_rel = O_gamma * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
     O_R = O_gamma + O_nu_rel;
-    O_k = params["omk"];
     O_M = O_b + O_cdm + O_nu;
-    O_tot = 1.0 - O_k;
-    O_V = O_tot - O_M - O_R;
+    
+    if (!use_non_physical){
+        O_k = params["omk"];
+        O_tot = 1.0 - O_k;
+        O_V = O_tot - O_M - O_R;
+    }
+    else {
+        O_V = params["omega_lambda"];
+        O_k = 1 - O_V - O_R - O_M;
+    }
+
     D_H = c / (1000.0 * H_0);
     t_H = 1.0 / H_0;
     w_DE = params["w_DE"];
@@ -374,7 +397,7 @@ double CosmoBasis::D_A(double z, double z2)
 
 double CosmoBasis::luminosity_dist(double z)
 {
-    return this->D_A(z) * pow(1+z,2);
+    return this->D_A(z) * pow(1.0+z,2);
 }
 
 double CosmoBasis::D_L(double z)
