@@ -116,5 +116,8 @@ int main(int argc, char* argv[])
         fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads);
     }
 
+    delete model;
+    delete analysis;
+
     return 0;
 }

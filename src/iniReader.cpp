@@ -425,7 +425,7 @@ void IniReaderAnalysis::parse()
     if (usePriors)
         priors = determinePriors();
     usePseudoInv = determineUsePseudoInv();
-    
+    modeUsed = determineAnalysisMode();
 }
 
 bool IniReaderAnalysis::determineEllipsesRequired()
@@ -589,3 +589,31 @@ bool IniReaderAnalysis::giveUseInterpolation()
     return useInterpolation;
 }
 
+Mode IniReaderAnalysis::determineAnalysisMode()
+{
+    Mode result = error_m;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("mode") != string::npos) 
+        {
+            string a, b, c;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> c;
+            
+            if (c == "powerspectrum")
+                result = powerspectrum;
+            else if (c == "bispectrum")
+                result = bispectrum;
+
+            break;
+        }
+    }
+
+    return result;
+
+}
+
+Mode IniReaderAnalysis::giveAnalysisMode()
+{
+    return modeUsed;
+}

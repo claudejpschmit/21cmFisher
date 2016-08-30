@@ -57,7 +57,20 @@ BOOST_AUTO_TEST_CASE(check_parser)
                                     "fcover","lmax_noise","tau_noise","foreground","kmin","kmax","k_stepsize",\
                                     "Pk_steps","lmin","lmax","lstepsize","n_threads","n_points_per_thread",\
                                     "zmax_interp"};
-    
+
+    // Now test IniReaderAnalysis
+    string iniFilename2 = "UnitTestData/analysis_check_parser.ini";
+    // Initialize inireader.
+    IniReaderAnalysis parser2(iniFilename2);
+    bool EllipseRequired = parser2.giveEllipsesRequired();
+    bool ShowMatrix = parser2.giveShowMatrix();
+    bool ShowInverse = parser2.giveShowInverse();
+    bool UsePriors = parser2.giveUsePriors();
+    map<string,double> Priors = parser2.givePriors();
+    bool UsePseudoInv = parser2.giveUsePseudoInv();
+    bool UseInterpolation = parser2.giveUseInterpolation();
+    Mode AnalysisMode = parser2.giveAnalysisMode();
+
     /**     CHECKS      **/
     BOOST_CHECK(GLOBAL_VERBOSITY_LEVEL == LOG_NOTHING);
     BOOST_CHECK(matrixPath == "output/unit_TEST/Cl_matrices");
@@ -72,6 +85,20 @@ BOOST_AUTO_TEST_CASE(check_parser)
     // check if all parameters are equal to 1, as given in the .ini file
     for (unsigned int i = 0; i < parameter_keys.size();i++)
         BOOST_CHECK(params[parameter_keys[i]] == 1);
+
+    // Analysis Parser
+    BOOST_CHECK(EllipseRequired);
+    BOOST_CHECK(ShowMatrix);
+    BOOST_CHECK(ShowInverse);
+    BOOST_CHECK(UsePriors);
+    BOOST_CHECK(UsePseudoInv);
+    BOOST_CHECK(UseInterpolation);
+    BOOST_CHECK(AnalysisMode == bispectrum);
+    
+    BOOST_CHECK(Priors["ombh2"] == 1);
+    BOOST_CHECK(Priors["n_s"] == 3);
+
+
 }
 
 BOOST_AUTO_TEST_CASE(check_integrator)
@@ -110,8 +137,6 @@ BOOST_AUTO_TEST_CASE(check_integrator)
     BOOST_CHECK(I6 > ans2 - 0.0001 && I6 < ans2 + 0.0001);
     BOOST_CHECK(I7 > ans2 - 0.0001 && I7 < ans2 + 0.0001);
     //BOOST_CHECK(I8 > ans2 - 0.001 && I8 < ans2 + 0.001);
-
-
 }
 
 BOOST_AUTO_TEST_CASE(check_cosmobasis)
@@ -146,6 +171,33 @@ BOOST_AUTO_TEST_CASE(check_cosmobasis)
     BOOST_CHECK(vol < 1065.325 && vol > 1065.315);
     BOOST_CHECK(ang_dist < 1583.95 && ang_dist > 1583.85);
     BOOST_CHECK(lum < 25343.5 && lum > 25342.5);
+}
+
+BOOST_AUTO_TEST_CASE(check_CAMB_CALLER)
+{
+    /**     SETUP   **/
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_cambcaller.ini";
+    IniReader parser(iniFilename);
+    
+    map<string,double> params = parser.giveRunParams();
+
+    CAMB_CALLER CAMB;
+   
+    CAMB.call(params);    
+    vector<double> vk = CAMB.get_k_values();
+    vector<vector<double>> Pz = CAMB.get_Pz_values();
+    cout << Pz.size() << " " << Pz[0].size() << endl; 
+    for (int i = 0; i < Pz.size();i++)
+        cout << vk[i] <<" " <<Pz[i][0] << " " << Pz[i][1]<<  endl;
+    // don't quite know what appropriate test cases are here.
+    // Maybe I could have a fiducial Pz result here that I could compare each value in the 
+    // Pz container with. This should best be computed by some other source, not my local CAMB 
+    // copy, eg. iCosmo.
+    /**     CHECKS      **/
+
+    //TODO: Write checks
+
 }
 
 

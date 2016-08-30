@@ -35,6 +35,15 @@ enum ModelAnalysis
     error
 };
 
+enum Mode
+{
+    powerspectrum,
+    bispectrum,
+
+    // error
+    error_m
+};
+
 class IniReader
 {
     public:
@@ -217,6 +226,11 @@ class IniReaderAnalysis : public IniReader
          */
         bool giveUseInterpolation();
 
+        /**
+         * Function returns the analysis mode that is being used.
+         */
+        Mode giveAnalysisMode();
+
     private:
         
         /**
@@ -259,8 +273,14 @@ class IniReaderAnalysis : public IniReader
          */
         bool determineUseInterpolation();
 
+        /**
+         * Uses iniFileContent to determine which analysis mode is being used
+         */
+        Mode determineAnalysisMode();
+
         /////////// Parameters
         bool ellipsesRequired, showMatrix, showInverse, usePriors, usePseudoInv,\
             useInterpolation;
+        Mode modeUsed;
         map<string,double> priors;  
 };
