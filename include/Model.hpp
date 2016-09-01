@@ -191,7 +191,7 @@ class Model_Intensity_Mapping : public ModelParent<Tb_interpolator_IM> {
         void update_hmf(map<string,double> params);
 
         double Tb(map<string,double> params, double z);
-    private:
+    protected:
         void update_Pkz(map<string,double> params, int *Pk_index);
         void update_T21(map<string,double> params, int *Tb_index);
         void update_q(map<string,double> params, int *q_index);
@@ -208,5 +208,16 @@ class Model_Intensity_Mapping : public ModelParent<Tb_interpolator_IM> {
         int zsteps_Ml;
         spline2dinterpolant interpolator_hmf;
         bool figfit;
+};
+
+/**       TESTCLASS       **/
+
+class TEST_Model_Intensity_Mapping : public Model_Intensity_Mapping {
+    public:
+        TEST_Model_Intensity_Mapping(map<string, double> params,\
+                int *Pk_index, int *Tb_index, int *q_index);
+        ~TEST_Model_Intensity_Mapping();
+        double q_interp(double z, int q_index) override;
+
 };
 

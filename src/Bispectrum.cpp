@@ -116,8 +116,8 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
 
     // Make sure that the integration bounds envelope the peak of r(z_c).
     double I2 = integrate(integrand3, 2000.0, 5000.0, 3000, simpson());
-    cout << "Window function integral = " << I2 << endl;
-    cout << "... Bispectrum Class initialized ..." << endl;
+    log<LOG_BASIC>("Window function integral = %1%.") % I2;
+    log<LOG_BASIC>("... Bispectrum Class initialized ...");
 }
 
 Bispectrum::~Bispectrum()
@@ -746,8 +746,6 @@ double Bispectrum::k_integrand2(int l, double z, double k)
     return k*k*P0*jl*I;
 }
 
-
-
 double Bispectrum::z_integrand(int l, double z)
 {
     double z_centre = z_centre_CLASS;
@@ -782,7 +780,6 @@ double Bispectrum::z_integrand(int l, double z)
     double hub = analysis->model->Hf_interp(z)*1000.0;
     double D = D_Growth_interp(z);
     return (analysis->model->c / hub) * D * D * f1(z) * Wnu(r,z_centre,delta_z) * I * I;
-
 }
 
 double Bispectrum::L_factor(int l)
@@ -794,7 +791,6 @@ double Bispectrum::L_factor(int l)
     double l_terms = (2.0*l + 1.0) * (2.0*l + 1.0) * W1 * W2 * W3 * W6J;
 
     return (16.0/pi) * sqrt(pow(2.0*l+1.0,3)/pow(4.0*pi,3)) * (34.0/21.0) * l_terms;
-
 }
 
 double Bispectrum::B0ll(int l)
@@ -809,7 +805,6 @@ double Bispectrum::B0ll(int l)
     cout << "L factor = " << L << endl;
 
     return L*I;
-
 }
 
 double Bispectrum::Blll_equilateral(int l)
@@ -839,7 +834,6 @@ double Bispectrum::Blll_PNG_equilat(int l, double fNL)
                  sqrt(((2.0*l+1.0) * (2.0*l+1.0) * (2.0*l+1.0))/(4.0*pi)) * W3J;
     cout << l << " " << pre*I << endl;
     return pre * I;
-
 }
 
 double Bispectrum::Blll_PNG_equilat_integrand(int l, double z)
@@ -1196,9 +1190,6 @@ double Bispectrum::transfer(double k)
     return log(1.0 + 2.34 * q)/(2.34 * q) *\
         pow(1.0 + 3.89 * q + pow(16.1*q,2) + pow(5.46*q,3) + pow(6.71*q,4),-0.25);
 }
-
-
-
 
 void Bispectrum::build_signal_triangles(int lmin, int lmax, int delta_l, double z)
 {

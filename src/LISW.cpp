@@ -55,14 +55,12 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
     }
 
     log<LOG_BASIC>("... LISW Class initialized ...");
-
 }
 
 Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
 {
 
     log<LOG_BASIC>("... Beginning LISW constructor ...");
-
 
     this->analysis = analysis;
     SN_calculation = false;
@@ -98,7 +96,6 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
     }
 
     log<LOG_BASIC>("... LISW Class initialized ...");
-
 }
 
 Bispectrum_LISW::~Bispectrum_LISW()
@@ -543,7 +540,6 @@ double Bispectrum_LISW::P_phi(double k, double z)
 
 double Bispectrum_LISW::integrand_Ql(int l, double z, double z_fixed)
 {
-
     double r = analysis->model->r_interp(z_fixed);
     double rzp = analysis->model->r_interp(z);
     double pre = (r - rzp)/(r*pow(rzp,3));
@@ -566,6 +562,7 @@ double Bispectrum_LISW::integrand_Ql(int l, double z, double z_fixed)
     //    cout << k << endl;
     return pre*deriv;//analysis->model->Pkz_interp(k, z,0);//*pre;
 }
+
 double Bispectrum_LISW::calc_angular_Blll(int l, double z1, double z2, double z3)
 {
     double min_z1z2, min_z1z3, min_z2z3;

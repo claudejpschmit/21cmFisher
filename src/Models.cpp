@@ -2365,3 +2365,23 @@ double Model_Intensity_Mapping::interp_dndm(double M, double z)
     return spline2dcalc(interpolator_hmf, M, z); 
    
 }
+
+/**     TESTCLASSES     **/
+
+TEST_Model_Intensity_Mapping::TEST_Model_Intensity_Mapping(map<string, double> params,\
+                int *Pk_index, int *Tb_index, int *q_index)
+    :
+        Model_Intensity_Mapping(params,Pk_index,Tb_index,q_index)
+{}
+
+TEST_Model_Intensity_Mapping::~TEST_Model_Intensity_Mapping()
+{}
+
+double TEST_Model_Intensity_Mapping::q_interp(double z, int q_index)
+{
+    double om1 = q_interpolators[q_index].ombh2;
+    double om2 = q_interpolators[q_index].omch2;
+
+    return z + (om1*om1) - (1.0/om2);
+}
+

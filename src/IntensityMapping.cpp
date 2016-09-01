@@ -32,7 +32,6 @@ IntensityMapping::IntensityMapping(ModelInterface* model)
     // Here I could include a code that precomputes the Cls between some lmin and lmax,
     // and nu_min and nu_max, then it stores this in a 2D interpolator.
     // I need to then create another function so that Cl(...) just returns the interpolated values.
-    
 }
 
 IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
@@ -539,4 +538,10 @@ double IntensityMapping::P(double k, double z1, double z2, double Pk_index)
     return sqrt(model->Pkz_interp(k,z1,Pk_index)*model->Pkz_interp(k,z2,Pk_index));
 }
 
+
+/**     TEST CLASS      **/
+TEST_IntensityMapping::TEST_IntensityMapping(ModelInterface* model, int num_params)
+    :
+        IntensityMapping(model,num_params)
+{}
 

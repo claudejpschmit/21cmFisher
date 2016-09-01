@@ -69,7 +69,7 @@ SOURCE = CosmoBasis.o Models.o AnalysisInterface.o Cosmology3D.o Tomography2D.o\
 ODE = ODEs.o ODE_Solver.o
 BISPECTRUM = Bispectrum.o LISW.o Bispectrum_Fisher.o
 BISPECTRUM_MAIN = Bispectrum_main.o
-TEST = test_suite.o
+TEST = test_suite.o 
 
 # ---------------------------------------------------------------------------------------------------------------#
 

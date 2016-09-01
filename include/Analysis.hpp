@@ -161,9 +161,10 @@ class HighZAnalysis : public AnalysisInterface {
 
 class TEST_IntensityMapping : public IntensityMapping {
     public:
-        TEST_IntensityMapping(ModelInterface* model);
+        //TEST_IntensityMapping(ModelInterface* model);
         TEST_IntensityMapping(ModelInterface* model, int num_params);
         
-        ~TEST_IntensityMapping();
+        //~TEST_IntensityMapping();
+        //double Cl_interp(int l,double nu1);
 
 };

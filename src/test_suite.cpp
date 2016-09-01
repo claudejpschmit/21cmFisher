@@ -187,9 +187,9 @@ BOOST_AUTO_TEST_CASE(check_CAMB_CALLER)
     CAMB.call(params);    
     vector<double> vk = CAMB.get_k_values();
     vector<vector<double>> Pz = CAMB.get_Pz_values();
-    cout << Pz.size() << " " << Pz[0].size() << endl; 
-    for (int i = 0; i < Pz.size();i++)
-        cout << vk[i] <<" " <<Pz[i][0] << " " << Pz[i][1]<<  endl;
+    //cout << Pz.size() << " " << Pz[0].size() << endl; 
+    //for (int i = 0; i < Pz.size();i++)
+    //    cout << vk[i] << " " << Pz[i][0] << " " << Pz[i][1]<< endl;
     // don't quite know what appropriate test cases are here.
     // Maybe I could have a fiducial Pz result here that I could compare each value in the 
     // Pz container with. This should best be computed by some other source, not my local CAMB 
@@ -200,5 +200,82 @@ BOOST_AUTO_TEST_CASE(check_CAMB_CALLER)
 
 }
 
+BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
+{
+    /**     SETUP       **/
+    
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_Fisher_Bispectrum.ini";
+    IniReader parser(iniFilename);
+    
+    map<string,double> params = parser.giveRunParams();
+    
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+    
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+    
+    TEST_Model_Intensity_Mapping* model;
+    model = new TEST_Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    
+    TEST_IntensityMapping* analysis;
+    analysis = new TEST_IntensityMapping(model, keys.size());
+    
+    Bispectrum* NLG;
+    NLG = new Bispectrum(analysis);
+        
+    Bispectrum_LISW* LISW;
+    LISW = new Bispectrum_LISW(analysis, keys.size());
 
+    TEST_Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
+
+    /**     CHECKS      **/
+    double nu_min = 650;
+    
+    //nu_max = 790, so between z = 0.8 and z = 1.2
+    double nu_stepsize = 10;
+    int n_points_per_thread = 2;
+    int n_threads = 1;
+         
+    fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads);
+    
+    stringstream filename1, filename2, filename3;
+    filename1 << fisherPath << "/Fl_ombh2_ombh2.dat";
+    filename2 << fisherPath << "/Fl_ombh2_omch2.dat";
+    filename3 << fisherPath << "/Fl_omch2_omch2.dat";
+
+    double val1, val2, val3, temp;
+    ifstream f1(filename1.str());
+    ifstream f2(filename2.str());
+    ifstream f3(filename3.str());
+    f1 >> temp >> val1;
+    f2 >> temp >> val2;
+    f3 >> temp >> val3;
+    double ombh1, ombh2, omch1, omch2;
+    ombh1 = sqrt(val1/4.0);
+    omch1 = sqrt(sqrt(1.0/val3));
+    ombh2 = omch1*omch1*val2/2.0;
+    omch2 = sqrt(2.0*ombh1/val2);
+    
+    double ombh2_ref, omch2_ref;
+    ombh2_ref = 0.022;
+    omch2_ref = 0.127;
+
+    /**     CHECKS      **/
+
+    // The right values are recovered to within 1% of the true value.
+    BOOST_CHECK(ombh1 > ombh2_ref - 0.01 * ombh2_ref);
+    BOOST_CHECK(ombh1 < ombh2_ref + 0.01 * ombh2_ref);
+    BOOST_CHECK(ombh2 > ombh2_ref - 0.01 * ombh2_ref);
+    BOOST_CHECK(ombh2 < ombh2_ref + 0.01 * ombh2_ref);
+    
+    BOOST_CHECK(omch1 > omch2_ref - 0.01 * omch2_ref);
+    BOOST_CHECK(omch1 < omch2_ref + 0.01 * omch2_ref);
+    BOOST_CHECK(omch2 > omch2_ref - 0.01 * omch2_ref);
+    BOOST_CHECK(omch2 < omch2_ref + 0.01 * omch2_ref);
+
+}
 // EOF
