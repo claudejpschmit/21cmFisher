@@ -3,6 +3,7 @@
 #include <cmath>
 #include <complex>
 #include "Zygelman.hpp"
+#include "Helper.hpp"
 
 using namespace std;
 typedef std::complex<double> dcomp;
@@ -17,12 +18,19 @@ class Bispectrum {
 
         
         double calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3);
+        double calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3,\
+                                double z, int Pk_index, int Tb_index, int q_index);
+
         double D_Growth_interp(double z);
+        double D_Growth_interp(double z, int q_index);
         double calc_Blll(int l1, int l2, int l3);
+        double calc_Blll(int l1, int l2, int l3, double z, int Pk_index, int Tb_index, int q_index);
+
         double g1(double z);
         AnalysisInterface* analysis;
         double Wnu(double r, double z_centre, double delta_z);
         double f1(double z);
+        double f1(double z, int Tb_index);
         double f1T(double z);
         double f1b(double z);
         double zprime_integrand(int l, double k, double zp);
@@ -53,17 +61,26 @@ class Bispectrum {
     private:
         double x_bar(double z);
         dcomp B_ll(int la, int lb, int lc);
+        dcomp B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_index, int q_index);
+
         dcomp B_ll_direct(int la, int lb, int lc);
-        
+        void update_D_Growth(int q_index); 
         double z_centre_CLASS;
         double delta_z_CLASS;
 
 
         double sph_bessel_camb(int l, double x);
         double theta(int li, int lj, double z, int q, double z_centre, double delta_z);
+        double theta(int li, int lj, double z, int q, double z_centre, double delta_z,\
+                int Pk_index, int Tb_index, int q_index);
         double F(double z);
         double D_Growth(double z);
+        double D_Growth(double z, int q_index);
+
         double alpha(int l, double k, double z_centre, double delta_z);
+        double alpha(int l, double k, double z_centre, double delta_z,\
+                int Pk_index, int Tb_index, int q_index);
+
         double f0(double z);
         double S(double z);
         double C(double z);
@@ -71,13 +88,19 @@ class Bispectrum {
         double YC(double z);
         double Yalpha(double z);
         double Tg(double z);
-        double power(double z);
+        double power(double k);
+        double power(double k, int Pk_index);
+
         double var;
         double pi = M_PI;
         double Growth_function_norm;
+        vector<double> Growth_function_norms;
         double g1_interp(double z);
         CollisionRates CollisionKappa;
-        spline1dinterpolant Growth_function_interpolator, g1_interpolator; 
+        spline1dinterpolant Growth_function_interpolator, g1_interpolator;
+        vector<spline1dinterpolant> growth_function_interps;
+
+        vector<Theta> theta_interpolants;
         
         vector<vector<double>> thetas;
 };

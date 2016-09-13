@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
     else
         iniFilename = argv[1];
 
-    // Initialize inireader.
+        // Initialize inireader.
     IniReaderAnalysis parser(iniFilename);
     // Information from .ini is stored in local variables.
     GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
@@ -43,10 +43,26 @@ int main(int argc, char* argv[])
     Analyser analyse(&parser);
     
     finv = analyse.build_Fisher_inverse();
-    if (parser.giveEllipsesRequired())
-        analyse.draw_error_ellipses(finv);
-   
+    
+    if (argc < 3)
+    {
+        if (parser.giveEllipsesRequired())
+            analyse.draw_error_ellipses(finv);
+    }
+    // comparing 2 runs
+    else if (argc == 3)
+    {
+        string iniFilename2 = argv[2];
+        IniReaderAnalysis parser2(iniFilename2);    
+        Fisher_return_pair finv2;
+        Analyser analyse2(&parser2);
+
+        finv2 = analyse2.build_Fisher_inverse();
+        
+        // Draw both runs on the same plot
+        log<LOG_BASIC>("### Ellispes in BLUE represent %1%, and ellipses in RED represent %2% ###") %\
+            iniFilename % iniFilename2;
+        analyse.draw_error_ellipses(finv, finv2, &analyse2);
+    }
     return 0;
 }
-
-

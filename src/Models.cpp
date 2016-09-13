@@ -37,6 +37,10 @@ double ModelInterface::Hf_interp(double z)
 {
     return 0;
 }
+double ModelInterface::H_interp(double z, int q_index)
+{
+    return 0;
+}
 
 double ModelInterface::qp_interp(double z, int q_index)
 {
@@ -111,6 +115,11 @@ double ModelParent<T21>::r_interp(double z)
 double ModelParent<T21>::Hf_interp(double z)
 {
     return spline1dcalc(q_interpolators[0].interpolator_Hf,z);
+}
+    template<typename T21>    
+double ModelParent<T21>::H_interp(double z, int q_index)
+{
+    return spline1dcalc(q_interpolators[q_index].interpolator_Hf,z);
 }
 
     template<typename T21>

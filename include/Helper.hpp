@@ -112,3 +112,11 @@ struct Ellipse {
     double sigma_x, sigma_y;
 };
 
+/**
+ *
+ */
+struct Theta {
+    int li, lj, q, Pk_index, Tb_index, q_index;
+    spline1dinterpolant interpolator;
+};
+

@@ -19,6 +19,7 @@ class ModelInterface : public CosmoBasis {
         virtual double q_interp(double z, int q_index);
         virtual double r_interp(double z);
         virtual double Hf_interp(double z);
+        virtual double H_interp(double z, int q_index);
         virtual double qp_interp(double z, int q_index);
         virtual double fz_interp(double z, int Tb_index);
         virtual void set_Santos_params(double *alpha, double *beta,\
@@ -47,6 +48,7 @@ class ModelParent : public ModelInterface {
         double q_interp(double z, int q_index);
         double r_interp(double z);
         double Hf_interp(double z);
+        double H_interp(double z, int q_index);
         double qp_interp(double z, int q_index);
         double fz_interp(double z, int Tb_index);
         void update(map<string, double> params,\

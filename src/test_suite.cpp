@@ -25,11 +25,6 @@ using namespace std;
 
 log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_NOTHING;
 
-int add(int i, int j)
-{
-    return i+j;
-}
-
 BOOST_AUTO_TEST_CASE(check_parser)
 {
     /**     SETUP   **/
@@ -97,8 +92,6 @@ BOOST_AUTO_TEST_CASE(check_parser)
     
     BOOST_CHECK(Priors["ombh2"] == 1);
     BOOST_CHECK(Priors["n_s"] == 3);
-
-
 }
 
 BOOST_AUTO_TEST_CASE(check_integrator)
@@ -278,4 +271,6 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     BOOST_CHECK(omch2 < omch2_ref + 0.01 * omch2_ref);
 
 }
+
+
 // EOF

@@ -132,6 +132,17 @@ double Bispectrum::calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3
     return B_lll * w;
 }
 
+double Bispectrum::calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3,\
+        double z, int Pk_index, int Tb_index, int q_index)
+{
+    double w = WignerSymbols::wigner3j(l1,l2,l3,m1,m2,m3);
+    double B_lll = calc_Blll(l1,l2,l3,z,Pk_index,Tb_index,q_index);
+    cout << B_lll << endl; 
+    // return the magintude:
+    return B_lll * w;
+}
+
+
 double Bispectrum::calc_Blll(int l1, int l2, int l3)
 {
     dcomp B_lll;
@@ -143,6 +154,221 @@ double Bispectrum::calc_Blll(int l1, int l2, int l3)
     return result;
 
 }
+
+double Bispectrum::calc_Blll(int l1, int l2, int l3, double z, int Pk_index, int Tb_index, int q_index)
+{
+    // Updates the growth functions used in the Blls
+
+    update_D_Growth(q_index);
+    dcomp B_lll;
+    if (l1 == l2 and l1 == l3)
+        B_lll = 3.0 * B_ll(l1,l2,l3,z,Pk_index,Tb_index,q_index);
+    else
+        B_lll = B_ll(l1,l2,l3,z,Pk_index,Tb_index,q_index) +\
+                B_ll(l1,l3,l2,z,Pk_index,Tb_index,q_index) +\
+                B_ll(l2,l3,l1,z,Pk_index,Tb_index,q_index);
+    double result = abs(B_lll);
+    return result;
+
+}
+dcomp Bispectrum::B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_index, int q_index)
+{
+    log<LOG_DEBUG>("Calculation for la = %1%, lb = %2% and lc = %3%") % la % lb % lc;
+    double A0, A1, A2, W1, W2, W3, W6J;
+    A0 = 10.0/7.0;
+    A1 = 1.0;
+    A2 = 4.0/7.0;
+    //dcomp prefactor = (16.0/pi) * sqrt(((2*la+ 1) * (2*lb + 1) * (2*lc + 1))/pow(4.0*pi,3));
+    dcomp B0abc, B1abc, B2abc;
+    // Integration params:
+    // TODO
+    double zmin, zmax, delta_z, z_centre;
+    //zmin = 49.5;
+    //zmax = 50.5;
+    delta_z = 0.1;
+    z_centre = z;
+    zmin = z_centre-delta_z;
+    zmax = z_centre+delta_z;
+    int steps = 100;
+
+    /*
+     * B0abc = ...
+     * B1abc = ...
+     * B2abc = ...
+     *
+     * Babc = B0abc + B1abc + B2abc
+     *
+     * return prefactor * Babc
+     */
+    ///////////////////////////////////////////////////////////////
+    // Calculation for B0abc:
+    W1 = WignerSymbols::wigner3j(la, la, 0, 0, 0, 0);
+    W2 = WignerSymbols::wigner3j(lb, lb, 0, 0, 0, 0);
+    W3 = WignerSymbols::wigner3j(lc, la, lb, 0, 0, 0);
+    W6J = WignerSymbols::wigner6j(la, lb, lc, lb, la, 0);
+    double B0 = A0+A2/3.0;
+    double pre = B0 * (2.0*la+1.0) * (2.0*lb+1.0) * W1 * W2 * W3 * W6J;
+    double I1 = 0;
+    if (pre != 0){
+        // The conversion factor is added in F(z).
+        auto integrand = [&](double z)
+        {
+            double D = D_Growth_interp(z,q_index);
+            double r = analysis->model->q_interp(z,q_index);
+            // 1000 factor is necessary to convert km into m.
+            double hub = analysis->model->H_interp(z,q_index)*1000.0;
+            double Fz = (analysis->model->c/hub)*D*D*f1(z,q_index)*Wnu(r, z_centre, delta_z);
+            double THETA1, THETA2;
+            THETA1 = theta(la,la,z,0, z_centre, delta_z,Pk_index,Tb_index,q_index);
+            if (la == lb) 
+            {
+                THETA2 = THETA1;
+            }
+            else 
+            {
+                THETA2 = theta(lb,lb,z,0, z_centre, delta_z, Pk_index,Tb_index,q_index);
+            }
+            //cout << "Thetas = " << THETA1 << " " << THETA2 << ", la = " <<\
+            la << ", lb = " << lb << ", z = " << z << ", Fz = " << Fz << endl;
+            return Fz * THETA1 * THETA2;
+        };
+
+        log<LOG_DEBUG>("%1% %2% %3% %4%") % W1 % W2 % W3 % W6J; 
+        I1 = integrate(integrand, zmin, zmax, steps, simpson());
+    }
+    B0abc = pre * I1 * pow(-1, la + lb);
+    //cout << " factors for B0 = " << pre << " " << I1 << endl;
+    log<LOG_DEBUG>("B0 done -> %1%") % B0abc;
+
+    ///////////////////////////////////////////////////////////
+    // Calculation for B1abc:
+    double B1 = A1;
+    dcomp c_sum(0,0);
+    double d_sum = 0;
+    for (int l6 = la - 1; l6 <= la + 1; l6++)
+    {
+        for (int l7 = lb - 1; l7 <= lb + 1; l7++)
+        {   
+            log<LOG_DEBUG>("B1 -> l6 = %1% , l7 = %2%.") % l6 % l7;
+            W1 = WignerSymbols::wigner3j(la, l6, 1, 0, 0, 0);
+            W2 = WignerSymbols::wigner3j(lb, l7, 1, 0, 0, 0);
+            W3 = WignerSymbols::wigner3j(lc, l6, l7, 0, 0, 0);
+            W6J = WignerSymbols::wigner6j(la, lb, lc, l7, l6, 1);
+            double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
+            // For debug:
+            l_terms = 0;
+            double I2 = 0;
+            if (l_terms != 0){
+                auto integrand2 = [&](double z)
+                {
+                    double D = D_Growth_interp(z,q_index);
+                    double r = analysis->model->q_interp(z,q_index);
+                    // 1000 factor is necessary to convert km into m.
+                    double hub = analysis->model->H_interp(z,q_index)*1000.0;
+                    double Fz = (analysis->model->c/hub)*D*D*f1(z,Tb_index)*Wnu(r,z_centre,delta_z);
+                    double THETA1, THETA2, THETA3, THETA4;
+                    THETA1 = theta(la,l6,z,-1,z_centre,delta_z);
+                    THETA2 = theta(lb,l7,z,1,z_centre,delta_z);
+                    if (la == lb and l6 == l7)
+                    {
+                        THETA3 = THETA2;
+                        THETA4 = THETA1;
+                    }
+                    else{
+                        THETA3 = theta(la,l6,z,1,z_centre,delta_z);
+                        THETA4 = theta(lb,l7,z,-1,z_centre,delta_z);
+                    }
+
+                    return Fz * (THETA1 * THETA2 + THETA3 * THETA4);
+                };
+
+                log<LOG_DEBUG>("%1% %2% %3% %4%") % W1 % W2 % W3 % W6J; 
+                I2 = integrate(integrand2, zmin, zmax, steps, simpson());
+            }
+            d_sum += I2 * l_terms;
+            dcomp i_exp(0,1);
+            i_exp = pow(i_exp, l6+l7);
+            dcomp c_res = i_exp * d_sum;
+            c_sum = c_sum + c_res;
+        }
+    }
+
+    dcomp i_exp(0,1);
+    i_exp = pow(i_exp, la+lb);
+    B1abc = i_exp * B1 * c_sum;
+    log<LOG_DEBUG>("B1 done -> %1%") % B1abc;
+
+    ////////////////////////////////////////////////////////
+    // Calculation for B2abc:
+    double B2 = 2.0*A2/3.0;
+    c_sum = 0;
+    d_sum = 0;
+    bool debug = true;
+    if (!debug)
+    {
+        for (int l6 = la - 2; l6 <= la + 2; l6++)
+        {
+            for (int l7 = lb - 2; l7 <= lb + 2; l7++)
+            {   
+                log<LOG_DEBUG>("B1 -> l6 = %1% , l7 = %2%.") % l6 % l7;
+                W1 = WignerSymbols::wigner3j(la, l6, 2, 0, 0, 0);
+                W2 = WignerSymbols::wigner3j(lb, l7, 2, 0, 0, 0);
+                W3 = WignerSymbols::wigner3j(lc, l6, l7, 0, 0, 0);
+                //cout << la << " " << lb << " " << lc << " " << l7 << " " << l6 << endl; 
+                W6J = WignerSymbols::wigner6j(la, lb, lc, l7, l6, 2);
+
+
+                double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
+                // For debug:
+                l_terms = 0;
+
+                double I3 = 0;
+                if (l_terms != 0){
+                    auto integrand3 = [&](double z)
+                    {
+                        double D = D_Growth_interp(z,q_index);
+                        double r = analysis->model->q_interp(z,q_index);
+                        // 1000 factor is necessary to convert km into m.
+                        double hub = analysis->model->H_interp(z,q_index)*1000.0;
+                        double Fz = (analysis->model->c/hub)*D*D*f1(z,q_index)*\
+                                    Wnu(r,z_centre,delta_z);
+                        double THETA2;
+                        double THETA1 = theta(la,l6,z,0,z_centre,delta_z);
+                        if (la == lb and l6 == l7)
+                            THETA2 = THETA1;
+                        else
+                            THETA2 = theta(lb,l7,z,0,z_centre,delta_z);
+
+                        return Fz * THETA1 * THETA2;
+                    };
+
+                    log<LOG_DEBUG>("%1% %2% %3% %4%") % W1 % W2 % W3 % W6J; 
+                    I3 = integrate(integrand3, zmin, zmax, steps, simpson());
+                }
+                d_sum += I3 * l_terms;
+                dcomp i_exp(0,1);
+                i_exp = pow(i_exp, l6+l7);
+                dcomp c_res = i_exp * d_sum;
+                c_sum = c_sum + c_res;
+            }
+        }
+    }
+    //i_exp is already i^(la+lb)
+    B2abc = i_exp * B2 * c_sum;
+    log<LOG_DEBUG>("B2 done -> %1%") % B2abc;
+
+    /////////////////////////////////////////////////////////////////
+    //
+    dcomp Babc = B0abc + B1abc + B2abc;
+    double lss = (2.0*la+ 1.0) * (2.0*lb + 1.0) * (2.0*lc + 1.0);
+    double FpiC = pow(4.0*pi,3);
+    double SoPi = 16.0/pi;
+    double prefactor = SoPi * sqrt(lss/FpiC);
+    //cout << lss << " " << FpiC << " " << SoPi << endl;
+    //cout << Babc << " " << prefactor << endl;
+    return Babc * prefactor;
+}
+
 
 dcomp Bispectrum::B_ll(int la, int lb, int lc)
 {
@@ -204,7 +430,7 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc)
                 THETA2 = theta(lb,lb,z,0, z_centre, delta_z);
             }
             //cout << "Thetas = " << THETA1 << " " << THETA2 << ", la = " <<\
-                la << ", lb = " << lb << ", z = " << z << ", Fz = " << Fz << endl;
+            la << ", lb = " << lb << ", z = " << z << ", Fz = " << Fz << endl;
             return Fz * THETA1 * THETA2;
         };
 
@@ -384,7 +610,7 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
             res *= P*jl;
             return res;
         };
-    
+
         /////////////
         //This determines the lower bound of the kappa integral
         double low;
@@ -400,22 +626,120 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
             lower_k_bound = low;
         else
             lower_k_bound = 0.0001;
-    
+
         //This determines the upper bound of the kappa integral
         double higher_k_bound = lower_k_bound + 0.5;
         /////////////
-    
+
         double I = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
-        
+
         // Adding the calculated value to the list of precomputed values.
         thetas[li][z_index] = I;
         return I;
-
     }
     else
     {
         //cout << "lookup " << li << " " << z_index << " " <<  thetas[li][z_index]<< endl;
         return thetas[li][z_index];
+    }
+}
+
+double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, double delta_z, int Pk_index, int Tb_index, int q_index)
+{
+    int index = 0;
+    bool pre_calc = false;
+    for (int i = 0; i < theta_interpolants.size(); i++)
+    {
+        if (theta_interpolants[i].li == li && theta_interpolants[i].lj == lj &&\
+                theta_interpolants[i].q == q && theta_interpolants[i].Pk_index == Pk_index &&\
+                theta_interpolants[i].Tb_index == Tb_index &&\
+                theta_interpolants[i].q_index == q_index)
+        {
+            index = i;
+            pre_calc = true;
+        }
+    }
+
+    if (!pre_calc)
+    {
+        cout << "precalc theta" << endl;
+        double zmin = z_centre - 1.5 * delta_z;
+        //double zmax = z_centre + 1.5 * delta_z;
+        int z_steps = 1000;
+        double z_stepsize = 3.0 * delta_z/(double)z_steps;
+        vector<double> zs, vals;
+
+        for (int i = 0; i < z_steps; i++)
+        {
+            double zi = zmin + i*z_stepsize;
+            zs.push_back(zi);
+            
+            //do calc
+            double r = analysis->model->q_interp(z,q_index);
+            auto integrand = [&](double k)
+            {
+                double res = pow(k, 2+q) *\
+                             alpha(li, k, z_centre, delta_z, Pk_index, Tb_index, q_index);
+                double P = power(k, Pk_index);
+                double jl = sph_bessel_camb(lj, k*r);
+                res *= P*jl;
+                return res;
+            };
+
+            /////////////
+            //This determines the lower bound of the kappa integral
+            double low;
+            if (li < 50){
+                low = 0.0001;
+            } else if (li < 1000){
+                low = (double)li/(2.0*10000.0);
+            } else {
+                low = (double)li/(2.0*10000.0);
+            }
+            double lower_k_bound;// = k_low;
+            if (low > 0.0001)
+                lower_k_bound = low;
+            else
+                lower_k_bound = 0.0001;
+
+            //This determines the upper bound of the kappa integral
+            double higher_k_bound = lower_k_bound + 0.5;
+            /////////////
+
+            double value = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
+            vals.push_back(value);
+        }
+        
+        // make an interpolator;
+        real_1d_array zs_list, vals_list;
+        zs_list.setlength(zs.size());
+        vals_list.setlength(vals.size());
+
+        for (int i = 0; i < zs.size(); i++)
+        {
+            zs_list[i] = zs[i];
+            vals_list[i] = vals[i];
+        }
+        spline1dinterpolant interp;
+        spline1dbuildcubic(zs_list, vals_list, interp);
+        Theta TH;
+        TH.li = li;
+        TH.lj = lj;
+        TH.q = q;
+        TH.Pk_index = Pk_index;
+        TH.Tb_index = Tb_index;
+        TH.q_index = q_index;
+        TH.interpolator = interp;
+        theta_interpolants.push_back(TH);
+
+        cout << "prcalc done" << endl;
+        // return the value wanted
+        return spline1dcalc(interp, z);
+
+    }
+    else 
+    {
+        return spline1dcalc(theta_interpolants[index].interpolator,z);
     }
 }
 
@@ -430,6 +754,25 @@ double Bispectrum::alpha(int l, double k, double z_centre, double delta_z)
         double D = D_Growth_interp(zp);
 
         return (analysis->model->c / hub) * jl * D * f1(zp) * Wnu(r, z_centre, delta_z);
+    };
+    double zmin = z_centre - delta_z;
+    double zmax = z_centre + delta_z;
+    double I = integrate(integrand, zmin, zmax, 100, simpson());
+    return I;
+}
+
+double Bispectrum::alpha(int l, double k, double z_centre, double delta_z,\
+        int Pk_index, int Tb_index, int q_index)
+{
+    auto integrand = [&](double zp)
+    {
+        double r = analysis->model->q_interp(zp,q_index);
+        double jl = analysis->model->sph_bessel_camb(l,k*r);
+        // 1000 factor is necessary to convert km into m.
+        double hub = analysis->model->H_interp(zp,q_index)*1000.0;
+        double D = D_Growth_interp(zp, q_index);
+
+        return (analysis->model->c / hub) * jl * D * f1(zp,Tb_index) * Wnu(r, z_centre, delta_z);
     };
     double zmin = z_centre - delta_z;
     double zmax = z_centre + delta_z;
@@ -453,9 +796,81 @@ double Bispectrum::D_Growth(double z)
     return pre * I1;
 }
 
+double Bispectrum::D_Growth(double z, int q_index)
+{
+    auto integrand = [&](double zp)
+    {
+        double H3 = this->analysis->model->H_interp(zp, q_index);
+        H3 = pow(H3, 3);
+
+        return (1+zp)/H3;
+    };
+    double I1 = integrate(integrand, z, 10000.0, 100000, simpson());
+
+    double pre = Growth_function_norms[q_index] * this->analysis->model->H_interp(z,q_index) /\
+                 this->analysis->model->H_interp(0,q_index);
+    return pre * I1;
+}
+
+void Bispectrum::update_D_Growth(int q_index)
+{
+    int count = (int)growth_function_interps.size() - 1;
+    while (count < q_index)
+    {
+        count ++;
+        //do calc
+        spline1dinterpolant interp;
+        auto integrand = [&](double z)
+        {
+            double H3 = this->analysis->model->H_interp(z,count);
+            H3 = pow(H3, 3);
+
+            return (1.0+z)/H3;
+        };
+        double I1 = integrate(integrand, 0.0, 10000.0, 1000000, simpson());
+        double norm = 1.0/I1;
+        Growth_function_norms.push_back(norm);
+
+        vector<double> zs_v, D_v;
+
+        // Should precalculate to at least z = 10000. 
+        // Although this takes 20 seconds each run, which is annoying.
+        zs_v.resize(1000);
+        D_v.resize(1000);
+#pragma omp parallel for
+        for (int i = 0; i < 1000; i++)
+        {
+            double z = i*0.1;
+            double D = D_Growth(z, count);
+
+            zs_v[i] = z;
+            D_v[i] = D;
+        }
+
+        real_1d_array zs, D_pluss;
+        zs.setlength(zs_v.size());
+        D_pluss.setlength(D_v.size());
+
+        for (unsigned int i = 0; i < zs_v.size(); i++){
+            zs[i] = zs_v[i];
+        }
+        for (unsigned int i = 0; i < D_v.size(); i++){
+            D_pluss[i] = D_v[i];
+        }
+        spline1dbuildcubic(zs, D_pluss, interp);
+
+        growth_function_interps.push_back(interp);
+    }
+}
+
 double Bispectrum::D_Growth_interp(double z)
 {
     return spline1dcalc(Growth_function_interpolator, z);
+}
+
+double Bispectrum::D_Growth_interp(double z, int q_index)
+{
+    return spline1dcalc(growth_function_interps[q_index], z);
 }
 
 double Bispectrum::f1(double z)
@@ -465,11 +880,17 @@ double Bispectrum::f1(double z)
     //double ffb = f1b(z);
     //double ffT = f1T(z);
     //return ffb + gg*ffT;
-    
-   
+
+
     // return -50.0;
     double bias = 2;
     return bias*analysis->model->T21_interp(z,0);
+}
+
+double Bispectrum::f1(double z, int Tb_index)
+{
+    double bias = 2;
+    return bias*analysis->model->T21_interp(z,Tb_index);
 }
 
 double Bispectrum::f1b(double z)
@@ -559,7 +980,7 @@ double Bispectrum::f1T(double z)
     return f0(z) * (term1 + term2);
 }
 
-// This function returns a gaussian window function around r(z=50) with 
+// This function returns a gaussian window function around r(z=z_centre) with 
 // a frequency bandwidth of 0.1 MHz.
 // Units are MPc^-1.
 // This function integrates to 1 (over r).
@@ -569,11 +990,11 @@ double Bispectrum::Wnu(double r, double z_centre, double delta_z)
     double zup = z_centre + delta_z;//1420.4/(nu50+0.1) - 1; 
     double zdown = z_centre - delta_z;//1420.4/(nu50-0.1) - 1;
     //double z_centre = 50.0;
-    
+
     double rup = analysis->model->r_interp(zup);
     double rdown = analysis->model->r_interp(zdown);
     double r_centre = analysis->model->r_interp(z_centre);
-    
+
     double sigma = abs(rup-rdown)/2.0;
     double norm = 1.0/(sqrt(2.0*pi) * sigma);
     return norm * exp(-0.5*pow((r-r_centre)/sigma,2));
@@ -593,6 +1014,13 @@ double Bispectrum::power(double k)
 {
     double A = 1.0;
     double P = analysis->model->Pkz_interp(k,0,0);
+    return A * P;
+}
+
+double Bispectrum::power(double k, int Pk_index)
+{
+    double A = 1.0;
+    double P = analysis->model->Pkz_interp(k,0,Pk_index);
     return A * P;
 }
 
@@ -769,13 +1197,13 @@ double Bispectrum::z_integrand(int l, double z)
         lower_k_bound = low;
     else
         lower_k_bound = 0.0001;
-    
+
     //This determines the upper bound of the kappa integral
     double higher_k_bound = lower_k_bound + 0.5;
     /////////////
-    
+
     double I = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
-    
+
     double r = analysis->model->r_interp(z);
     double hub = analysis->model->Hf_interp(z)*1000.0;
     double D = D_Growth_interp(z);
@@ -827,7 +1255,7 @@ double Bispectrum::Blll_PNG_equilat(int l, double fNL)
         double sum = 3.0 * beta * beta * gamma;
         return (analysis->model->c/hub) * r * r * sum;
     };
-    
+
     double I = integrate(integrand, 49.0, 51.0, 100, simpson());
     double W3J = WignerSymbols::wigner3j(l,l,l,0,0,0);
     double pre = (16.0/pow(pi,3)) * fNL *\
@@ -860,7 +1288,7 @@ double Bispectrum::Blll_PNG(int la, int lb, int lc, double fNL)
     cout << la << " " << pre*I << endl;
     return pre * I;
 }
-   
+
 double Bispectrum::Blll_PNG_integrand_z(int la, int lb, int lc, double z)
 {
     double r = analysis->model->r_interp(z);
@@ -875,13 +1303,13 @@ double Bispectrum::Blll_PNG_integrand(int la, int lb, int lc, double r)
     if (la == lb and la == lc)
     {
         double beta, gamma;
-        #pragma omp parallel sections
+#pragma omp parallel sections
         {
-            #pragma omp section
+#pragma omp section
             {
                 beta = beta_l(la,r); 
             }
-            #pragma omp section
+#pragma omp section
             {
                 gamma = Gamma_l(la,r);
             }
@@ -893,23 +1321,23 @@ double Bispectrum::Blll_PNG_integrand(int la, int lb, int lc, double r)
         double beta_a, beta_b, beta_c, gamma_a, gamma_b, gamma_c;
         if (la == lb)
         {
-            #pragma omp parallel sections
+#pragma omp parallel sections
             {
-                #pragma omp section
+#pragma omp section
                 {
                     beta_a = beta_l(la,r); 
                     beta_b = beta_a;
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     beta_c = beta_l(lc,r);
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_a = Gamma_l(la,r);
                     gamma_b = gamma_a;
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_c = Gamma_l(lc,r);
                 }
@@ -917,23 +1345,23 @@ double Bispectrum::Blll_PNG_integrand(int la, int lb, int lc, double r)
         }
         else if (la == lc)
         {
-            #pragma omp parallel sections
+#pragma omp parallel sections
             {
-                #pragma omp section
+#pragma omp section
                 {
                     beta_a = beta_l(la,r); 
                     beta_c = beta_a;
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     beta_b = beta_l(lb,r);
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_a = Gamma_l(la,r);
                     gamma_c = gamma_a;
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_b = Gamma_l(lb,r);
                 }
@@ -941,22 +1369,22 @@ double Bispectrum::Blll_PNG_integrand(int la, int lb, int lc, double r)
         }
         else if (lb == lc)
         {
-            #pragma omp parallel sections
+#pragma omp parallel sections
             {
-                #pragma omp section
+#pragma omp section
                 {
                     beta_a = beta_l(la,r); 
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     beta_b = beta_l(lb,r);
                     beta_c = beta_b;
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_a = Gamma_l(la,r);
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_b = Gamma_l(lb,r);
                     gamma_c = gamma_b;
@@ -965,29 +1393,29 @@ double Bispectrum::Blll_PNG_integrand(int la, int lb, int lc, double r)
         }
         else
         {
-            #pragma omp parallel sections
+#pragma omp parallel sections
             {
-                #pragma omp section
+#pragma omp section
                 {
                     beta_a = beta_l(la,r); 
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     beta_b = beta_l(lb,r);
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     beta_c = beta_l(lc,r);
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_a = Gamma_l(la,r);
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_b = Gamma_l(lb,r);
                 }
-                #pragma omp section
+#pragma omp section
                 {
                     gamma_c = Gamma_l(lc,r);
                 }
@@ -1010,7 +1438,7 @@ double Bispectrum::beta_l_integrand(int l, double r, double k)
     double a = alpha(l, k,z_centre,delta_z);
     double jl = sph_bessel_camb(l, k*r);
     return (P0/Tk) * a * jl;
-  
+
 }
 double Bispectrum::beta_l(int l, double r)
 {
@@ -1018,7 +1446,7 @@ double Bispectrum::beta_l(int l, double r)
     {
         return beta_l_integrand(l,r,k);
     };
-    
+
     /////////////
     //This determines the lower bound of the kappa integral
     double low;
@@ -1034,7 +1462,7 @@ double Bispectrum::beta_l(int l, double r)
         lower_k_bound = low;
     else
         lower_k_bound = 0.0001;
-    
+
     //This determines the upper bound of the kappa integral
     double higher_k_bound = lower_k_bound + 0.2;
     /////////////
@@ -1070,7 +1498,7 @@ double Bispectrum::Gamma_l(int l, double r)
     {
         return Gamma_l_integrand(l, r, k);
     };
-    
+
     /////////////
     //This determines the lower bound of the kappa integral
     double low;
@@ -1086,9 +1514,9 @@ double Bispectrum::Gamma_l(int l, double r)
         lower_k_bound = low;
     else
         lower_k_bound = 0.0001;
-    
+
     //This determines the upper bound of the kappa integral
-    
+
     double higher_k_bound;
     if (l < 5000)
     {
@@ -1118,7 +1546,7 @@ double Bispectrum::Gamma_l_z(int l, double z)
     {
         return Gamma_l_integrand(l, r, k);
     };
-    
+
     /////////////
     //This determines the lower bound of the kappa integral
     double low;
@@ -1134,9 +1562,9 @@ double Bispectrum::Gamma_l_z(int l, double z)
         lower_k_bound = low;
     else
         lower_k_bound = 0.0001;
-    
+
     //This determines the upper bound of the kappa integral
-    
+
     double higher_k_bound;
     if (l < 5000)
     {

@@ -247,7 +247,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
             (void)r;
         }
 
-        bool ERROR = true;
+        bool ERROR = false;
         for (int i = 0; i < num_params; i++)
             if (RESULT.matrix(i,i) < 0)
                 ERROR = true;
@@ -483,7 +483,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
             (void)r;
         }
 
-        bool ERROR = true;
+        bool ERROR = false;
         for (int i = 0; i < num_params; i++)
             if (RESULT.matrix(i,i) < 0)
                 ERROR = true;
@@ -502,28 +502,6 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
     }
     return RESULT;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1224,3 +1202,100 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv)
     //int r = system("rm ellipse_info.tmp.dat");
     //(void)r;
 }
+
+void Analyser::draw_error_ellipses(Fisher_return_pair finv1, Fisher_return_pair finv2, Analyser* analyser)
+{
+    // first need to know how many parameters we have,
+    // the grid size is equal to that
+    vector<string> param_keys = parser->giveParamKeys();
+    int num_params = param_keys.size();
+    // for each parameter pair we need to create an ellipse 
+    vector<Ellipse> error_ellipses, error_ellipses2;
+    for (int i = 0; i < num_params - 1; i++)
+    {
+        for (int j = i + 1; j < num_params; j++)
+        {
+            string param1 = param_keys[i];
+            string param2 = param_keys[j];
+            Ellipse ellipse = find_error_ellipse(finv1, param2, param1);
+            Ellipse ellipse2 = analyser->find_error_ellipse(finv2, param2, param1);
+            error_ellipses.push_back(ellipse);
+            error_ellipses2.push_back(ellipse2);
+        }
+    }
+    // a vector of ellipses should be passed to the drawing function
+    //   as well as information about the corresponding parameters.
+    // then draw
+    string filename = "ellipse_info.tmp.dat";
+    string filename2 = "ellipse_info2.tmp.dat";
+    ofstream ellipse_file(filename);
+    ofstream ellipse_file2(filename2);
+    ellipse_file << num_params << endl;
+    ellipse_file2 << num_params << endl;
+    bool ERROR = false;
+    for (unsigned int i = 0; i<error_ellipses.size(); i++)
+    {
+        ellipse_file << error_ellipses[i].a2 << endl;
+        ellipse_file << error_ellipses[i].b2 << endl;
+        ellipse_file << error_ellipses[i].theta << endl;
+        ellipse_file << error_ellipses[i].cx << endl;
+        ellipse_file << error_ellipses[i].cy << endl;
+        ellipse_file << error_ellipses[i].sigma_x << endl;
+        ellipse_file << error_ellipses[i].sigma_y << endl;
+        if (error_ellipses[i].a2 <= 0 || error_ellipses[i].b2 <= 0)
+            ERROR = true;
+
+        ellipse_file2 << error_ellipses2[i].a2 << endl;
+        ellipse_file2 << error_ellipses2[i].b2 << endl;
+        ellipse_file2 << error_ellipses2[i].theta << endl;
+        ellipse_file2 << error_ellipses2[i].cx << endl;
+        ellipse_file2 << error_ellipses2[i].cy << endl;
+        ellipse_file2 << error_ellipses2[i].sigma_x << endl;
+        ellipse_file2 << error_ellipses2[i].sigma_y << endl;
+        if (error_ellipses2[i].a2 <= 0 || error_ellipses2[i].b2 <= 0)
+            ERROR = true;
+
+    }
+    if (!ERROR)
+    {
+        //write a temporary file with the parameter names & pass to drawer
+        ofstream param_file("paramfile.tmp.dat");
+        for (int i = 0; i < num_params; i++)
+        {
+            param_file << param_keys[i] << endl;
+        }
+        param_file.close();
+        stringstream command_buff;
+        command_buff << "python plotEllipsesDouble.py " << filename << " " <<\
+            filename2 << " paramfile.tmp.dat";
+        char* command = new char[command_buff.str().length() + 1];
+        strcpy(command, command_buff.str().c_str());
+        int r = system(command);
+        (void)r;
+        delete command;
+        //r = system("rm paramfile.tmp.dat");
+        //(void)r;
+    }
+    else {
+        log<LOG_ERROR>("    ERROR: some ellipses are ill-defined with a^2 < 0 or b^2 < 0.");
+        /*for (unsigned int i = 0; i<error_ellipses.size(); i++)
+          {
+          if (error_ellipses[i].a2 < 0 or error_ellipses[i].b2 < 0)
+          {
+          log<LOG_ERROR>("i = %1%, a^2 = %2%, b^2 = %3%.") % i %\
+          error_ellipses[i].a2 %\
+          error_ellipses[i].b2;
+          }
+          }*/
+        log<LOG_ERROR>("      check for linearly dependent rows or columns.");
+        log<LOG_ERROR>("      These can be due to degeneracies between parameters.");
+    }
+    //int r = system("rm ellipse_info.tmp.dat");
+    //(void)r;
+}
+
+IniReaderAnalysis*  Analyser::accessParser()
+{
+    return parser;
+}
+

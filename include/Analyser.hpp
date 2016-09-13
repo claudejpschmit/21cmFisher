@@ -55,12 +55,25 @@ class Analyser {
          *
          * @param finv contains a Fisher matrix return pair from which the 
          *              error ellipse information will be gained. 
-         * @param path contains a string containing the relative path to the
-         *              RUN_INFO.dat file from the executable.
          */
         void draw_error_ellipses(Fisher_return_pair finv);
 
-    private:
+        /**
+         * Function to draw 1sigma and 2sigma error ellipses on triangular grid
+         * against parameter values. The function uses the python script
+         * plotEllipsesDouble.py to do the actual drawing.
+         *
+         * This function is the same as above, except it draws 2 runs on the
+         * same plot.
+         *
+         * @param finv1 contains a Fisher matrix return pair from which the 
+         *              error ellipse information will be gained. 
+         * @param finv2 contains a Fisher matrix return pair from which the 
+         *              error ellipse information will be gained. 
+         */
+        void draw_error_ellipses(Fisher_return_pair finv1, Fisher_return_pair finv2, Analyser* analyser);
+
+        IniReaderAnalysis* accessParser();
 
         /**
          * Function to calculate the semi-major, semi-minor, rotation angle
@@ -77,6 +90,7 @@ class Analyser {
          */
         Ellipse find_error_ellipse(Fisher_return_pair finv, string param1, string param2);
 
+    private:
         vector<string> params_done;
         
         // local parser
