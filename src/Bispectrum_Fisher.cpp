@@ -258,7 +258,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                     }
                     else
                     {
-                        F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2, Pk_index, Tb_index,q_index);
+                        F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,Pk_index,Tb_index,q_index);
                     }
                 }
                 else

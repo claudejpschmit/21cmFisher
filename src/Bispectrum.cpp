@@ -137,7 +137,7 @@ double Bispectrum::calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3
 {
     double w = WignerSymbols::wigner3j(l1,l2,l3,m1,m2,m3);
     double B_lll = calc_Blll(l1,l2,l3,z,Pk_index,Tb_index,q_index);
-    cout << B_lll << endl; 
+    //cout << B_lll << endl; 
     // return the magintude:
     return B_lll * w;
 }
@@ -662,10 +662,9 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
 
     if (!pre_calc)
     {
-        cout << "precalc theta" << endl;
         double zmin = z_centre - 1.5 * delta_z;
         //double zmax = z_centre + 1.5 * delta_z;
-        int z_steps = 1000;
+        int z_steps = 100;
         double z_stepsize = 3.0 * delta_z/(double)z_steps;
         vector<double> zs, vals;
 
@@ -732,13 +731,13 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
         TH.interpolator = interp;
         theta_interpolants.push_back(TH);
 
-        cout << "prcalc done" << endl;
         // return the value wanted
         return spline1dcalc(interp, z);
 
     }
     else 
     {
+        //cout << " --- read" << endl; 
         return spline1dcalc(theta_interpolants[index].interpolator,z);
     }
 }
