@@ -52,6 +52,7 @@ int main(int argc, char* argv[])
     // comparing 2 runs
     else if (argc == 3)
     {
+        cout << "Using 2 runs" << endl;
         string iniFilename2 = argv[2];
         IniReaderAnalysis parser2(iniFilename2);    
         Fisher_return_pair finv2;

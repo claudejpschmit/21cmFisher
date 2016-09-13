@@ -347,12 +347,12 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
     //TODO: include the NLG bispectrum
     //cout << l1 << " " << l2 << " " << l3 << " " <<*Pk_index<< " " << *Tb_index << " " <<  *q_index <<endl;
-    B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+    //B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
 
     working_params[param_key] = x;
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
     B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
-    B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+    //B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
     
     //working_params[param_key] = x - 2*h;
     //analysis->model->update(working_params, Pk_index, Tb_index, q_index);
@@ -360,7 +360,7 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     //cout << "B = " << B << endl;
     //cout << delta_B << " " << B << endl; 
     // Simple derivative via finite difference
-    return (B1 - B2)/h + (B1_NLG - B2_NLG)/h;
+    return (B1 - B2)/h;// + (B1_NLG - B2_NLG)/h;
     //return (-B1 + 8*B2 - 8*B3 + B4)/(12.0*h); 
 }
 
