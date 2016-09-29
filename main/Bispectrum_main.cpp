@@ -112,8 +112,9 @@ int main(int argc, char* argv[])
         double nu_stepsize = 10;
         int n_points_per_thread = 5;
         int n_threads = 1;
-         
-        fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads);
+        
+        Bispectrum_Effects effects = LISW_eff;
+        fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects);
         //NLG->calc_angular_B(2,2,2,0,0,0,1.0,0,0,0); 
         delete NLG;
         delete LISW;

@@ -223,6 +223,7 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     Bispectrum_LISW* LISW;
     LISW = new Bispectrum_LISW(analysis, keys.size());
 
+    Bispectrum_Effects effects = ALL_eff;
     TEST_Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
 
     /**     CHECKS      **/
@@ -233,7 +234,7 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     int n_points_per_thread = 2;
     int n_threads = 1;
          
-    fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads);
+    fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects);
     
     stringstream filename1, filename2, filename3;
     filename1 << fisherPath << "/Fl_ombh2_ombh2.dat";

@@ -1,6 +1,7 @@
 #include "Bispectrum_Fisher.hpp"
 #include "Log.hpp"
 #include "wignerSymbols.h"
+#include <omp.h>
 
 /*********************************/
 /**     Bispectrum_Fisher       **/
@@ -10,7 +11,7 @@ Bispectrum_Fisher::Bispectrum_Fisher(AnalysisInterface* analysis, Bispectrum_LIS
         vector<string> param_keys_considered, string fisherPath)
 {
     log<LOG_BASIC>("... Beginning Bispectrum_Fisher constructor ...");
-
+    omp_set_nested(0);
     this->fisherPath = fisherPath;
     model_param_keys = param_keys_considered;
     this->analysis = analysis;
@@ -36,7 +37,7 @@ Bispectrum_Fisher::~Bispectrum_Fisher()
 {}
 
 double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
-        int n_points_per_thread, int n_threads)
+        int n_points_per_thread, int n_threads, Bispectrum_Effects effects)
 {
     int nu_steps = n_points_per_thread * n_threads;
     //string filename_prefix = update_runinfo(lmin, lmax, lstepsize, xstepsize);
@@ -103,7 +104,8 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
                     stringstream ss, ss2;
                     ss << "Computation of F_nu starts for nu = " << nu << "\n";
                     log<LOG_VERBOSE>("%1%") % ss.str().c_str();
-                    double fnu = compute_Fnu(nu, param_key1, param_key2, &Pk_index, &Tb_index, &q_index);
+                    double fnu = compute_Fnu(nu, param_key1, param_key2,\
+                            &Pk_index, &Tb_index, &q_index, effects);
 
                     //adding results to the output matrix
                     output(k-1, 0) = nu;
@@ -132,7 +134,7 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
 }
 
 double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param_key2,\
-        int *Pk_index, int *Tb_index, int *q_index)
+        int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects)
 {
     double res = 0;
     //for all (l1,l2,l3) calc Fisher_element
@@ -164,7 +166,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                 {   
                     //cout << l2 << " " << l3 << endl;
                     F = Fisher_element(2,l2,l3,nu,param_key1,param_key2,\
-                            &Pk_index2, &Tb_index2, &q_index2);
+                            &Pk_index2, &Tb_index2, &q_index2, effects);
                     //cout << "test" <<endl;
                 }
             }
@@ -179,44 +181,71 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     }
 
    
-    int n_threads = 6;
+    int n_threads = 7;
+    int gaps = 4;
+    int stepsize = gaps + 1;
+    int lmodes = ceil((lmax_CLASS-2.0)/(double)stepsize);
+    int imax = ceil((double)lmodes/(double)n_threads) * n_threads;
+    //cout << "nthreads = " << n_threads << endl;
+    //cout << "lmodes = " << lmodes << endl;
+    //cout << "imax = " << imax << endl;
+    int modmax = (imax-1)*stepsize;//lmax_CLASS-3;// ceil((lmax_CLASS-2)/n_threads) * n_threads - 1;
     double sum = 0;
+    // This will only be used if omp_nested is set to 1 in the constructor above.
+    int n_threads_2 = 8;
     log<LOG_VERBOSE>("Entering Parallel regime");
     #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
     {
+        //cout << "modmax = " << modmax << endl;
+        //cout << modmax << endl;
         #pragma omp for reduction (+:sum)
-        for (int i = 3; i <= lmax_CLASS; i++)
+        for (int i = 1; i <= imax; i++)
         {
-            int l1 = 3+(n_threads*(i-3) % (lmax_CLASS-3));
-            if (i == lmax_CLASS)
-                l1 = lmax_CLASS;
+            int l1 = 3 + (n_threads*stepsize*(i-1) % (modmax));
+            if (i != 1 && n_threads*stepsize*(i-1) % (modmax) == 0)
+                l1 = modmax + 3;
+            /*
+            if (l1 > lmax_CLASS)
+                l1 = modmax;*/
             int lmin = l1/2;
-            log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
-            for (int l2 = lmin; l2 <= l1; l2++)
+            //cout << i << " -- " << l1 << endl;
+            if (l1 <= lmax_CLASS)
             {
-                for (int l3 = 0; l3 <= l1; l3++)
+                log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
+                #pragma omp parallel num_threads(n_threads_2) private(Pk_index2, Tb_index2, q_index2)
                 {
-                    double F = 0;
-                    if (l3 >= (l1-l2) and l3 <= l2)
-                    {   
+                #pragma omp for reduction (+:sum)
+                for (int l2 = lmin; l2 <= l1; l2++)
+                {
+                    for (int l3 = 0; l3 <= l1; l3++)
+                    {
+                        double F = 0;
+                        if (l3 >= (l1-l2) and l3 <= l2)
+                        {   
                         
-                        if (l1 == l2 and l3 == 0)
-                        {
-                            F = 0;
+                            if (l1 == l2 and l3 == 0)
+                            {
+                                F = 0;
+                            }
+                            else
+                            {
+                                F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
+                                    &Pk_index2, &Tb_index2, &q_index2, effects);
+                            }
                         }
                         else
                         {
-                            F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
-                                    &Pk_index2, &Tb_index2, &q_index2);
+                            //enter 0
+                            F = 0;
                         }
+                        sum += (2.0 * l1 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * stepsize * F;
                     }
-                    else
-                    {
-                        //enter 0
-                        F = 0;
-                    }
-                    sum += (2.0 * l1 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * F;
                 }
+                }
+            }
+            else
+            {
+                sum+=0;
             }
         }
     }
@@ -275,7 +304,8 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
 }
 */
 double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
-        string param_key1, string param_key2, int *Pk_index, int *Tb_index, int *q_index)
+        string param_key1, string param_key2, int *Pk_index, int *Tb_index, int *q_index,\
+        Bispectrum_Effects effects)
 {
     // I think these should be at indecies = 0...
     double Cl1 = Cl(l1,nu);
@@ -307,11 +337,11 @@ double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
     }
     else
     {
-        mu_A = calc_mu(l1,l2,l3,nu,param_key1, Pk_index, Tb_index, q_index);
+        mu_A = calc_mu(l1,l2,l3,nu,param_key1, Pk_index, Tb_index, q_index, effects);
         if (param_key1 == param_key2)
             mu_B = mu_A;
         else
-            mu_B = calc_mu(l1,l2,l3,nu,param_key2, Pk_index, Tb_index, q_index);
+            mu_B = calc_mu(l1,l2,l3,nu,param_key2, Pk_index, Tb_index, q_index, effects);
     }
     return frac * mu_A * mu_B;
 }
@@ -322,7 +352,7 @@ double Bispectrum_Fisher::Cl(int l, double nu)
 }
 
 double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string param_key,\
-        int *Pk_index, int *Tb_index, int *q_index)
+        int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects)
 {   
     log<LOG_VERBOSE>("entered mu");
     double z = (1420.4/nu) - 1.0;
@@ -342,16 +372,17 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     //analysis->model->update(working_params, Pk_index, Tb_index, q_index);
     //B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
     
-    working_params[param_key] = x + h;
-    analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-    B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+    //working_params[param_key] = x + h;
+    //analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+    //B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
     //TODO: include the NLG bispectrum
-    //cout << l1 << " " << l2 << " " << l3 << " " <<*Pk_index<< " " << *Tb_index << " " <<  *q_index <<endl;
+    //cout << l1 << " " << l2 << " " << l3 << " " <<*Pk_index<< " " << 
+    //*Tb_index << " " <<  *q_index <<endl;
     //B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
 
-    working_params[param_key] = x;
-    analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-    B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+    //working_params[param_key] = x;
+    //analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+    //B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
     //B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
     
     //working_params[param_key] = x - 2*h;
@@ -360,8 +391,45 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     //cout << "B = " << B << endl;
     //cout << delta_B << " " << B << endl; 
     // Simple derivative via finite difference
-    return (B1 - B2)/h;// + (B1_NLG - B2_NLG)/h;
     //return (-B1 + 8*B2 - 8*B3 + B4)/(12.0*h); 
+    if (effects == NLG_eff)
+    {
+        working_params[param_key] = x + h;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+        working_params[param_key] = x;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+        
+        return (B1_NLG - B2_NLG)/h;
+
+    }
+    else if (effects == LISW_eff)
+    {
+        working_params[param_key] = x + h;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+        working_params[param_key] = x;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+     
+        return (B1 - B2)/h;
+    }
+    else
+    {
+        working_params[param_key] = x + h;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+        B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+
+        working_params[param_key] = x;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+        B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+
+        return (B1 - B2)/h + (B1_NLG - B2_NLG)/h;
+
+    }
 }
 
 vector<double> Bispectrum_Fisher::set_range(int l, double xmin, double xmax)
@@ -405,7 +473,7 @@ TEST_Bispectrum_Fisher::~TEST_Bispectrum_Fisher()
 
 
 double TEST_Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
-        string param_key1, string param_key2, int *Pk_index, int *Tb_index, int *q_index)
+        string param_key1, string param_key2, int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects)
 {
     // This Wigner Symbol is actually (l1,l2,l3,m1,m2,m3) but we evaluate it at ms = 0 2l+1 times
     double W3J1 = WignerSymbols::wigner3j(l1,l2,l3,0,0,0);
@@ -418,17 +486,17 @@ double TEST_Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,
     }
     else
     {
-        mu_A = calc_mu(l1,l2,l3,nu,param_key1, Pk_index, Tb_index, q_index);
+        mu_A = calc_mu(l1,l2,l3,nu,param_key1, Pk_index, Tb_index, q_index, effects);
         if (param_key1 == param_key2)
             mu_B = mu_A;
         else
-            mu_B = calc_mu(l1,l2,l3,nu,param_key2, Pk_index, Tb_index, q_index);
+            mu_B = calc_mu(l1,l2,l3,nu,param_key2, Pk_index, Tb_index, q_index, effects);
     }
     return mu_A * mu_B;
 }
 
 double TEST_Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string param_key,\
-        int *Pk_index, int *Tb_index, int *q_index)
+        int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects)
 {   
     map<string,double> working_params = fiducial_params;
     double h = this->var_params[param_key];
@@ -447,7 +515,7 @@ double TEST_Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string
 }
 
 double TEST_Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param_key2,\
-        int *Pk_index, int *Tb_index, int *q_index)
+        int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects)
 {
     double res = 0;
     //for all (l1,l2,l3) calc Fisher_element
@@ -478,7 +546,8 @@ double TEST_Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string 
                 }
                 else
                 {  
-                    F = Fisher_element(2,l2,l3,nu,param_key1,param_key2, &Pk_index2, &Tb_index2, &q_index2);
+                    F = Fisher_element(2,l2,l3,nu,param_key1,param_key2,\
+                            &Pk_index2, &Tb_index2, &q_index2, effects);
                     if (F != 0)
                         count++;
                 }
@@ -523,7 +592,7 @@ double TEST_Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string 
                         else
                         {
                             F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
-                                    &Pk_index2, &Tb_index2, &q_index2);
+                                    &Pk_index2, &Tb_index2, &q_index2, effects);
                             if (F != 0)
                                 count2++;
 
