@@ -62,7 +62,5 @@ class TEST_Bispectrum_Fisher : public Bispectrum_Fisher {
                 int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects) override;
         double compute_Fnu(double nu, string param_key1, string param_key2,\
                 int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects) override;
-
-
 };
 

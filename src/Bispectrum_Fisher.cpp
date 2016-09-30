@@ -11,7 +11,7 @@ Bispectrum_Fisher::Bispectrum_Fisher(AnalysisInterface* analysis, Bispectrum_LIS
         vector<string> param_keys_considered, string fisherPath)
 {
     log<LOG_BASIC>("... Beginning Bispectrum_Fisher constructor ...");
-    omp_set_nested(0);
+    omp_set_nested(analysis->model->give_fiducial_params("nested"));
     this->fisherPath = fisherPath;
     model_param_keys = param_keys_considered;
     this->analysis = analysis;
@@ -181,8 +181,8 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     }
 
    
-    int n_threads = 7;
-    int gaps = 4;
+    int n_threads = analysis->model->give_fiducial_params("n_threads_bispectrum");
+    int gaps = analysis->model->give_fiducial_params("gaps_bispectrum");
     int stepsize = gaps + 1;
     int lmodes = ceil((lmax_CLASS-2.0)/(double)stepsize);
     int imax = ceil((double)lmodes/(double)n_threads) * n_threads;
@@ -192,7 +192,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     int modmax = (imax-1)*stepsize;//lmax_CLASS-3;// ceil((lmax_CLASS-2)/n_threads) * n_threads - 1;
     double sum = 0;
     // This will only be used if omp_nested is set to 1 in the constructor above.
-    int n_threads_2 = 8;
+    int n_threads_2 = analysis->model->give_fiducial_params("n_sub_threads");
     log<LOG_VERBOSE>("Entering Parallel regime");
     #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
     {

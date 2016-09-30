@@ -367,6 +367,9 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("limber",0.0)); 
     basicParams.insert(pair<string,double>("n_threads",7));
     basicParams.insert(pair<string,double>("n_points_per_thread",100));
+    basicParams.insert(pair<string,double>("n_threads_bispectrum",7));
+    basicParams.insert(pair<string,double>("nested",0));
+    basicParams.insert(pair<string,double>("n_sub_threads",8));
     // This determines whether alpha, beta and gamma are supposed to be taken 
     // to be constant in the calculation.
     // set to 1 if trying to get table IV.
@@ -385,6 +388,7 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("lmax_Fisher_Bispectrum",100));
     basicParams.insert(pair<string,double>("Bispectrum_numin",500));
     basicParams.insert(pair<string,double>("Bispectrum_numax",800));
+    basicParams.insert(pair<string,double>("gaps_bispectrum",0));
 }
 
 /////////////////////////////
