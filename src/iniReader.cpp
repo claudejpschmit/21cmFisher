@@ -73,9 +73,20 @@ void IniReader::cpToOutput()
     boost::filesystem::path p1(outpath_mat.str());
     if (!exists(p1))
         boost::filesystem::copy(filepath, p1);
+    else
+    {
+        boost::filesystem::remove(p1);
+        boost::filesystem::copy(filepath, p1);
+    }
     boost::filesystem::path p2(outpath_fish.str());
     if (!exists(p2))
         boost::filesystem::copy(filepath, p2);
+    else
+    {
+        boost::filesystem::remove(p2);
+        boost::filesystem::copy(filepath, p2);
+    }
+
 }
 
 vector<ModelAnalysis> IniReader::determineMA()
