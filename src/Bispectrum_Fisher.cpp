@@ -214,33 +214,33 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                 log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
                 #pragma omp parallel num_threads(n_threads_2) private(Pk_index2, Tb_index2, q_index2)
                 {
-                #pragma omp for reduction (+:sum)
-                for (int l2 = lmin; l2 <= l1; l2++)
-                {
-                    for (int l3 = 0; l3 <= l1; l3++)
+                    #pragma omp for reduction (+:sum)
+                    for (int l2 = lmin; l2 <= l1; l2++)
                     {
-                        double F = 0;
-                        if (l3 >= (l1-l2) and l3 <= l2)
-                        {   
+                        for (int l3 = 0; l3 <= l1; l3++)
+                        {
+                            double F = 0;
+                            if (l3 >= (l1-l2) and l3 <= l2)
+                            {   
                         
-                            if (l1 == l2 and l3 == 0)
-                            {
-                                F = 0;
+                                if (l1 == l2 and l3 == 0)
+                                {
+                                    F = 0;
+                                }
+                                else
+                                {
+                                    F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
+                                        &Pk_index2, &Tb_index2, &q_index2, effects);
+                                }
                             }
                             else
                             {
-                                F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
-                                    &Pk_index2, &Tb_index2, &q_index2, effects);
+                                //enter 0
+                                F = 0;
                             }
+                            sum += (2.0 * l1 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * stepsize * F;
                         }
-                        else
-                        {
-                            //enter 0
-                            F = 0;
-                        }
-                        sum += (2.0 * l1 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * stepsize * F;
                     }
-                }
                 }
             }
             else
@@ -348,7 +348,8 @@ double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
 
 double Bispectrum_Fisher::Cl(int l, double nu)
 {
-    return analysis->Cl(l,nu,nu,0,0,0);
+    // Noise now included 
+    return analysis->Cl(l,nu,nu,0,0,0) + analysis->Cl_noise(l, nu, nu);
 }
 
 double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string param_key,\
@@ -417,18 +418,25 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     }
     else
     {
-        working_params[param_key] = x + h;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
-        B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+        if (param_key == "lambda_LISW")
+        {
+            double BLISW = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, 0, 0, 0);
+            return BLISW;
+        }
+        else 
+        {
+            working_params[param_key] = x + h;
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+            B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
 
-        working_params[param_key] = x;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
-        B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+            working_params[param_key] = x;
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+            B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
 
-        return (B1 - B2)/h + (B1_NLG - B2_NLG)/h;
-
+            return (B1 - B2)/h + (B1_NLG - B2_NLG)/h;
+        }
     }
 }
 

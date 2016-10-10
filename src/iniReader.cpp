@@ -46,6 +46,7 @@ void IniReader::parse()
     matPath = determineMatrixPath();
     fishPath = determineFisherPath();
     verbosity = determineVerbosity();
+    effects = determineBispectrumEffects();
     genOutputFolders();
     cpToOutput();
 }
@@ -73,19 +74,19 @@ void IniReader::cpToOutput()
     boost::filesystem::path p1(outpath_mat.str());
     if (!exists(p1))
         boost::filesystem::copy(filepath, p1);
-    else
-    {
-        boost::filesystem::remove(p1);
-        boost::filesystem::copy(filepath, p1);
-    }
+    //else
+    //{
+    //    boost::filesystem::remove(p1);
+    //    boost::filesystem::copy(filepath, p1);
+    //}
     boost::filesystem::path p2(outpath_fish.str());
     if (!exists(p2))
         boost::filesystem::copy(filepath, p2);
-    else
-    {
-        boost::filesystem::remove(p2);
-        boost::filesystem::copy(filepath, p2);
-    }
+    //else
+    //{
+    //   boost::filesystem::remove(p2);
+    //    boost::filesystem::copy(filepath, p2);
+    //}
 
 }
 
@@ -180,6 +181,11 @@ string IniReader::giveFisherPath()
     return fishPath;
 }
 
+Bispectrum_Effects IniReader::giveBispectrumEffects()
+{
+    return effects;
+}
+
 map<string,double> IniReader::determineRunParams()
 {
     vector<string> keysFound;
@@ -220,6 +226,16 @@ vector<string> IniReader::determineParamKeysToVary()
             stringstream line(iniFileContent[i]);
             line >> a >> b >> value;
             keysFound.push_back(value);
+        }
+        if (iniFileContent[i].find("Bias_included") != string::npos)
+        {
+            string a, b;
+            int value;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> value;
+            if (value == 1)
+                keysFound.push_back("lambda_LISW");
+
         }
     }
     return keysFound;
@@ -400,7 +416,41 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("Bispectrum_numin",500));
     basicParams.insert(pair<string,double>("Bispectrum_numax",800));
     basicParams.insert(pair<string,double>("gaps_bispectrum",0));
+    
+    // LISW Bias Computation
+    basicParams.insert(pair<string,double>("lambda_LISW",1));
+    basicParams.insert(pair<string,double>("Bias_included",0));
 }
+
+Bispectrum_Effects IniReader::determineBispectrumEffects()
+{
+    Bispectrum_Effects effectsFound;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("effects_Bispectrum") != string::npos) 
+        {
+            string a, b, value;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> value;
+            
+            if (value == "LISW_only")
+                effectsFound = LISW_eff;
+            else if (value == "NLG_only")
+                effectsFound = NLG_eff;  
+            else if (value == "ALL")
+                effectsFound = ALL_eff;   
+            else
+            {
+                log<LOG_ERROR>("Parsing ERROR: Bispectrum effects %1% not understood.") % value;
+                log<LOG_ERROR>("               Bispectrum effects assumed to be ALL_eff!");
+                effectsFound = ALL_eff;
+            }
+            break;
+        }
+    }
+    return effectsFound;
+}
+
 
 /////////////////////////////
 // IniReaderAnalysis Class //
@@ -441,6 +491,7 @@ void IniReaderAnalysis::parse()
         priors = determinePriors();
     usePseudoInv = determineUsePseudoInv();
     modeUsed = determineAnalysisMode();
+    bias = determineGiveBias();
 }
 
 bool IniReaderAnalysis::determineEllipsesRequired()
@@ -631,4 +682,25 @@ Mode IniReaderAnalysis::determineAnalysisMode()
 Mode IniReaderAnalysis::giveAnalysisMode()
 {
     return modeUsed;
+}
+
+bool IniReaderAnalysis::giveBias()
+{
+    return bias;
+}
+
+bool IniReaderAnalysis::determineGiveBias()
+{
+    bool result = false;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("give_bias") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> result;
+            break;
+        }
+    }
+    return result;
 }

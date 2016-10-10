@@ -48,6 +48,9 @@ class Analyser {
         
         //Fisher_return_pair build_Fisher_inverse_Santos();
 
+        
+        Fisher_return_pair build_Fisher();
+
         /**
          * Function to draw 1sigma and 2sigma error ellipses on triangular grid
          * against parameter values. The function uses the python script
@@ -90,9 +93,10 @@ class Analyser {
          */
         Ellipse find_error_ellipse(Fisher_return_pair finv, string param1, string param2);
 
+        void getBias();
     private:
         vector<string> params_done;
-        
+
         // local parser
         IniReaderAnalysis* parser;
 };

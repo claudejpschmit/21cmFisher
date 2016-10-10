@@ -13,6 +13,7 @@
 #include <map>
 #include <vector>
 #include "Log.hpp"
+#include "Helper.hpp"
 
 using namespace std;
 
@@ -99,6 +100,11 @@ class IniReader
          */
         string giveFisherPath();
 
+        /**
+         * Gives the Bispectrum effects used
+         */
+        Bispectrum_Effects giveBispectrumEffects();
+
     protected:
         /**
          * Sets default parameters, independent of .ini file.
@@ -160,6 +166,11 @@ class IniReader
          * Uses iniFileContent to determine the output path for the Fisher elements.
          */
         string determineFisherPath();
+
+        /**
+         * Uses iniFileContent to determine the Bispectrum effects that are used.
+         */
+        Bispectrum_Effects determineBispectrumEffects();
             
         // Note: keys - parameter keys to be varied
         //       paramNames - names of the parameters in outputParams.
@@ -167,6 +178,7 @@ class IniReader
         map<string,double> basicParams, outputParams;
         vector<ModelAnalysis> MA;
         log_level_t verbosity;
+        Bispectrum_Effects effects;
         string matPath, fishPath;
         string iniFilename;
 };
@@ -231,6 +243,11 @@ class IniReaderAnalysis : public IniReader
          */
         Mode giveAnalysisMode();
 
+        /**
+         * Function returns whether biasing should be computed
+         */
+        bool giveBias();
+
     private:
         
         /**
@@ -278,9 +295,11 @@ class IniReaderAnalysis : public IniReader
          */
         Mode determineAnalysisMode();
 
+        bool determineGiveBias();
+
         /////////// Parameters
         bool ellipsesRequired, showMatrix, showInverse, usePriors, usePseudoInv,\
-            useInterpolation;
+            useInterpolation, bias;
         Mode modeUsed;
         map<string,double> priors;  
 };

@@ -44,8 +44,13 @@ int main(int argc, char* argv[])
     
     finv = analyse.build_Fisher_inverse();
     
+    
     if (argc < 3)
     {
+        if (parser.giveBias())
+        {
+            analyse.getBias();
+        }
         if (parser.giveEllipsesRequired())
             analyse.draw_error_ellipses(finv);
     }

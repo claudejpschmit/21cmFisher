@@ -274,6 +274,9 @@ void CosmoBasis::check_params()
     this->fiducial_params.insert(pair<string,double>("gamma",-3.13));
     this->fiducial_params.insert(pair<string,double>("RLy",100));
     this->fiducial_params.insert(pair<string,double>("Santos_interval_size", 5));
+    
+    //Bispectrum
+    this->fiducial_params.insert(pair<string,double>("lambda_LISW", 1));
 }
 
 double CosmoBasis::E(double z)

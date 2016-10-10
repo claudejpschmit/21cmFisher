@@ -14,11 +14,6 @@ using namespace alglib;
 using namespace arma;
 using namespace std;
 
-enum Bispectrum_Effects {
-    NLG_eff,
-    LISW_eff,
-    ALL_eff
-};
 
 class Bispectrum_Fisher {
     public:

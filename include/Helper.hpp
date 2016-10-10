@@ -120,3 +120,12 @@ struct Theta {
     spline1dinterpolant interpolator;
 };
 
+/**
+ *
+ */
+enum Bispectrum_Effects {
+    NLG_eff,
+    LISW_eff,
+    ALL_eff
+};
+
