@@ -961,7 +961,6 @@ Fisher_return_pair Analyser::build_Fisher()
     return RESULT;
 }
 
-
 Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, string param2)
 {
     int index1, index2;
@@ -1026,7 +1025,7 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
     // Using the stored ini file to get basic parameter information.
     // This is necessary to get center points.
     stringstream tmp;
-    tmp << parser->giveFisherPath() << "/PARAMS.INI.dat"; 
+    tmp << parser->giveFisherPath() << "/PARAMS.INI.dat";
     string runIniFile = tmp.str();
     IniReader RunParser(runIniFile);
     ellipse.cx = RunParser.giveRunParams()[param1];

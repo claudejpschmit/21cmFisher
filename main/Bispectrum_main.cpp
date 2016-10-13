@@ -24,7 +24,7 @@ log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
 int main(int argc, char* argv[])
 {
-    string iniFilename;
+    string iniFilename = "";
     if (argc < 2)
     {
         log<LOG_ERROR>("--- No .ini file provided. Standard ./params.ini is used. ---");
@@ -48,7 +48,7 @@ int main(int argc, char* argv[])
     /*
      * Defining analysis methods according to the .ini file.
      */
-    ModelInterface* model; 
+    ModelInterface* model = NULL; 
     switch (parser.giveModelAndAnalysis()[0])
     {
         case santos:
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
             ERROR = true;
             break;
     }
-    AnalysisInterface* analysis;
+    AnalysisInterface* analysis = NULL;
     switch (parser.giveModelAndAnalysis()[1])
     {
         case cosmo3D:
@@ -100,17 +100,14 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        Bispectrum* NLG;
-        NLG = new Bispectrum(analysis);
-        
-        Bispectrum_LISW* LISW;
-        LISW = new Bispectrum_LISW(analysis, keys.size());
+        Bispectrum* NLG = new Bispectrum(analysis);
+        Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
         
         Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
         double nu_min = 650;
         //nu_max = 790, so between z = 0.8 and z = 1.2
         double nu_stepsize = 10;
-        int n_points_per_thread = 2;
+        int n_points_per_thread = 5;
         int n_threads = 1;
         
         Bispectrum_Effects effects = parser.giveBispectrumEffects();
@@ -118,9 +115,9 @@ int main(int argc, char* argv[])
         //NLG->calc_angular_B(2,2,2,0,0,0,1.0,0,0,0); 
         delete NLG;
         delete LISW;
-        
-        delete model;
-        delete analysis;
     }
-        return 0;
+    delete model;
+    delete analysis;
+
+    return 0;
 }

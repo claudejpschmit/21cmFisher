@@ -41,12 +41,12 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
 {
     int nu_steps = n_points_per_thread * n_threads;
     //string filename_prefix = update_runinfo(lmin, lmax, lstepsize, xstepsize);
-    stringstream filename;
-    string slash;
+    string slash = "";
     if (fisherPath.back() == '/')
         slash = "";
     else
         slash = "/";
+    stringstream filename;
     filename << fisherPath << slash << "Fl_";
     string filename_prefix = filename.str();
 
@@ -95,13 +95,13 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
                 #pragma omp for reduction (+:sum)
                 for (int k = 1; k <= nu_steps; ++k) {
                     // note: k has nothing to do with scale here, just an index!
-                    int m;
+                    int m = 0;
                     if (k == nu_steps)
                         m = nu_steps;
                     else
                         m = ((k-1)*n_threads) % (nu_steps - 1) + 1;
                     int nu = nu_min + m * nu_stepsize;
-                    stringstream ss, ss2;
+                    stringstream ss;
                     ss << "Computation of F_nu starts for nu = " << nu << "\n";
                     log<LOG_VERBOSE>("%1%") % ss.str().c_str();
                     double fnu = compute_Fnu(nu, param_key1, param_key2,\
@@ -111,6 +111,7 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
                     output(k-1, 0) = nu;
                     output(k-1, 1) = fnu;
 
+                    stringstream ss2;
                     ss2 << "fnu with nu = " << nu << " is: " << fnu << "\n";
                     log<LOG_VERBOSE>("%1%") % ss2.str().c_str();
                     sum += fnu;
@@ -179,7 +180,6 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             res += (2.0 * 2 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * F;
         }
     }
-
    
     int n_threads = analysis->model->give_fiducial_params("n_threads_bispectrum");
     int gaps = analysis->model->give_fiducial_params("gaps_bispectrum");
@@ -192,7 +192,8 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     int modmax = (imax-1)*stepsize;//lmax_CLASS-3;// ceil((lmax_CLASS-2)/n_threads) * n_threads - 1;
     double sum = 0;
     // This will only be used if omp_nested is set to 1 in the constructor above.
-    int n_threads_2 = analysis->model->give_fiducial_params("n_sub_threads");
+    int n_threads_2 = analysis->model->give_fiducial_params("sub_threads");
+    cout << "sub_threads = " << n_threads_2 << endl;
     log<LOG_VERBOSE>("Entering Parallel regime");
     #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
     {
@@ -303,6 +304,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     return res;
 }
 */
+
 double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
         string param_key1, string param_key2, int *Pk_index, int *Tb_index, int *q_index,\
         Bispectrum_Effects effects)
@@ -311,7 +313,7 @@ double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
     double Cl1 = Cl(l1,nu);
     double Cl2 = Cl(l2,nu);
     double Cl3 = Cl(l3,nu);
-    double delta_lll;
+    double delta_lll = 0;
     if (l1 == l2 and l1 == l3)
     {   
         delta_lll = 6.0;
@@ -328,8 +330,8 @@ double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
 
     // This Wigner Symbol is actually (l1,l2,l3,m1,m2,m3) but we evaluate it at ms = 0 2l+1 times
     double W3J1 = WignerSymbols::wigner3j(l1,l2,l3,0,0,0);
-    double mu_A; 
-    double mu_B;
+    double mu_A = 0; 
+    double mu_B = 0;
     if (W3J1 == 0)
     {
         mu_A = 0;
@@ -348,8 +350,11 @@ double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
 
 double Bispectrum_Fisher::Cl(int l, double nu)
 {
-    // Noise now included 
-    return analysis->Cl(l,nu,nu,0,0,0) + analysis->Cl_noise(l, nu, nu);
+    // Noise now included
+    double cl = analysis->Cl(l,nu,nu,0,0,0);
+    double noise = analysis->Cl_noise(l, nu, nu);
+    //cout << cl << " --- " << noise << endl; 
+    return cl;//+noise;
 }
 
 double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string param_key,\
@@ -367,7 +372,10 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     //  mat f4matrix = randu<mat>(range.size(),range.size());
     
     // 5-point stencil derivative:
-    double B1, B2, B1_NLG, B2_NLG;
+    double B1 = 0;
+    double B2 = 0;
+    double B1_NLG = 0;
+    double B2_NLG = 0;
     
     //working_params[param_key] = x + 2*h;
     //analysis->model->update(working_params, Pk_index, Tb_index, q_index);
@@ -402,6 +410,8 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
         analysis->model->update(working_params, Pk_index, Tb_index, q_index);
         B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
         
+        //cout << B1_NLG << endl;
+        //cout << B2_NLG << endl;
         return (B1_NLG - B2_NLG)/h;
 
     }
@@ -485,8 +495,8 @@ double TEST_Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,
 {
     // This Wigner Symbol is actually (l1,l2,l3,m1,m2,m3) but we evaluate it at ms = 0 2l+1 times
     double W3J1 = WignerSymbols::wigner3j(l1,l2,l3,0,0,0);
-    double mu_A; 
-    double mu_B;
+    double mu_A = 0; 
+    double mu_B = 0;
     if (W3J1 == 0)
     {
         mu_A = 0;
@@ -510,7 +520,8 @@ double TEST_Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string
     double h = this->var_params[param_key];
     double x = working_params[param_key];
     double z = 1420.4/nu -1;
-    double B1, B2;
+    double B1 = 0;
+    double B2 = 0;
     
     working_params[param_key] = x + h;
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);
@@ -601,8 +612,9 @@ double TEST_Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string 
                         {
                             F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
                                     &Pk_index2, &Tb_index2, &q_index2, effects);
-                            if (F != 0)
+                            if (F != 0){
                                 count2++;
+                            }
 
                         }
                     }

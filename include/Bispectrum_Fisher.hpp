@@ -38,7 +38,6 @@ class Bispectrum_Fisher {
         Bispectrum_LISW* LISW;
         Bispectrum* NLG;
         
-        int lmax_CLASS;
         vector<string> model_param_keys;
         string fisherPath;
         map<string,double> fiducial_params, var_params;

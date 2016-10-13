@@ -42,17 +42,19 @@ BOOST_AUTO_TEST_CASE(check_parser)
     ModelAnalysis model_case = parser.giveModelAndAnalysis()[0];
     ModelAnalysis analyse_case = parser.giveModelAndAnalysis()[1];
    
-    vector<string> parameter_keys = {"interp_Cls", "lmax_Fisher_Bispectrum", "Bispectrum_numin",\
+    vector<string> parameter_keys = {"interp_Cls", "lmax_Fisher_Bispectrum", "gaps_bispectrum",\
+                                    "lambda_LISW","Bias_included", "Bispectrum_numin",\
                                     "Bispectrum_numax","ombh2","omch2","omnuh2","omk","hubble","A_s",\
                                     "n_s","sigma8","tau_reio","T_CMB","w_DE","100*theta_s","k_pivot","YHe",\
-                                    "z_pk","omega_lambda","zmin","zmax","zsteps","gamma","beta","alpha",\
+                                    "z_pk","omega_lambda","zmin","zmax","zsteps","zmax_interp","gamma",\
+                                    "beta","alpha",\
                                     "RLy","Santos_const_abg","Santos_interval_size","fstar","fesc",\
                                     "nion","fx","flya","popflag","xrayflag","lyaxrayflag","IM_zlow",\
                                     "IM_zhigh","zbin_size","rsd","limber","noise","Ae","df","Tsys",\
                                     "fcover","lmax_noise","tau_noise","foreground","kmin","kmax","k_stepsize",\
                                     "Pk_steps","lmin","lmax","lstepsize","n_threads","n_points_per_thread",\
-                                    "zmax_interp"};
-
+                                    "n_threads_bispectrum", "nested","sub_threads"};
+                                    
     // Now test IniReaderAnalysis
     string iniFilename2 = "UnitTestData/analysis_check_parser.ini";
     // Initialize inireader.
@@ -77,10 +79,73 @@ BOOST_AUTO_TEST_CASE(check_parser)
     BOOST_CHECK(keys[1] == "omch2");
     BOOST_REQUIRE(parameter_keys.size() == params.size());
    
-    // check if all parameters are equal to 1, as given in the .ini file
-    for (unsigned int i = 0; i < parameter_keys.size();i++)
-        BOOST_CHECK(params[parameter_keys[i]] == 1);
-
+    // check the value of all parameters, as given in the .ini file
+    BOOST_CHECK(params["interp_Cls"] == 1);
+    BOOST_CHECK(params["lmax_Fisher_Bispectrum"] == 2);
+    BOOST_CHECK(params["gaps_bispectrum"] == 3);
+    BOOST_CHECK(params["lambda_LISW"] == 4);
+    BOOST_CHECK(params["Bias_included"] == 5);
+    BOOST_CHECK(params["Bispectrum_numin"] == 6);
+    BOOST_CHECK(params["Bispectrum_numax"] == 7);
+    BOOST_CHECK(params["ombh2"] == 8);
+    BOOST_CHECK(params["omch2"] == 9);
+    BOOST_CHECK(params["omnuh2"] == 10);
+    BOOST_CHECK(params["omk"] == 11);
+    BOOST_CHECK(params["hubble"] == 12);
+    BOOST_CHECK(params["A_s"] == 13);
+    BOOST_CHECK(params["n_s"] == 14);
+    BOOST_CHECK(params["sigma8"] == 15);
+    BOOST_CHECK(params["tau_reio"] == 16);
+    BOOST_CHECK(params["T_CMB"] == 17);
+    BOOST_CHECK(params["w_DE"] == 18);
+    BOOST_CHECK(params["100*theta_s"] == 19);
+    BOOST_CHECK(params["k_pivot"] == 20);
+    BOOST_CHECK(params["YHe"] == 21);
+    BOOST_CHECK(params["z_pk"] == 22);
+    BOOST_CHECK(params["omega_lambda"] == 23);
+    BOOST_CHECK(params["zmin"] == 24);
+    BOOST_CHECK(params["zmax"] == 25);
+    BOOST_CHECK(params["zsteps"] == 26);
+    BOOST_CHECK(params["zmax_interp"] == 27);
+    BOOST_CHECK(params["gamma"] == 28);
+    BOOST_CHECK(params["beta"] == 29);
+    BOOST_CHECK(params["alpha"] == 30);
+    BOOST_CHECK(params["RLy"] == 31);
+    BOOST_CHECK(params["Santos_const_abg"] == 32);
+    BOOST_CHECK(params["Santos_interval_size"] == 33);
+    BOOST_CHECK(params["fstar"] == 34);
+    BOOST_CHECK(params["fesc"] == 35);
+    BOOST_CHECK(params["nion"] == 36);
+    BOOST_CHECK(params["fx"] == 37);
+    BOOST_CHECK(params["flya"] == 38);
+    BOOST_CHECK(params["popflag"] == 39);
+    BOOST_CHECK(params["xrayflag"] == 40);
+    BOOST_CHECK(params["lyaxrayflag"] == 41);
+    BOOST_CHECK(params["IM_zlow"] == 42);
+    BOOST_CHECK(params["IM_zhigh"] == 43);
+    BOOST_CHECK(params["zbin_size"] == 44);
+    BOOST_CHECK(params["rsd"] == 45);
+    BOOST_CHECK(params["limber"] == 46);
+    BOOST_CHECK(params["noise"] == 47);
+    BOOST_CHECK(params["Ae"] == 48);
+    BOOST_CHECK(params["df"] == 49);
+    BOOST_CHECK(params["Tsys"] == 50);
+    BOOST_CHECK(params["fcover"] == 51);
+    BOOST_CHECK(params["lmax_noise"] == 52);
+    BOOST_CHECK(params["tau_noise"] == 53);
+    BOOST_CHECK(params["foreground"] == 54);
+    BOOST_CHECK(params["kmin"] == 55);
+    BOOST_CHECK(params["kmax"] == 56);
+    BOOST_CHECK(params["k_stepsize"] == 57);
+    BOOST_CHECK(params["Pk_steps"] == 58);
+    BOOST_CHECK(params["lmin"] == 59);
+    BOOST_CHECK(params["lmax"] == 60);
+    BOOST_CHECK(params["lstepsize"] == 61);
+    BOOST_CHECK(params["n_threads"] == 62);
+    BOOST_CHECK(params["n_points_per_thread"] == 63);
+    BOOST_CHECK(params["n_threads_bispectrum"] == 64);
+    BOOST_CHECK(params["nested"] == 65);
+    BOOST_CHECK(params["sub_threads"] == 66);
     // Analysis Parser
     BOOST_CHECK(EllipseRequired);
     BOOST_CHECK(ShowMatrix);
@@ -211,16 +276,16 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     int Tb_index = 0;
     int q_index = 0; 
     
-    TEST_Model_Intensity_Mapping* model;
+    TEST_Model_Intensity_Mapping* model = NULL;
     model = new TEST_Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
     
-    TEST_IntensityMapping* analysis;
+    TEST_IntensityMapping* analysis = NULL;
     analysis = new TEST_IntensityMapping(model, keys.size());
     
-    Bispectrum* NLG;
+    Bispectrum* NLG = NULL;
     NLG = new Bispectrum(analysis);
         
-    Bispectrum_LISW* LISW;
+    Bispectrum_LISW* LISW = NULL;
     LISW = new Bispectrum_LISW(analysis, keys.size());
 
     Bispectrum_Effects effects = ALL_eff;

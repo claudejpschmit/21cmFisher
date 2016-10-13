@@ -34,8 +34,8 @@ CUBAFLAGS = -lcuba
 # added to the compilation of the files containing boost->sph_bess(l,x).
 OPTFLAG_CLASS = -ffast-math
 OMPFLAG = -fopenmp
-CCFLAG = -g -fPIC
-LDFLAG = -g -fPIC
+CCFLAG = -fPIC -g
+LDFLAG = -fPIC -g
 
 # Header files for local libraries
 INCLUDES = -I../include

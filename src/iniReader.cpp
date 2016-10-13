@@ -87,7 +87,6 @@ void IniReader::cpToOutput()
     //   boost::filesystem::remove(p2);
     //    boost::filesystem::copy(filepath, p2);
     //}
-
 }
 
 vector<ModelAnalysis> IniReader::determineMA()
@@ -98,7 +97,7 @@ vector<ModelAnalysis> IniReader::determineMA()
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
         
-        if (iniFileContent[i].find("model") != string::npos) 
+        if (iniFileContent[i].find("-model") != string::npos) 
         {
             string a, b, value;
             stringstream line(iniFileContent[i]);
@@ -122,7 +121,7 @@ vector<ModelAnalysis> IniReader::determineMA()
                 break;
         }
         
-        if (iniFileContent[i].find("analysis") != string::npos) 
+        if (iniFileContent[i].find("-analysis") != string::npos) 
         {
             string a, b, value;
             stringstream line(iniFileContent[i]);
@@ -194,7 +193,7 @@ map<string,double> IniReader::determineRunParams()
     {
         for (unsigned int j = 0; j < paramNames.size(); j++)
         {
-            if (iniFileContent[i].find(paramNames[j]) != string::npos) 
+            if (iniFileContent[i].find("-"+paramNames[j] + " =") != string::npos) 
             {
                 string a, b;
                 double value;
@@ -220,14 +219,14 @@ vector<string> IniReader::determineParamKeysToVary()
     vector<string> keysFound;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("param_key_") != string::npos) 
+        if (iniFileContent[i].find("-param_key_") != string::npos) 
         {
             string a, b, value;
             stringstream line(iniFileContent[i]);
             line >> a >> b >> value;
             keysFound.push_back(value);
         }
-        if (iniFileContent[i].find("Bias_included") != string::npos)
+        if (iniFileContent[i].find("-Bias_included") != string::npos)
         {
             string a, b;
             int value;
@@ -246,7 +245,7 @@ log_level_t IniReader::determineVerbosity()
     log_level_t verboFound;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("verbosity") != string::npos) 
+        if (iniFileContent[i].find("-verbosity") != string::npos) 
         {
             string a, b, value;
             stringstream line(iniFileContent[i]);
@@ -300,7 +299,7 @@ string IniReader::determineMatrixPath()
     string value;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("path_matrices_Cl") != string::npos) 
+        if (iniFileContent[i].find("-path_matrices_Cl") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);
@@ -316,7 +315,7 @@ string IniReader::determineFisherPath()
     string value;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("path_fisher") != string::npos) 
+        if (iniFileContent[i].find("-path_fisher") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);
@@ -396,7 +395,7 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("n_points_per_thread",100));
     basicParams.insert(pair<string,double>("n_threads_bispectrum",7));
     basicParams.insert(pair<string,double>("nested",0));
-    basicParams.insert(pair<string,double>("n_sub_threads",8));
+    basicParams.insert(pair<string,double>("sub_threads",8));
     // This determines whether alpha, beta and gamma are supposed to be taken 
     // to be constant in the calculation.
     // set to 1 if trying to get table IV.
@@ -427,7 +426,7 @@ Bispectrum_Effects IniReader::determineBispectrumEffects()
     Bispectrum_Effects effectsFound;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("effects_Bispectrum") != string::npos) 
+        if (iniFileContent[i].find("-effects_Bispectrum") != string::npos) 
         {
             string a, b, value;
             stringstream line(iniFileContent[i]);
@@ -499,7 +498,7 @@ bool IniReaderAnalysis::determineEllipsesRequired()
     bool result = false;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("ellipses") != string::npos) 
+        if (iniFileContent[i].find("-ellipses") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);
@@ -520,7 +519,7 @@ bool IniReaderAnalysis::determineShowMatrix()
     bool result = false;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("show_matrix") != string::npos) 
+        if (iniFileContent[i].find("-show_matrix") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);
@@ -541,7 +540,7 @@ bool IniReaderAnalysis::determineShowInverse()
     bool result = false;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("show_inverse") != string::npos) 
+        if (iniFileContent[i].find("-show_inverse") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);
@@ -562,7 +561,7 @@ bool IniReaderAnalysis::determineUsePriors()
     bool result = false;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("use_priors") != string::npos) 
+        if (iniFileContent[i].find("-use_priors") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);
@@ -585,7 +584,7 @@ map<string,double> IniReaderAnalysis::determinePriors()
     vector<double> vals;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("prior_key_") != string::npos) 
+        if (iniFileContent[i].find("-prior_key_") != string::npos) 
         {
             string a, b, key;
             stringstream line(iniFileContent[i]);
@@ -593,7 +592,7 @@ map<string,double> IniReaderAnalysis::determinePriors()
             keys.push_back(key);
         }
         
-        if (iniFileContent[i].find("prior_value_") != string::npos) 
+        if (iniFileContent[i].find("-prior_value_") != string::npos) 
         {
             string a, b;
             double value;
@@ -618,7 +617,7 @@ bool IniReaderAnalysis::determineUsePseudoInv()
     bool result = false;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("pseudo_inverse") != string::npos) 
+        if (iniFileContent[i].find("-pseudo_inverse") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);
@@ -639,7 +638,7 @@ bool IniReaderAnalysis::determineUseInterpolation()
     bool result = false;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("use_interpolation") != string::npos) 
+        if (iniFileContent[i].find("-use_interpolation") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);
@@ -660,7 +659,7 @@ Mode IniReaderAnalysis::determineAnalysisMode()
     Mode result = error_m;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("mode") != string::npos) 
+        if (iniFileContent[i].find("-mode") != string::npos) 
         {
             string a, b, c;
             stringstream line(iniFileContent[i]);
@@ -694,7 +693,7 @@ bool IniReaderAnalysis::determineGiveBias()
     bool result = false;
     for (unsigned int i = 0; i < iniFileContent.size(); i++)
     {
-        if (iniFileContent[i].find("give_bias") != string::npos) 
+        if (iniFileContent[i].find("-give_bias") != string::npos) 
         {
             string a, b;
             stringstream line(iniFileContent[i]);

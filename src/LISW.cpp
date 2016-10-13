@@ -738,9 +738,9 @@ double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, dou
             Q6 = Q3;
             double Cl1,Cl2,Cl3;
             // Noise now included
-            Cl1 = Cl(l1, nu1, nu1, Pk_index, Tb_index, q_index) + Cl_noise(l1, nu1, nu1);
-            Cl2 = Cl(l2, nu1, nu1, Pk_index, Tb_index, q_index) + Cl_noise(l2, nu1, nu1);
-            Cl3 = Cl(l3, nu1, nu1, Pk_index, Tb_index, q_index) + Cl_noise(l3, nu1, nu1);
+            Cl1 = Cl(l1, nu1, nu1, Pk_index, Tb_index, q_index);// + Cl_noise(l1, nu1, nu1);
+            Cl2 = Cl(l2, nu1, nu1, Pk_index, Tb_index, q_index);// + Cl_noise(l2, nu1, nu1);
+            Cl3 = Cl(l3, nu1, nu1, Pk_index, Tb_index, q_index);// + Cl_noise(l3, nu1, nu1);
 
             term1 = Cl2 * Q1; 
             term2 = Cl3 * Q2; 

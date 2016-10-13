@@ -184,19 +184,19 @@ double IntensityMapping::calc_Cl(int l, double nu1, double nu2,\
     //This determines the lower bound of the kappa integral
     double k_low = model->give_fiducial_params("kmin");
     double k_high = model->give_fiducial_params("kmax");
-    double low;
+    double low = 0;
     if (l < 50){
         low = k_low;
     } else if (l < 1000){
-        low = (double)l/(1.2*10000);
+        low = (double)l/(1.2*10000.0);
     } else {
-        low = (double)l/(10000);
+        low = (double)l/(10000.0);
     }
 
     double z1 = 1420.0/nu1 - 1.0;
     double z2 = 1420.0/nu2 - 1.0;
     
-    double lower_kappa_bound;// = k_low;
+    double lower_kappa_bound = 0;// = k_low;
     
     if (z1 < 2 or z2 < 2)
     {
@@ -278,7 +278,6 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
         return calc_Cl(l, nu1, nu2, Pk_index, Tb_index, q_index);
     }
 }
-
 
 double IntensityMapping::I(int l, double k, double nu_0)
 {

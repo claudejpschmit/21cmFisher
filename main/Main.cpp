@@ -116,17 +116,17 @@ int main (int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        ofstream file("Cl_800_IM_2.dat");
-        ofstream file2("Cl_900_IM_2.dat");
-        ofstream file3("Cl_1000_IM_2.dat");
-        ofstream file4("Cl_1100_IM_2.dat");
-        ofstream file5("Cl_1200_IM_2.dat");
-        ofstream file6("Cl_1300_IM_2.dat");
-        ofstream file8("Cl_300_IM_2.dat");
-        ofstream file9("Cl_400_IM_2.dat");
-        ofstream file10("Cl_500_IM_2.dat");
-        ofstream file11("Cl_600_IM_2.dat");
-        ofstream file12("Cl_700_IM_2.dat");
+        ofstream file("Cl_800_IM_3.dat");
+        ofstream file2("Cl_900_IM_3.dat");
+        ofstream file3("Cl_1000_IM_3.dat");
+        ofstream file4("Cl_1100_IM_3.dat");
+        ofstream file5("Cl_1200_IM_3.dat");
+        ofstream file6("Cl_1300_IM_3.dat");
+        ofstream file8("Cl_300_IM_3.dat");
+        ofstream file9("Cl_400_IM_3.dat");
+        ofstream file10("Cl_500_IM_3.dat");
+        ofstream file11("Cl_600_IM_3.dat");
+        ofstream file12("Cl_700_IM_3.dat");
 
         for (int i = 1; i < 100; i++)
         {
