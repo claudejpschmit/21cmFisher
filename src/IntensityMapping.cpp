@@ -9,7 +9,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model)
     
     log<LOG_DEBUG>("-> You better be using camb_ares_2D or camb_ares as your model!");
     analysisID = "IntensityMapping_analysis";
-    Cls_interpolators_large = NULL;
+    //Cls_interpolators_large = NULL;
     if (model->give_fiducial_params("interp_Cls") == 0)
         this->interpolating = false;
     else
@@ -53,35 +53,104 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
     
     if (interpolating)
     {
-                
         this->num_params = num_params;
         // num_deriv is the number of non_fiducial points calculated for the fisher derivative.
         // 1 for normal derivative,
         // 4 for 5 point stencil.
         int num_deriv = 1;
         int num_indecies = num_params * num_deriv + 1;
-
-        boost::array<Interpol_Array::index,4> dims = {{lmax_CLASS+1,num_indecies,\
+        //boost::array<Interpol_Array::index,4> dims = {{lmax_CLASS+1,num_indecies,\
             num_indecies,num_indecies}};
-        Cls_interpolators_large = new boost::multi_array<Interpol,4>(dims);
+        //boost::multi_array<Interpol,4> arr(dims);
+        //Cls_interpolators_large = new boost::multi_array<Interpol,4>(dims);
         for (int l = 0; l < lmax_CLASS+1; l++)
         {
+            vector<vector<vector<Interpol>>> subvec3;
+            //Cls_interpolators_large2[l].resize(num_indecies);
+            for (int i = 0; i < num_indecies; i++)
+            {
+                //Cls_interpolators_large2[l][i].resize(num_indecies);
+                vector<vector<Interpol>> subvec2;
+                for (int j = 0; j < num_indecies; j++)
+                {
+                    //Cls_interpolators_large2[l][i][j].resize(num_indecies);
+                    vector<Interpol> subvec1;
+                    for (int k = 0; k < num_indecies; k++)
+                    {    
+                        Interpol I;
+                        real_1d_array x;                        
+                        real_1d_array y;
+                        x.setlength(2);
+                        y.setlength(2);
+                        x[0] = 0;
+                        x[1] = 1;
+                        y[0] = 0;
+                        y[1] = 1;
+                        spline1dinterpolant interpol;
+                        spline1dbuildlinear(x, y, 2, interpol);
+                        I.computed = false;
+                        I.interpolator = interpol;
+                        //(*Cls_interpolators_large)[l][i][j][k].computed = false;
+                        subvec1.push_back(I);//Cls_interpolators_large2[l][i][j][k].computed = false;
+                    }
+                    subvec2.push_back(subvec1);
+                }
+                subvec3.push_back(subvec2);
+            }
+            Cls_interpolators_large2.push_back(subvec3);
+        }
+
+        log<LOG_BASIC>("Cls are being interpolated");
+        log<LOG_BASIC>("Parameters are: lmin = %1%, lmax = %2%, nu_min = %3%, nu_max = %4%, nu_steps = %5%.") %\
+            lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
+
+        ////////////////////////////////////////////////////////////////////////////////////
+        /*
+        double nu_stepsize = abs(numax_CLASS-numin_CLASS)/(double)nu_steps_CLASS;
+        
+        #pragma omp parallel for
+        for (int l = lmin_CLASS; l <= lmax_CLASS; l++)
+        {
+            vector<double> vnu, vCl;
+            for (int i = 0; i <= nu_steps_CLASS; i++)
+            {
+                double nu = numin_CLASS + i*nu_stepsize;
+                vCl.push_back(this->calc_Cl(l,nu,nu,0,0,0));
+                vnu.push_back(nu);
+            }
+        
+            real_1d_array nu_arr, Cl_arr;
+            nu_arr.setlength(vnu.size());
+            Cl_arr.setlength(vCl.size());
+
+            for (unsigned int i = 0; i < vnu.size(); i++){
+                nu_arr[i] = vnu[i];
+            }
+            for (unsigned int i = 0; i < vCl.size(); i++){
+                Cl_arr[i] = vCl[i];
+            }
+
+            spline1dinterpolant interpolator;
+            spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
+
+            //(*Cls_interpolators_large)[l][0][0][0].interpolator = interpolator;
+            (*Cls_interpolators_large)[l][0][0][0].computed = true;
+            //cout << "Cl for l = " << l << " is interpolated." << endl;
             for (int i = 0; i < num_indecies; i++)
             {
                 for (int j = 0; j < num_indecies; j++)
                 {
                     for (int k = 0; k < num_indecies; k++)
                     {    
-                        (*Cls_interpolators_large)[l][i][j][k].computed = false;
+                        //(*Cls_interpolators_large)[l][i][j][k].computed = false;
+                        (*Cls_interpolators_large)[l][i][j][k].interpolator = interpolator;
                     }
                 }
             }
+
         }
+        */
 
-
-        log<LOG_BASIC>("Cls are being interpolated");
-        log<LOG_BASIC>("Parameters are: lmin = %1%, lmax = %2%, nu_min = %3%, nu_max = %4%, nu_steps = %5%.") %\
-            lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
         make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS, nu_steps_CLASS,0,0,0);
     }
     else
@@ -93,7 +162,6 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
 
 IntensityMapping::~IntensityMapping()
 {
-    delete Cls_interpolators_large;
 }
 
 void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps)
@@ -131,39 +199,46 @@ void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double
 void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
         int Pk_index, int Tb_index, int q_index)
 {
-    if ((*Cls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
-    {   
-
+    //if ((*Cls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
+    if (Cls_interpolators_large2[lmax][Pk_index][Tb_index][q_index].computed == false)
+    {  
         double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
-        
-        #pragma omp parallel for
-        for (int l = lmin; l <= lmax; l++)
+       
+        // CAUTION: This causes a possible memory leak in Valgrind.
+        #pragma omp parallel num_threads(6) 
         {
-            vector<double> vnu, vCl;
-            for (int i = 0; i <= nu_steps; i++)
+            #pragma omp for
+            for (int l = lmin; l <= lmax; l++)
             {
-                double nu = nu_min + i*nu_stepsize;
-                vCl.push_back(this->calc_Cl(l,nu,nu,0,0,0));
-                vnu.push_back(nu);
-            }
+                vector<double> vnu, vCl;
+                for (int i = 0; i <= nu_steps; i++)
+                {
+                    double nu = nu_min + i*nu_stepsize;
+                    vCl.push_back(this->calc_Cl(l,nu,nu,0,0,0));
+                    vnu.push_back(nu);
+                }
         
-            real_1d_array nu_arr, Cl_arr;
-            nu_arr.setlength(vnu.size());
-            Cl_arr.setlength(vCl.size());
+                real_1d_array nu_arr, Cl_arr;
+                nu_arr.setlength(vnu.size());
+                Cl_arr.setlength(vCl.size());
 
-            for (unsigned int i = 0; i < vnu.size(); i++){
-                nu_arr[i] = vnu[i];
+                for (unsigned int i = 0; i < vnu.size(); i++){
+                    nu_arr[i] = vnu[i];
+                }
+                for (unsigned int i = 0; i < vCl.size(); i++){
+                    Cl_arr[i] = vCl[i];
+                }
+
+                spline1dinterpolant interpolator;
+                spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
+            
+                Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].interpolator = interpolator;
+                Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].computed = true;
+
+                //(*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator = &interpolator;
+                //(*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed = true;
+                //cout << "Cl for l = " << l << " is interpolated." << endl;
             }
-            for (unsigned int i = 0; i < vCl.size(); i++){
-                Cl_arr[i] = vCl[i];
-            }
-
-            spline1dinterpolant interpolator;
-            spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
-
-            (*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator = interpolator;
-            (*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed = true;
-            //cout << "Cl for l = " << l << " is interpolated." << endl;
         }
     }
 }
@@ -175,7 +250,13 @@ double IntensityMapping::Cl_interp(int l,double nu1)
 
 double IntensityMapping::Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index)
 {
-    return spline1dcalc((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator, nu1);
+    if (nu1 <= numax_CLASS && nu1 >= numin_CLASS)
+        //spline1dcalc((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator, nu1);
+        return spline1dcalc(Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].interpolator, nu1);
+    else{
+        cout << "INTERPOLATION ERROR MUST HAVE OCURRED" << endl;
+        return 0;
+    }
 }
 
 double IntensityMapping::calc_Cl(int l, double nu1, double nu2,\
@@ -259,10 +340,12 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
 {
     if (interpolating && interpolate_large)
     {
-        if ((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed == false)
+        //if ((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed == false)
+        
+        if (Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].computed == false)
             make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS,\
                     nu_steps_CLASS, Pk_index, Tb_index, q_index);
-
+       
         // The make_... function doesn't do anything if the interpolator already exists, 
         // so this should be fine.
         //make_Ql_interps(lmax_CLASS,numin_CLASS,numax_CLASS,Pk_index,Tb_index,q_index);

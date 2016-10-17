@@ -68,9 +68,9 @@ class Bispectrum_LISW {
             bool computed;
             spline1dinterpolant interpolator;
         };
-        typedef boost::multi_array<Interpol,4> Interpol_Array;
+        //typedef boost::multi_array<Interpol,4> Interpol_Array;
         //boost::array<Interpol_Array::index,4> shape = {{1,1,1,1}};
-        Interpol_Array* Qls_interpolators_large;
+        vector<vector<vector<vector<Interpol>>>> Qls_interpolators_large;
         double numin_CLASS, numax_CLASS;
         int lmax_CLASS;
 };

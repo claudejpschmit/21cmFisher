@@ -11,7 +11,7 @@ class CosmoBasis {
 
     public:
         CosmoBasis(map<string, double> params);
-        ~CosmoBasis();
+        virtual ~CosmoBasis();
 
         void generate_params(map<string,double> params);
         void show_params(map<string, double> params);

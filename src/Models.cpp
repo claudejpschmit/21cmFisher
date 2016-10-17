@@ -205,6 +205,8 @@ Model_CAMB_ARES::Model_CAMB_ARES(map<string,double> params, int *Pk_index, int *
 
     log<LOG_BASIC>("... precalculating 21cm interface ...");
     log<LOG_BASIC>("...  -> ARES for 21cm signal ...");
+    //AresInterface I;
+    //ARES = &I;
     ARES = new AresInterface();
     update_T21(fiducial_params, Tb_index);
 
@@ -895,7 +897,9 @@ Model_Santos2006::Model_Santos2006(map<string, double> params,\
 }
 
 Model_Santos2006::~Model_Santos2006()
-{}
+{
+    delete CAMB;
+}
 
 void Model_Santos2006::update_Pkz(map<string,double> params, int *Pk_index)
 {
@@ -1377,7 +1381,10 @@ Model_Santos_ARES::Model_Santos_ARES(map<string, double> params,\
 }
 
 Model_Santos_ARES::~Model_Santos_ARES()
-{}
+{ 
+    delete CAMB;
+    delete ARES;
+}
 
 void Model_Santos_ARES::update_Pkz(map<string,double> params, int *Pk_index)
 {
@@ -1858,7 +1865,9 @@ Model_Intensity_Mapping::Model_Intensity_Mapping(map<string, double> params,\
 }
 
 Model_Intensity_Mapping::~Model_Intensity_Mapping()
-{}
+{
+    delete CAMB;
+}
 
 void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_index)
 {
@@ -2372,7 +2381,6 @@ void Model_Intensity_Mapping::update_hmf(map<string,double> params)
 double Model_Intensity_Mapping::interp_dndm(double M, double z)
 {
     return spline2dcalc(interpolator_hmf, M, z); 
-   
 }
 
 /**     TESTCLASSES     **/

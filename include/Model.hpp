@@ -35,7 +35,6 @@ class ModelInterface : public CosmoBasis {
         virtual void update_q(map<string,double> params, int *q_index);
         
         string modelID;
-
 };
 
 

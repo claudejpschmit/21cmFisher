@@ -4,7 +4,7 @@
 
 class AnalysisInterface {
     public:
-        ~AnalysisInterface();
+        virtual ~AnalysisInterface();
         // So here, the x1 and x2 can correspont to any 3D parametrization, 
         //  be it k's or f's or z's or whatever.
         //  The Fisher Method will worry about how to use that.
@@ -31,7 +31,7 @@ class AnalysisInterface {
 class Cosmology3D : public AnalysisInterface {
     public:
         Cosmology3D(ModelInterface* model);
-
+      
         double Cl(int l, double k1, double k2,\
                 int Pk_index, int Tb_index, int q_index);
         double Cl_noise(int l, double k1, double k2);
@@ -134,9 +134,11 @@ class IntensityMapping : public AnalysisInterface {
             spline1dinterpolant interpolator;
         };
 
-        typedef boost::multi_array<Interpol,4> Interpol_Array;
+        //typedef boost::multi_array<Interpol,4> Interpol_Array;
         //boost::array<Interpol_Array::index,4> shape = {{1,1,1,1}};
-        Interpol_Array* Cls_interpolators_large;
+        //Interpol_Array* Cls_interpolators_large;
+       
+        vector<vector<vector<vector<Interpol>>>> Cls_interpolators_large2;
         int num_params;
         int lmax_CLASS,lmin_CLASS, nu_steps_CLASS;
         double numax_CLASS,numin_CLASS;

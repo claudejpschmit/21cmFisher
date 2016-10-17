@@ -22,7 +22,7 @@ vpath .base build
 
 # Compiler required for c++ code.
 # including -ffast-math may not be as bad as anticipated.
-CXX = g++ -Wall -std=c++11 -ffast-math -s -Wno-deprecated -fopenmp 
+CXX = g++ -Wall -std=c++11 -ffast-math -s -Wno-deprecated -fopenmp -g
 
 OPTFLAG = -O4
 ARMAFLAGS = -larmadillo
@@ -34,8 +34,8 @@ CUBAFLAGS = -lcuba
 # added to the compilation of the files containing boost->sph_bess(l,x).
 OPTFLAG_CLASS = -ffast-math
 OMPFLAG = -fopenmp
-CCFLAG = -fPIC -g
-LDFLAG = -fPIC -g
+CCFLAG = -fPIC #-g
+LDFLAG = -fPIC #-g
 
 # Header files for local libraries
 INCLUDES = -I../include

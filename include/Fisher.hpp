@@ -14,7 +14,7 @@ using namespace std;
 
 class FisherInterface {
     public:
-        ~FisherInterface();
+        virtual ~FisherInterface();
         virtual void calc_Fls();
         mat read_matrix(string filename, int n_rows, int n_cols);
     protected: 
@@ -89,7 +89,7 @@ class Fisher_Santos : public FisherInterface {
         /* First the functions that do the heavy lifting */
         void run(int lmin, int lstepsize, int n_points_per_thread, int n_threads);
         /* Then the support functions */
-        //string update_runinfo(int lmin, int lmax,\
+        //string update_runinfo(int lmin, int lmax,
         //        int lstepsize, double kstepsize);
         //vector<double> give_kmodes(int l, double k_max, double kstepsize);
 

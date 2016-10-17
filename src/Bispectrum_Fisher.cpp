@@ -193,7 +193,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     double sum = 0;
     // This will only be used if omp_nested is set to 1 in the constructor above.
     int n_threads_2 = analysis->model->give_fiducial_params("sub_threads");
-    cout << "sub_threads = " << n_threads_2 << endl;
+    cout << "n = " << n_threads_2 << endl;
     log<LOG_VERBOSE>("Entering Parallel regime");
     #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
     {
@@ -521,7 +521,7 @@ double TEST_Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string
     double x = working_params[param_key];
     double z = 1420.4/nu -1;
     double B1 = 0;
-    double B2 = 0;
+    double B2 = 0;;
     
     working_params[param_key] = x + h;
     analysis->model->update(working_params, Pk_index, Tb_index, q_index);

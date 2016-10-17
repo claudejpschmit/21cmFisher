@@ -1,7 +1,9 @@
 #include "Analysis.hpp"
 
 AnalysisInterface::~AnalysisInterface()
-{}
+{
+    //delete model;
+}
 
 double AnalysisInterface::Cl(int l, double x1, double x2,\
                 int Pk_index, int Tb_index, int q_index)

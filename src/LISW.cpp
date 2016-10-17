@@ -45,7 +45,7 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
     SN_calculation = false;
     ql_interpolated = false;
     interpolate_large = false;
-    Qls_interpolators_large = NULL;
+    //Qls_interpolators_large = NULL;
     if (analysis->model->give_fiducial_params("interp_Cls") == 1)
     {
         double numin = analysis->model->give_fiducial_params("Bispectrum_numin");
@@ -66,33 +66,53 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
     SN_calculation = false;
     ql_interpolated = false;
     interpolate_large = false;
-    lmax_CLASS = (int)analysis->model->give_fiducial_params("lmax_Fisher_Bispectrum");
+    this->lmax_CLASS = (int)analysis->model->give_fiducial_params("lmax_Fisher_Bispectrum");
     this->num_params = num_params;
     // num_deriv is the number of non_fiducial points calculated for the fisher derivative.
     int num_deriv = 1;
     int num_indecies = num_params * num_deriv + 1;
-
-    boost::array<Interpol_Array::index,4> dims = {{lmax_CLASS+1,num_indecies,\
-        num_indecies,num_indecies}};
-    Qls_interpolators_large = new boost::multi_array<Interpol,4>(dims);
-    for (int l = 0; l < lmax_CLASS+1; l++)
+    
+    //boost::array<Interpol_Array::index,4> dims = {{lmax_CLASS+1,num_indecies,
+    //    num_indecies,num_indecies}};
+    //Qls_interpolators_large = new boost::multi_array<Interpol,4>(dims);
+    for (int l = 0; l < this->lmax_CLASS+1; l++)
     {
+        vector<vector<vector<Interpol>>> subvec3;
         for (int i = 0; i < num_indecies; i++)
         {
+            vector<vector<Interpol>> subvec2;
             for (int j = 0; j < num_indecies; j++)
             {
+                vector<Interpol> subvec1;
                 for (int k = 0; k < num_indecies; k++)
                 {   
-                    (*Qls_interpolators_large)[l][i][j][k].computed = false;
+                    Interpol I;
+                    real_1d_array x;                        
+                    real_1d_array y;
+                    x.setlength(2);
+                    y.setlength(2);
+                    x[0] = 0;
+                    x[1] = 1;
+                    y[0] = 0;
+                    y[1] = 1;
+                    spline1dinterpolant interpol;
+                    spline1dbuildlinear(x, y, 2, interpol);
+                    I.computed = false;
+                    I.interpolator = interpol;
+                    subvec1.push_back(I);
+                    //(*Qls_interpolators_large)[l][i][j][k].computed = false;
                 }
+                subvec2.push_back(subvec1);
             }
+            subvec3.push_back(subvec2);
         }
+        Qls_interpolators_large.push_back(subvec3);
     }
     if (analysis->model->give_fiducial_params("interp_Cls") == 1)
     {
         numin_CLASS = analysis->model->give_fiducial_params("Bispectrum_numin");
         numax_CLASS = analysis->model->give_fiducial_params("Bispectrum_numax");
-        make_Ql_interps(lmax_CLASS, numin_CLASS, numax_CLASS, 0,0,0);
+        //make_Ql_interps(lmax_CLASS, numin_CLASS, numax_CLASS, 0,0,0);
     }
 
     log<LOG_BASIC>("... LISW Class initialized ...");
@@ -100,7 +120,7 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
 
 Bispectrum_LISW::~Bispectrum_LISW()
 {
-    delete Qls_interpolators_large; 
+    //delete Qls_interpolators_large; 
 }
 
 double Bispectrum_LISW::calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3,\
@@ -315,7 +335,8 @@ void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax)
 void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax,\
         int Pk_index, int Tb_index, int q_index)
 {
-    if ((*Qls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
+    //if ((*Qls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
+    if (Qls_interpolators_large[lmax][Pk_index][Tb_index][q_index].computed == false)
     {   
         // I could make this use parallellism...
         double z_min, z_max, z_stepsize;
@@ -325,7 +346,8 @@ void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax,\
         z_steps = 10;
         z_stepsize = abs(z_max - z_min)/(double)z_steps;
 
-#pragma omp parallel for
+        // Caution: This causes possible memory loss
+        #pragma omp parallel for
         for (int l = 0; l <= lmax; l++)
         {
             vector<double> vz, vQl;
@@ -349,8 +371,8 @@ void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax,\
             spline1dinterpolant interpolator;
             spline1dbuildcubic(z_arr, Ql_arr, interpolator);
 
-            (*Qls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator = interpolator;
-            (*Qls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed = true;
+            Qls_interpolators_large[l][Pk_index][Tb_index][q_index].interpolator = interpolator;
+            Qls_interpolators_large[l][Pk_index][Tb_index][q_index].computed = true;
             //cout << "Ql for l = " << l << " is interpolated." << endl;
         }
         ql_interpolated = true;
@@ -412,7 +434,7 @@ double Bispectrum_LISW::interp_Ql(int l, double z)
 
 double Bispectrum_LISW::interp_Ql(int l, double z, int Pk_index, int Tb_index, int q_index)
 {
-    return spline1dcalc((*Qls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator,z);
+    return spline1dcalc(Qls_interpolators_large[l][Pk_index][Tb_index][q_index].interpolator,z);
 }
 
 double Bispectrum_LISW::Ql_calc(int l, double z, int Pk_index, int Tb_index, int q_index)
@@ -462,7 +484,7 @@ double Bispectrum_LISW::Ql(int l, double z, int Pk_index, int Tb_index, int q_in
 {
     if (ql_interpolated && interpolate_large)
     {  
-        if ((*Qls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed == false)
+        if (Qls_interpolators_large[l][Pk_index][Tb_index][q_index].computed == false)
             make_Ql_interps(lmax_CLASS,numin_CLASS,numax_CLASS,Pk_index,Tb_index,q_index);
 
         // The make_... function doesn't do anything if the interpolator already exists, 

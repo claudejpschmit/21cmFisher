@@ -20,10 +20,64 @@
 #include "Zygelman.hpp"
 #include "Bispectrum_Fisher.hpp"
 #include "Integrator.hpp"
+#include "interpolation.h"
 
 using namespace std;
 
 log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_NOTHING;
+
+struct Interpol{
+    bool computed;
+    spline1dinterpolant* interpolator;
+};
+
+BOOST_AUTO_TEST_CASE(test_interp)
+{
+    int lmax_CLASS = 100;
+    int num_indecies = 5;
+
+    for (int l = 0; l < lmax_CLASS+1; l++)
+        {
+            //vector<vector<vector<Interpol>>> subvec3;
+            //Cls_interpolators_large2[l].resize(num_indecies);
+            for (int i = 0; i < num_indecies; i++)
+            {
+                //Cls_interpolators_large2[l][i].resize(num_indecies);
+                //vector<vector<Interpol>> subvec2;
+                for (int j = 0; j < num_indecies; j++)
+                {
+                    //Cls_interpolators_large2[l][i][j].resize(num_indecies);
+                    vector<Interpol> subvec1;
+                    for (int k = 0; k < num_indecies; k++)
+                    {    
+                        Interpol I;
+                        real_1d_array x;                        
+                        real_1d_array y;
+                        x.setlength(2);
+                        y.setlength(2);
+                        x[0] = 0;
+                        x[1] = 1;
+                        y[0] = 0;
+                        y[1] = 1;
+                        spline1dinterpolant interpol;
+                        spline1dbuildlinear(x, y, 2, interpol);
+                        I.computed = false;
+                        I.interpolator = &interpol;
+                        //(*Cls_interpolators_large)[l][i][j][k].computed = false;
+                        subvec1.push_back(I);//Cls_interpolators_large2[l][i][j][k].computed = false;
+                    }
+                    //subvec2.push_back(subvec1);
+                }
+                //subvec3.push_back(subvec2);
+            }
+            //Cls_interpolators_large2.push_back(subvec3);
+        }
+        cout << "here" << endl;
+
+
+
+    cout << " END TEST INTERPOLATION " << endl;
+}
 
 BOOST_AUTO_TEST_CASE(check_parser)
 {
@@ -337,6 +391,7 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     BOOST_CHECK(omch2 < omch2_ref + 0.01 * omch2_ref);
 
 }
+
 
 
 // EOF

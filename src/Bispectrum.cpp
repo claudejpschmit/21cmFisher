@@ -29,10 +29,12 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
 
     // Should precalculate to at least z = 10000. 
     // Although this takes 20 seconds each run, which is annoying.
-    zs_v.resize(1000);
-    D_v.resize(1000);
-#pragma omp parallel for
-    for (int i = 0; i < 1000; i++)
+    zs_v.resize(10);
+    D_v.resize(10);
+
+    // Caution: This introduces a possible memory loss
+    #pragma omp parallel for
+    for (int i = 0; i < 10; i++)
     {
         double z = i*0.1;
         double D = D_Growth(z);

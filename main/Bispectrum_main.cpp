@@ -41,6 +41,8 @@ int main(int argc, char* argv[])
     string matrixPath = parser.giveMatrixPath();
     string fisherPath = parser.giveFisherPath();
     GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
+    
+    
     bool ERROR = false;
     int Pk_index = 0;
     int Tb_index = 0;
@@ -48,6 +50,8 @@ int main(int argc, char* argv[])
     /*
      * Defining analysis methods according to the .ini file.
      */
+    
+    //CosmoBasis cosmo(params);
     ModelInterface* model = NULL; 
     switch (parser.giveModelAndAnalysis()[0])
     {
@@ -92,6 +96,8 @@ int main(int argc, char* argv[])
             ERROR = true;
             break;
     }
+    //delete analysis;
+    //delete model;
     /*
      * Reminder, model, analysis & fisher are pointers, so they need to be called as such.
      * eg. cout << model->T21_interp(19, 0) << endl;
@@ -113,11 +119,14 @@ int main(int argc, char* argv[])
         Bispectrum_Effects effects = parser.giveBispectrumEffects();
         fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects);
         //NLG->calc_angular_B(2,2,2,0,0,0,1.0,0,0,0); 
+        
         delete NLG;
         delete LISW;
     }
-    delete model;
-    delete analysis;
-
+    if (model)
+        delete model;
+    if (analysis)
+        delete analysis;
+    
     return 0;
 }
