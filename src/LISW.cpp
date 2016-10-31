@@ -39,12 +39,13 @@
 #define NEXTRA 0
 
 Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
+    :
+        interpolate_large(false),
+        ql_interpolated(false)
 {
     log<LOG_BASIC>("... Beginning LISW constructor ...");
     this->analysis = analysis;
     SN_calculation = false;
-    ql_interpolated = false;
-    interpolate_large = false;
     //Qls_interpolators_large = NULL;
     if (analysis->model->give_fiducial_params("interp_Cls") == 1)
     {
@@ -58,14 +59,15 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
 }
 
 Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
+    :
+        interpolate_large(false),
+        ql_interpolated(false)
 {
 
     log<LOG_BASIC>("... Beginning LISW constructor ...");
 
     this->analysis = analysis;
     SN_calculation = false;
-    ql_interpolated = false;
-    interpolate_large = false;
     this->lmax_CLASS = (int)analysis->model->give_fiducial_params("lmax_Fisher_Bispectrum");
     this->num_params = num_params;
     // num_deriv is the number of non_fiducial points calculated for the fisher derivative.
@@ -112,7 +114,7 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
     {
         numin_CLASS = analysis->model->give_fiducial_params("Bispectrum_numin");
         numax_CLASS = analysis->model->give_fiducial_params("Bispectrum_numax");
-        //make_Ql_interps(lmax_CLASS, numin_CLASS, numax_CLASS, 0,0,0);
+        make_Ql_interps(lmax_CLASS, numin_CLASS, numax_CLASS, 0,0,0);
     }
 
     log<LOG_BASIC>("... LISW Class initialized ...");
@@ -347,7 +349,7 @@ void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax,\
         z_stepsize = abs(z_max - z_min)/(double)z_steps;
 
         // Caution: This causes possible memory loss
-        #pragma omp parallel for
+        //#pragma omp parallel for
         for (int l = 0; l <= lmax; l++)
         {
             vector<double> vz, vQl;
@@ -498,6 +500,7 @@ double Bispectrum_LISW::Ql(int l, double z, int Pk_index, int Tb_index, int q_in
     }
     else
     {
+        cout << "no interp " << ql_interpolated << " " << interpolate_large << endl;
         return Ql_calc(l,z,Pk_index,Tb_index,q_index);
     }
 }

@@ -117,12 +117,12 @@ class IntensityMapping : public AnalysisInterface {
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
     protected:
         void make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps);
-        void make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
+        int make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
                 int Pk_index, int Tb_index, int q_index);
         double P(double k, double z1, double z2, double Pk_index);
         double I(int l, double k, double nu_0);
         double Cl_interp(int l,double nu1);
-        double Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index);
+        double Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index, int index);
 
         bool interpolating, interpolate_large;
         double calc_Cl(int l, double nu1, double nu2,\
@@ -133,6 +133,8 @@ class IntensityMapping : public AnalysisInterface {
             bool computed;
             spline1dinterpolant interpolator;
         };
+
+        vector<CL_INTERP> Cls_interpolators_large; 
 
         //typedef boost::multi_array<Interpol,4> Interpol_Array;
         //boost::array<Interpol_Array::index,4> shape = {{1,1,1,1}};

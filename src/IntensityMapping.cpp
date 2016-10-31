@@ -14,7 +14,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model)
         this->interpolating = false;
     else
         this->interpolating = true;
-    interpolate_large = false;
+    interpolate_large = true;
     if (interpolating)
     {
         int lmin = 0;
@@ -53,7 +53,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
     
     if (interpolating)
     {
-        this->num_params = num_params;
+        /*this->num_params = num_params;
         // num_deriv is the number of non_fiducial points calculated for the fisher derivative.
         // 1 for normal derivative,
         // 4 for 5 point stencil.
@@ -105,6 +105,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
             lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
 
         ////////////////////////////////////////////////////////////////////////////////////
+        */
         /*
         double nu_stepsize = abs(numax_CLASS-numin_CLASS)/(double)nu_steps_CLASS;
         
@@ -150,7 +151,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
 
         }
         */
-
+        cout << "interpolating" << endl;
         make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS, nu_steps_CLASS,0,0,0);
     }
     else
@@ -196,20 +197,94 @@ void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double
     }
 }
 
-void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
+int IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
         int Pk_index, int Tb_index, int q_index)
 {
+    bool do_calc = true;
+    int index = -1;
+    for (int i = 0; i < Cls_interpolators_large.size(); i++)
+    {
+        if (Cls_interpolators_large[i].Pk_index == Pk_index &&\
+                Cls_interpolators_large[i].Tb_index == Tb_index &&\
+                Cls_interpolators_large[i].q_index == q_index)
+        {
+            do_calc = false;
+            index = i;
+            break;
+        }
+    }
+    
+    if (do_calc)
+    {
+/////////////
+
+        double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
+        vector<double> vnu, vl;
+        vector<double> vCls;
+        for (int l = lmin; l <= lmax; l++)
+        {
+            vl.push_back(l);
+        }
+
+        for (int i = 0; i <= nu_steps; i++)
+        {
+            double nu = nu_min + i*nu_stepsize;
+            vnu.push_back(nu);
+        }
+        
+        
+        for (int l = lmin; l <= lmax; l++)
+        {
+            for (int i = 0; i <= nu_steps; i++)
+            {
+                double nu = vnu[i];
+                double cl = this->calc_Cl(l,nu,nu,Pk_index,Tb_index,q_index);
+                vCls.push_back(cl);
+            }
+        }
+
+        real_1d_array nu_arr, l_arr, Cl_arr;
+        nu_arr.setlength(vnu.size());
+        Cl_arr.setlength(vCls.size());
+        l_arr.setlength(vl.size());    
+        for (unsigned int i = 0; i < vnu.size(); i++){
+            nu_arr[i] = vnu[i];
+        }
+        for (unsigned int i = 0; i < vCls.size(); i++){
+            Cl_arr[i] = vCls[i];
+        }
+        for (unsigned int i = 0; i < vl.size(); i++){
+            l_arr[i] = vl[i];
+        }
+       
+        spline2dinterpolant interpolator;
+        spline2dbuildbilinearv(nu_arr, vnu.size(), l_arr, vl.size(), Cl_arr, 1, interpolator);
+        
+        CL_INTERP I;
+        I.Pk_index = Pk_index;
+        I.Tb_index = Tb_index;
+        I.q_index = q_index;
+        I.interpolator = interpolator;
+
+        Cls_interpolators_large.push_back(I);
+        index = Cls_interpolators_large.size() - 1;
+        
+/////////////
+    }
+    return index;
     //if ((*Cls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
-    if (Cls_interpolators_large2[lmax][Pk_index][Tb_index][q_index].computed == false)
-    {  
+    /*if (Cls_interpolators_large2[lmax][Pk_index][Tb_index][q_index].computed == false)
+    { 
+        cout << "here" << endl;
         double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
        
         // CAUTION: This causes a possible memory leak in Valgrind.
-        #pragma omp parallel num_threads(6) 
-        {
-            #pragma omp for
+        //#pragma omp parallel num_threads(6) 
+        //{
+        //     #pragma omp for
             for (int l = lmin; l <= lmax; l++)
             {
+                cout << l << endl;
                 vector<double> vnu, vCl;
                 for (int i = 0; i <= nu_steps; i++)
                 {
@@ -218,6 +293,7 @@ void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double
                     vnu.push_back(nu);
                 }
         
+                cout << l << endl;
                 real_1d_array nu_arr, Cl_arr;
                 nu_arr.setlength(vnu.size());
                 Cl_arr.setlength(vCl.size());
@@ -228,19 +304,24 @@ void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double
                 for (unsigned int i = 0; i < vCl.size(); i++){
                     Cl_arr[i] = vCl[i];
                 }
+                cout << l << endl;
 
                 spline1dinterpolant interpolator;
+                cout << l << endl;
                 spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
+                cout << l << endl;
             
                 Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].interpolator = interpolator;
                 Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].computed = true;
 
+                cout << l << endl;
+                cout << "end" << endl;
                 //(*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator = &interpolator;
                 //(*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed = true;
                 //cout << "Cl for l = " << l << " is interpolated." << endl;
             }
-        }
-    }
+        //}
+    }*/
 }
 
 double IntensityMapping::Cl_interp(int l,double nu1)
@@ -248,11 +329,19 @@ double IntensityMapping::Cl_interp(int l,double nu1)
     return spline1dcalc(Clnu_interpolators[l], nu1);
 }
 
-double IntensityMapping::Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index)
+double IntensityMapping::Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index, int index)
 {
+    if (index < 0)
+    {
+        cout << "ERROR: SOMETHING WENT HORRIBLY WRONG" << endl;
+    }
     if (nu1 <= numax_CLASS && nu1 >= numin_CLASS)
+    {
         //spline1dcalc((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator, nu1);
-        return spline1dcalc(Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].interpolator, nu1);
+        //spline1dcalc(Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].interpolator, nu1);
+        //spline2dinterpolant interp = Cls_interpolators_large[index].interpolator;
+        return spline2dcalc(Cls_interpolators_large[index].interpolator, nu1, l);
+    }
     else{
         cout << "INTERPOLATION ERROR MUST HAVE OCURRED" << endl;
         return 0;
@@ -310,11 +399,11 @@ double IntensityMapping::calc_Cl(int l, double nu1, double nu2,\
     {
         log<LOG_ERROR>("ERROR: bad z range. Cl from IM analysis method is only valid for z < 5.");
     }
-        
     double dTb1 = model->T21_interp(z1, Tb_index);
     double dTb2 = model->T21_interp(z2, Tb_index);
     auto integrand = [&](double k)
     {
+
         double r1 = model->q_interp(z1,q_index);
         double r2 = model->q_interp(z2,q_index);
 
@@ -330,6 +419,7 @@ double IntensityMapping::calc_Cl(int l, double nu1, double nu2,\
     //      b = 2 (b^2 = 4) as in Hall et al. 2013
     double BIAS_squared = 4.0;
     //cout << lower_kappa_bound << " " << higher_kappa_bound << endl;
+    
     double integral = integrate_simps(integrand, lower_kappa_bound, higher_kappa_bound, steps);
     return 2.0/(model->pi) * dTb1 * dTb2 * BIAS_squared * integral;
 
@@ -342,14 +432,13 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
     {
         //if ((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed == false)
         
-        if (Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].computed == false)
-            make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS,\
+        //if (Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].computed == false)
+        int index = make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS,\
                     nu_steps_CLASS, Pk_index, Tb_index, q_index);
-       
         // The make_... function doesn't do anything if the interpolator already exists, 
         // so this should be fine.
         //make_Ql_interps(lmax_CLASS,numin_CLASS,numax_CLASS,Pk_index,Tb_index,q_index);
-        return Cl_interp(l, nu1, Pk_index, Tb_index, q_index); 
+        return Cl_interp(l, nu1, Pk_index, Tb_index, q_index, index); 
 
     }
     else if (interpolating && Pk_index == 0 && Tb_index == 0 && q_index == 0)

@@ -89,20 +89,36 @@ ModelParent<T21>::ModelParent(map<string,double> params)
     template<typename T21>
 double ModelParent<T21>::Pkz_interp(double k, double z, int Pk_index)
 {
+    spline2dinterpolant interp;  
+    //#pragma omp critical
+    //{
+    //interp = Pkz_interpolators[Pk_index].interpolator;
+    //}
     return spline2dcalc(Pkz_interpolators[Pk_index].interpolator, k, z);
 }
 
     template<typename T21>
 double ModelParent<T21>::T21_interp(double z, int Tb_index)
 {
+    spline1dinterpolant interp;  
+    //#pragma omp critical
+    //{
+    //interp = Tb_interpolators[Tb_index].interpolator;
+    //}
     // The factor of 1000 is so I get the result in mK.
-    return spline1dcalc(Tb_interpolators[Tb_index].interpolator, z);
+    return spline1dcalc(Tb_interpolators[Tb_index].interpolator,z);
+
 }
 
     template<typename T21>
 double ModelParent<T21>::q_interp(double z, int q_index)
 {
-    return spline1dcalc(q_interpolators[q_index].interpolator, z);
+    spline1dinterpolant interp;  
+    //#pragma omp critical
+    //{
+    //interp = q_interpolators[q_index].interpolator;
+    //}
+    return spline1dcalc(q_interpolators[q_index].interpolator,z);
 }
 
     template<typename T21>
@@ -119,34 +135,58 @@ double ModelParent<T21>::Hf_interp(double z)
     template<typename T21>    
 double ModelParent<T21>::H_interp(double z, int q_index)
 {
+    spline1dinterpolant interp;  
+    //#pragma omp critical
+    //{
+    //    interp = q_interpolators[q_index].interpolator_Hf;
+    //}
     return spline1dcalc(q_interpolators[q_index].interpolator_Hf,z);
 }
 
     template<typename T21>
 double ModelParent<T21>::qp_interp(double z, int q_index)
 {
+    spline1dinterpolant interp;  
+    //#pragma omp critical 
+    //{
+    //    interp = q_interpolators[q_index].interpolator_qp;
+    //}
     return spline1dcalc(q_interpolators[q_index].interpolator_qp,z);
 }
 
     template<typename T21>
 double ModelParent<T21>::fz_interp(double z, int Tb_index)
 {
+    spline1dinterpolant interp;  
+    //#pragma omp critical
+    //{
+    //interp = Tb_interpolators[Tb_index].fz_interpolator;
+    //}
     return spline1dcalc(Tb_interpolators[Tb_index].fz_interpolator,z);
 }
 
     template<typename T21>
 double ModelParent<T21>::hubble_h(int q_index)
 {
-    return q_interpolators[q_index].h;
+    double h;  
+    //#pragma omp critical
+    //{
+    h = q_interpolators[q_index].h;
+    //}
+    return h;
 }
 
     template<typename T21>
 void ModelParent<T21>::update(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
 {
-    try {
-        update_Pkz(params, Pk_index);
-        update_T21(params, Tb_index);
-        update_q(params, q_index);
+    try 
+    {
+        //#pragma omp critical 
+        //{
+            update_Pkz(params, Pk_index);
+            update_T21(params, Tb_index);
+            update_q(params, q_index);
+        //}
     }
     catch(alglib::ap_error e)
     {

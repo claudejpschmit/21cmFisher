@@ -10,6 +10,7 @@
 #include "Fisher.hpp"
 #include "iniReader.hpp"
 #include "Bispectrum.hpp"
+#include "Bispectrum_NLG.hpp"
 #include "LISW.hpp"
 #include "ODEs.hpp"
 #include "ODE_Solver.hpp"
@@ -90,7 +91,6 @@ int main(int argc, char* argv[])
         case highz:
             analysis = new HighZAnalysis(model);
             break;
-
         default:
             log<LOG_ERROR>("!!!!! Critical Error: No analysis was defined !!!!!");
             ERROR = true;
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
         double nu_min = 650;
         //nu_max = 790, so between z = 0.8 and z = 1.2
         double nu_stepsize = 10;
-        int n_points_per_thread = 5;
+        int n_points_per_thread = 2;
         int n_threads = 1;
         
         Bispectrum_Effects effects = parser.giveBispectrumEffects();

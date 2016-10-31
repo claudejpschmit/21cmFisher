@@ -53,13 +53,11 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
     // now compute F_ab's (symmetric hence = F_ba's)
     for (unsigned int i = 0; i < model_param_keys.size(); i++) {
         for (unsigned int j = i; j < model_param_keys.size(); j++) {
-
-
             filename.str("");
             string param_key1 = model_param_keys[i];
             string param_key2 = model_param_keys[j];
 
-            log<LOG_BASIC>("STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
+            log<LOG_BASIC>("----> STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
             filename << filename_prefix << param_key1 << "_" << param_key2 << ".dat";
 
             int Pk_index = 0;
@@ -86,13 +84,13 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
             // to define how many threads should be used.
 
             log<LOG_VERBOSE>("Entering Parallel regime");
-            #pragma omp parallel num_threads(n_threads) private(Pk_index, Tb_index, q_index) 
-            {
-                Pk_index = 0;
-                Tb_index = 0;
-                q_index = 0;
+            //#pragma omp parallel num_threads(n_threads) private(Pk_index, Tb_index, q_index) 
+            //{
+            //    Pk_index = 0;
+            //    Tb_index = 0;
+            //    q_index = 0;
 
-                #pragma omp for reduction (+:sum)
+            //    #pragma omp for reduction (+:sum)
                 for (int k = 1; k <= nu_steps; ++k) {
                     // note: k has nothing to do with scale here, just an index!
                     int m = 0;
@@ -116,7 +114,7 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
                     log<LOG_VERBOSE>("%1%") % ss2.str().c_str();
                     sum += fnu;
                 }
-            } // parallel end.
+            //} // parallel end.
 
             ofstream outfile;
             outfile.open(filename.str());
@@ -180,7 +178,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             res += (2.0 * 2 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * F;
         }
     }
-   
+    cout << "HERE" << endl; 
     int n_threads = analysis->model->give_fiducial_params("n_threads_bispectrum");
     int gaps = analysis->model->give_fiducial_params("gaps_bispectrum");
     int stepsize = gaps + 1;
@@ -192,11 +190,14 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     int modmax = (imax-1)*stepsize;//lmax_CLASS-3;// ceil((lmax_CLASS-2)/n_threads) * n_threads - 1;
     double sum = 0;
     // This will only be used if omp_nested is set to 1 in the constructor above.
-    int n_threads_2 = analysis->model->give_fiducial_params("sub_threads");
-    cout << "n = " << n_threads_2 << endl;
+    //int n_threads_2 = analysis->model->give_fiducial_params("sub_threads");
     log<LOG_VERBOSE>("Entering Parallel regime");
     #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
     {
+        // ! Imporant: each private variable needs to be initialized within the OMP block!!!
+        Pk_index2 = 0;
+        Tb_index2 = 0;
+        q_index2 = 0;
         //cout << "modmax = " << modmax << endl;
         //cout << modmax << endl;
         #pragma omp for reduction (+:sum)
@@ -212,10 +213,16 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             //cout << i << " -- " << l1 << endl;
             if (l1 <= lmax_CLASS)
             {
-                log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
-                #pragma omp parallel num_threads(n_threads_2) private(Pk_index2, Tb_index2, q_index2)
+                #pragma omp critical 
                 {
-                    #pragma omp for reduction (+:sum)
+                    log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
+                }
+                //#pragma omp parallel num_threads(n_threads_2) private(Pk_index2, Tb_index2, q_index2)
+                //{
+                //  Pk_index2 = 0;
+                //  Tb_index2 = 0;
+                //  q_index2 = 0;     
+                //  //#pragma omp for reduction (+:sum)
                     for (int l2 = lmin; l2 <= l1; l2++)
                     {
                         for (int l3 = 0; l3 <= l1; l3++)
@@ -242,7 +249,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                             sum += (2.0 * l1 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * stepsize * F;
                         }
                     }
-                }
+                //}
             }
             else
             {
@@ -352,7 +359,7 @@ double Bispectrum_Fisher::Cl(int l, double nu)
 {
     // Noise now included
     double cl = analysis->Cl(l,nu,nu,0,0,0);
-    double noise = analysis->Cl_noise(l, nu, nu);
+    //double noise = analysis->Cl_noise(l, nu, nu);
     //cout << cl << " --- " << noise << endl; 
     return cl;//+noise;
 }
@@ -404,10 +411,16 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     if (effects == NLG_eff)
     {
         working_params[param_key] = x + h;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //#pragma omp critical
+        //{
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //}
         B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
         working_params[param_key] = x;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //#pragma omp critical
+        //{
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //}
         B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
         
         //cout << B1_NLG << endl;
@@ -418,10 +431,16 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     else if (effects == LISW_eff)
     {
         working_params[param_key] = x + h;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //#pragma omp critical
+        //{
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //}
         B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
         working_params[param_key] = x;
-        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //#pragma omp critical
+        //{
+            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //}
         B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
      
         return (B1 - B2)/h;
@@ -436,12 +455,18 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
         else 
         {
             working_params[param_key] = x + h;
-            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            //#pragma omp critical
+            //{
+                analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            //}
             B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
             B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
 
             working_params[param_key] = x;
-            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            //#pragma omp critical
+            //{
+                analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            //}
             B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
             B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
 
@@ -595,7 +620,10 @@ double TEST_Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string 
             if (i == lmax_CLASS)
                 l1 = lmax_CLASS;
             int lmin = l1/2;
+            
+            #pragma omp critical
             log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
+            
             for (int l2 = lmin; l2 <= l1; l2++)
             {
                 for (int l3 = 0; l3 <= l1; l3++)

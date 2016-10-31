@@ -29,12 +29,12 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
 
     // Should precalculate to at least z = 10000. 
     // Although this takes 20 seconds each run, which is annoying.
-    zs_v.resize(10);
-    D_v.resize(10);
+    zs_v.resize(1000);
+    D_v.resize(1000);
 
     // Caution: This introduces a possible memory loss
     #pragma omp parallel for
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 1000; i++)
     {
         double z = i*0.1;
         double D = D_Growth(z);
@@ -64,6 +64,7 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
     }
 
 
+    // G1 function currently not being used
     log<LOG_BASIC>("Precalculating g1 function");
 
     g1_ODE G1(2000.0);
@@ -158,8 +159,11 @@ double Bispectrum::calc_Blll(int l1, int l2, int l3)
 double Bispectrum::calc_Blll(int l1, int l2, int l3, double z, int Pk_index, int Tb_index, int q_index)
 {
     // Updates the growth functions used in the Blls
-
-    update_D_Growth(q_index);
+    
+    //#pragma omp critical
+    //{
+        update_D_Growth(q_index);
+    //}
     dcomp B_lll(0,0);
     if (l1 == l2 and l1 == l3)
         B_lll = 3.0 * B_ll(l1,l2,l3,z,Pk_index,Tb_index,q_index);
@@ -213,6 +217,8 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_in
         // The conversion factor is added in F(z).
         auto integrand = [&](double z)
         {
+            if (analysis == NULL || analysis->model == NULL)
+                cout << "segfault is likely: 1" << endl;
             double D = D_Growth_interp(z,q_index);
             double r = analysis->model->q_interp(z,q_index);
             // 1000 factor is necessary to convert km into m.
@@ -740,6 +746,12 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
     else 
     {
         //cout << " --- read" << endl; 
+        //spline1dinterpolant interp = theta_interpolants[index].interpolator;
+        if (theta_interpolants.size()<= index)
+        {   
+            cout << "ERROR: OMG EVERYTHING IS BROKEN!!!" << theta_interpolants.size() <<\
+                " <= " << index << endl;
+        }
         return spline1dcalc(theta_interpolants[index].interpolator,z);
     }
 }
@@ -871,7 +883,15 @@ double Bispectrum::D_Growth_interp(double z)
 
 double Bispectrum::D_Growth_interp(double z, int q_index)
 {
-    return spline1dcalc(growth_function_interps[q_index], z);
+    double result = 0;
+    //#pragma omp critical
+    result = spline1dcalc(growth_function_interps[q_index], z);
+    
+    if (result == 0)
+    {
+        cout << "ERROR in D_GROWTH_INTERP" << endl;
+    }
+    return result;
 }
 
 double Bispectrum::f1(double z)

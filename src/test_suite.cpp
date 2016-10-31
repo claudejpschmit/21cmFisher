@@ -14,6 +14,7 @@
 #include "Fisher.hpp"
 #include "iniReader.hpp"
 #include "Bispectrum.hpp"
+#include "Bispectrum_NLG.hpp"
 #include "LISW.hpp"
 #include "ODEs.hpp"
 #include "ODE_Solver.hpp"

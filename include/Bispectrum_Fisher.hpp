@@ -2,6 +2,7 @@
 
 #include "Analysis.hpp"
 #include "Bispectrum.hpp"
+#include "Bispectrum.hpp"
 #include "LISW.hpp"
 #include "Helper.hpp"
 #include <armadillo>

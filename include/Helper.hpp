@@ -123,6 +123,14 @@ struct Theta {
 /**
  *
  */
+struct CL_INTERP { 
+    int Pk_index, Tb_index, q_index;
+    spline2dinterpolant interpolator;
+};
+
+/**
+ *
+ */
 enum Bispectrum_Effects {
     NLG_eff,
     LISW_eff,
