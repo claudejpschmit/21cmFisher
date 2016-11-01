@@ -120,6 +120,9 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
     // Make sure that the integration bounds envelope the peak of r(z_c).
     double I2 = integrate(integrand3, 2000.0, 5000.0, 3000, simpson());
     log<LOG_BASIC>("Window function integral = %1%.") % I2;
+
+    log<LOG_BASIC>("D_GROWTH_INTERP is prepared for q_index = 0.");
+    update_D_Growth(0);
     log<LOG_BASIC>("... Bispectrum Class initialized ...");
 }
 
@@ -225,7 +228,8 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_in
             double hub = analysis->model->H_interp(z,q_index)*1000.0;
             double Fz = (analysis->model->c/hub)*D*D*f1(z,q_index)*Wnu(r, z_centre, delta_z);
             double THETA2 = 0;
-            double THETA1 = theta(la,la,z,0, z_centre, delta_z,Pk_index,Tb_index,q_index);
+            double THETA1 = 0; 
+            THETA1 = theta(la,la,z,0, z_centre, delta_z,Pk_index,Tb_index,q_index);
             if (la == lb) 
             {
                 THETA2 = THETA1;
@@ -654,6 +658,8 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
 
 double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, double delta_z, int Pk_index, int Tb_index, int q_index)
 {
+    //return 0;
+    
     int index = 0;
     bool pre_calc = false;
     for (int i = 0; i < theta_interpolants.size(); i++)
@@ -682,7 +688,7 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
             zs.push_back(zi);
             
             //do calc
-            double r = analysis->model->q_interp(z,q_index);
+            double r = analysis->model->q_interp(zi,q_index);
             auto integrand = [&](double k)
             {
                 double res = pow(k, 2+q) *\
@@ -721,7 +727,8 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
         real_1d_array zs_list, vals_list;
         zs_list.setlength(zs.size());
         vals_list.setlength(vals.size());
-
+        if (zs.size() != vals.size())
+            cout << "ERROR: BAD ARRAY SIZES" << endl;
         for (int i = 0; i < zs.size(); i++)
         {
             zs_list[i] = zs[i];
@@ -747,13 +754,14 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
     {
         //cout << " --- read" << endl; 
         //spline1dinterpolant interp = theta_interpolants[index].interpolator;
-        if (theta_interpolants.size()<= index)
+        if (theta_interpolants.size() <= index)
         {   
             cout << "ERROR: OMG EVERYTHING IS BROKEN!!!" << theta_interpolants.size() <<\
                 " <= " << index << endl;
         }
         return spline1dcalc(theta_interpolants[index].interpolator,z);
     }
+    
 }
 
 double Bispectrum::alpha(int l, double k, double z_centre, double delta_z)
@@ -820,6 +828,8 @@ double Bispectrum::D_Growth(double z, int q_index)
     };
     double I1 = integrate(integrand, z, 10000.0, 100000, simpson());
 
+    if (q_index >= Growth_function_norms.size())
+        cout << "ERROR: D(z) normalization error" << endl;
     double pre = Growth_function_norms[q_index] * this->analysis->model->H_interp(z,q_index) /\
                  this->analysis->model->H_interp(0,q_index);
     return pre * I1;
@@ -827,6 +837,63 @@ double Bispectrum::D_Growth(double z, int q_index)
 
 void Bispectrum::update_D_Growth(int q_index)
 {
+    bool do_calc = true;
+    for (int i = 0; i < growth_function_interps.size(); i++)
+    {
+        if (growth_function_interps[i].q_index == q_index)
+        {
+            do_calc = false;
+        }
+    }
+    if (do_calc)
+    {
+        auto integrand = [&](double z)
+        {
+            double H3 = this->analysis->model->H_interp(z,q_index);
+            H3 = pow(H3, 3);
+
+            return (1.0+z)/H3;
+        };
+        double I1 = integrate(integrand, 0.0, 10000.0, 1000000, simpson());
+        double norm = 1.0/I1;
+        Growth_function_norms.push_back(norm);
+
+        vector<double> zs_v, D_v;
+
+        // Should precalculate to at least z = 10000. 
+        // Although this takes 20 seconds each run, which is annoying.
+        zs_v.resize(1000);
+        D_v.resize(1000);
+        #pragma omp parallel for
+        for (int i = 0; i < 1000; i++)
+        {
+            double z = i*0.1;
+            double D = D_Growth(z, q_index);
+
+            zs_v[i] = z;
+            D_v[i] = D;
+        }
+
+        real_1d_array zs, D_pluss;
+        zs.setlength(zs_v.size());
+        D_pluss.setlength(D_v.size());
+
+        for (unsigned int i = 0; i < zs_v.size(); i++){
+            zs[i] = zs_v[i];
+        }
+        for (unsigned int i = 0; i < D_v.size(); i++){
+            D_pluss[i] = D_v[i];
+        }
+        spline1dinterpolant interp;
+        spline1dbuildcubic(zs, D_pluss, interp);
+        D_INTERP D;
+        D.q_index = q_index;
+        D.interpolator = interp;
+
+        growth_function_interps.push_back(D);
+        cout << "growth function updated for q_index = " << q_index << endl;
+    }
+    /*
     int count = (int)growth_function_interps.size() - 1;
     while (count < q_index)
     {
@@ -874,6 +941,7 @@ void Bispectrum::update_D_Growth(int q_index)
 
         growth_function_interps.push_back(interp);
     }
+    */
 }
 
 double Bispectrum::D_Growth_interp(double z)
@@ -883,8 +951,36 @@ double Bispectrum::D_Growth_interp(double z)
 
 double Bispectrum::D_Growth_interp(double z, int q_index)
 {
+    int index = -1;
+    for (int i = 0; i < growth_function_interps.size(); i++)
+    {
+        if (growth_function_interps[i].q_index == q_index)
+        {
+            index = i;
+            break;
+        }
+    }
+    
+    if (index < 0)
+    {
+        cout << "ERROR: growth function gone wrong" << endl;
+        return 0;
+    }
+    else
+    {
+        double result = spline1dcalc(growth_function_interps[index].interpolator, z);
+        if (result == 0)
+        {
+            cout << "ERROR in D_GROWTH_INTERP: index = " << index << ", D(z=" << z << ") = " <<\
+                result << endl;
+        }
+        return result;
+    }
+    /*
     double result = 0;
     //#pragma omp critical
+    if (q_index >= growth_function_interps.size())
+        cout << "ERROR: growth function gone wrong" << endl;
     result = spline1dcalc(growth_function_interps[q_index], z);
     
     if (result == 0)
@@ -892,6 +988,7 @@ double Bispectrum::D_Growth_interp(double z, int q_index)
         cout << "ERROR in D_GROWTH_INTERP" << endl;
     }
     return result;
+    */
 }
 
 double Bispectrum::f1(double z)

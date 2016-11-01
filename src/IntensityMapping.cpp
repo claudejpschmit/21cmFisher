@@ -331,7 +331,7 @@ double IntensityMapping::Cl_interp(int l,double nu1)
 
 double IntensityMapping::Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index, int index)
 {
-    if (index < 0)
+    if (index < 0 || index >= Cls_interpolators_large.size())
     {
         cout << "ERROR: SOMETHING WENT HORRIBLY WRONG" << endl;
     }

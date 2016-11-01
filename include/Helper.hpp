@@ -131,6 +131,14 @@ struct CL_INTERP {
 /**
  *
  */
+struct D_INTERP {
+    int q_index;
+    spline1dinterpolant interpolator;
+};
+
+/**
+ *
+ */
 enum Bispectrum_Effects {
     NLG_eff,
     LISW_eff,

@@ -178,7 +178,6 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             res += (2.0 * 2 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * F;
         }
     }
-    cout << "HERE" << endl; 
     int n_threads = analysis->model->give_fiducial_params("n_threads_bispectrum");
     int gaps = analysis->model->give_fiducial_params("gaps_bispectrum");
     int stepsize = gaps + 1;

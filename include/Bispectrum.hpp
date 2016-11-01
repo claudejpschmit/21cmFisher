@@ -99,7 +99,7 @@ class Bispectrum {
         CollisionRates CollisionKappa;
         spline1dinterpolant Growth_function_interpolator;
         spline1dinterpolant g1_interpolator;
-        vector<spline1dinterpolant> growth_function_interps;
+        vector<D_INTERP> growth_function_interps;
 
         vector<Theta> theta_interpolants;
         

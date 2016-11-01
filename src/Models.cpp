@@ -89,23 +89,28 @@ ModelParent<T21>::ModelParent(map<string,double> params)
     template<typename T21>
 double ModelParent<T21>::Pkz_interp(double k, double z, int Pk_index)
 {
-    spline2dinterpolant interp;  
+    //spline2dinterpolant interp;  
     //#pragma omp critical
     //{
     //interp = Pkz_interpolators[Pk_index].interpolator;
     //}
+    if (Pk_index >= Pkz_interpolators.size())
+        cout << "ERROR in PKZ" << endl;
     return spline2dcalc(Pkz_interpolators[Pk_index].interpolator, k, z);
 }
 
     template<typename T21>
 double ModelParent<T21>::T21_interp(double z, int Tb_index)
 {
-    spline1dinterpolant interp;  
+    //spline1dinterpolant interp;  
     //#pragma omp critical
     //{
     //interp = Tb_interpolators[Tb_index].interpolator;
     //}
     // The factor of 1000 is so I get the result in mK.
+    if (Tb_index >= Tb_interpolators.size())
+        cout << "ERROR in Tb" << endl;
+
     return spline1dcalc(Tb_interpolators[Tb_index].interpolator,z);
 
 }
@@ -113,11 +118,14 @@ double ModelParent<T21>::T21_interp(double z, int Tb_index)
     template<typename T21>
 double ModelParent<T21>::q_interp(double z, int q_index)
 {
-    spline1dinterpolant interp;  
+    //spline1dinterpolant interp;  
     //#pragma omp critical
     //{
     //interp = q_interpolators[q_index].interpolator;
     //}
+    if (q_index >= q_interpolators.size())
+        cout << "ERROR in Q" << endl;
+
     return spline1dcalc(q_interpolators[q_index].interpolator,z);
 }
 
@@ -130,45 +138,60 @@ double ModelParent<T21>::r_interp(double z)
     template<typename T21>
 double ModelParent<T21>::Hf_interp(double z)
 {
+    if (q_interpolators.size() == 0)
+        cout << "ERROR in HF" << endl;
+
     return spline1dcalc(q_interpolators[0].interpolator_Hf,z);
 }
     template<typename T21>    
 double ModelParent<T21>::H_interp(double z, int q_index)
 {
-    spline1dinterpolant interp;  
+    //spline1dinterpolant interp;  
     //#pragma omp critical
     //{
     //    interp = q_interpolators[q_index].interpolator_Hf;
     //}
+    if (q_index >= q_interpolators.size())
+        cout << "ERROR in H" << endl;
+
     return spline1dcalc(q_interpolators[q_index].interpolator_Hf,z);
 }
 
     template<typename T21>
 double ModelParent<T21>::qp_interp(double z, int q_index)
 {
-    spline1dinterpolant interp;  
+    //spline1dinterpolant interp;  
     //#pragma omp critical 
     //{
     //    interp = q_interpolators[q_index].interpolator_qp;
     //}
+    if (q_index >= q_interpolators.size())
+        cout << "ERROR in QP" << endl;
+
     return spline1dcalc(q_interpolators[q_index].interpolator_qp,z);
 }
 
     template<typename T21>
 double ModelParent<T21>::fz_interp(double z, int Tb_index)
 {
-    spline1dinterpolant interp;  
+    //spline1dinterpolant interp;  
     //#pragma omp critical
     //{
     //interp = Tb_interpolators[Tb_index].fz_interpolator;
     //}
+    if (Tb_index >= Tb_interpolators.size())
+        cout << "ERROR in FZ" << endl;
+
     return spline1dcalc(Tb_interpolators[Tb_index].fz_interpolator,z);
 }
 
     template<typename T21>
 double ModelParent<T21>::hubble_h(int q_index)
 {
-    double h;  
+    double h; 
+    if (q_index >= q_interpolators.size())
+        cout << "ERROR in h" << endl;
+
     //#pragma omp critical
     //{
     h = q_interpolators[q_index].h;
@@ -1931,7 +1954,6 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
             break;
         }
     }
-
     if (do_calc) {
         log<LOG_VERBOSE>("Calculating Pkz from scratch");
         Pk_interpolator interp;
@@ -2012,6 +2034,7 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
             break;
         }
     }
+
     if (do_calc) {
         log<LOG_VERBOSE>("Calculating T21 from scratch");
 
@@ -2182,7 +2205,7 @@ void Model_Intensity_Mapping::update_q(map<string,double> params, int *q_index)
         q_interpolators.push_back(interp);
         *q_index = q_interpolators.size() - 1;
         log<LOG_VERBOSE>("q update done");
-    }    
+    }
 }
 
 //in micro_K
