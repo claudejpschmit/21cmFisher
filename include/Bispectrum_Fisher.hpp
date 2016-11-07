@@ -38,8 +38,12 @@ class Bispectrum_Fisher {
         AnalysisInterface* analysis;
         Bispectrum_LISW* LISW;
         Bispectrum* NLG;
+
+        bool interpolation_done;
         
         int lmax_CLASS;
+        int nu_steps_CLASS;
+        double nu_min_CLASS, nu_stepsize_CLASS;
         vector<string> model_param_keys;
         string fisherPath;
         map<string,double> fiducial_params, var_params;

@@ -16,6 +16,10 @@ class Bispectrum {
         void build_signal_triangles(int lmin, int lmax, int delta_l, double z);
         vector<vector<double>> build_triangle(int lmax, string filename);
 
+        void update_THETAS(vector<vector<Theta>> transfer_vec);
+        int theta_size();
+        Theta make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, int q_i,\
+                double zc_max, double zc_min, double delta_zc);
         
         double calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3);
         double calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3,\
@@ -57,6 +61,8 @@ class Bispectrum {
         double Gamma_l_integrand_z(int l, double z, double k);
         double Gamma_l_z(int l, double z);
         double Gamma_integral(int l);
+        
+        void update_D_Growth(int q_index); 
 
     private:
         double x_bar(double z);
@@ -64,10 +70,9 @@ class Bispectrum {
         dcomp B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_index, int q_index);
 
         dcomp B_ll_direct(int la, int lb, int lc);
-        void update_D_Growth(int q_index); 
         double z_centre_CLASS;
         double delta_z_CLASS;
-
+        int determine_theta_index(int li, int lj, int q, int Pk_index, int Tb_index, int q_index);
 
         double sph_bessel_camb(int l, double x);
         double theta(int li, int lj, double z, int q, double z_centre, double delta_z);
@@ -90,6 +95,10 @@ class Bispectrum {
         double Tg(double z);
         double power(double k);
         double power(double k, int Pk_index);
+
+        void sort_theta();
+        //bool Compare_li(const Theta& l, const Theta& r);
+
 
         double var;
         double pi = M_PI;

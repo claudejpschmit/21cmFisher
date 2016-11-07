@@ -57,6 +57,22 @@ double ModelInterface::hubble_h(int q_index)
     return 0;
 }
 
+int ModelInterface::Pkz_size()
+{
+    return 0;
+}
+
+int ModelInterface::Tb_size()
+{
+    return 0;
+}
+
+int ModelInterface::q_size()
+{
+    return 0;
+}
+
+
 string ModelInterface::give_modelID()
 {
     return modelID;
@@ -242,6 +258,26 @@ void ModelParent<T21>::writePK_T21_q()
     }
     t21.close();
 }
+
+    template<typename T21>
+int ModelParent<T21>::Pkz_size()
+{
+    return Pkz_interpolators.size();
+}
+
+    template<typename T21>
+int ModelParent<T21>::Tb_size()
+{
+    return Tb_interpolators.size();
+}
+
+    template<typename T21>
+int ModelParent<T21>::q_size()
+{
+    return q_interpolators.size();
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /*                              Code for CAMB_ARES                           */

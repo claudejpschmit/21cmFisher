@@ -218,10 +218,18 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_in
     double I1 = 0;
     if (pre != 0){
         // The conversion factor is added in F(z).
+        int theta_index1 = 0;
+        int theta_index2 = 0;
+        theta_index1 = determine_theta_index(la,la,0, Pk_index, Tb_index, q_index);
+        if (la == lb)
+            theta_index2 = theta_index1;
+        else
+            theta_index2 = determine_theta_index(lb,lb,0,Pk_index,Tb_index,q_index);
+
         auto integrand = [&](double z)
         {
-            if (analysis == NULL || analysis->model == NULL)
-                cout << "segfault is likely: 1" << endl;
+            //if (analysis == NULL || analysis->model == NULL)
+            //    cout << "segfault is likely: 1" << endl;
             double D = D_Growth_interp(z,q_index);
             double r = analysis->model->q_interp(z,q_index);
             // 1000 factor is necessary to convert km into m.
@@ -229,17 +237,18 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_in
             double Fz = (analysis->model->c/hub)*D*D*f1(z,q_index)*Wnu(r, z_centre, delta_z);
             double THETA2 = 0;
             double THETA1 = 0; 
-            THETA1 = theta(la,la,z,0, z_centre, delta_z,Pk_index,Tb_index,q_index);
+            THETA1 = spline2dcalc(theta_interpolants[theta_index1].interpolator,z,z_centre);
+            //theta(la,la,z,0, z_centre, delta_z,Pk_index,Tb_index,q_index);
             if (la == lb) 
             {
                 THETA2 = THETA1;
             }
             else 
             {
-                THETA2 = theta(lb,lb,z,0, z_centre, delta_z, Pk_index,Tb_index,q_index);
+                THETA2 = spline2dcalc(theta_interpolants[theta_index2].interpolator,z,z_centre);
             }
             //cout << "Thetas = " << THETA1 << " " << THETA2 << ", la = " <<\
-            la << ", lb = " << lb << ", z = " << z << ", Fz = " << Fz << endl;
+            //la << ", lb = " << lb << ", z = " << z << ", Fz = " << Fz << endl;
             return Fz * THETA1 * THETA2;
         };
 
@@ -266,6 +275,11 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_in
             W6J = WignerSymbols::wigner6j(la, lb, lc, l7, l6, 1);
             double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
             // For debug:
+            // IMPORTANT: before enabling this, updating the theta vector needs to be 
+            //              reviewed. ATM I just initialize the vectors with li = lj
+            //              because that's the only once needed for the first term.
+            //
+            //            Same goes for the q values.
             l_terms = 0;
             double I2 = 0;
             if (l_terms != 0){
@@ -331,6 +345,12 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_in
 
                 double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
                 // For debug:
+                // IMPORTANT: before enabling this, updating the theta vector needs to be 
+                //              reviewed. ATM I just initialize the vectors with li = lj
+                //              because that's the only once needed for the first term.
+                //
+                //             same goes for the qs.
+
                 l_terms = 0;
 
                 double I3 = 0;
@@ -655,11 +675,113 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
         return thetas[li][z_index];
     }
 }
+int Bispectrum::determine_theta_index(int li, int lj, int q, int Pk_index, int Tb_index, int q_index)
+{
+    int qmax = 1;
+    // this is 1 because li = lj always...
+    int lj_max = 1;//analysis->model->give_fiducial_params("lmax_Fisher_Bispectrum");
+
+
+    int Tb_fact = analysis->model->q_size();
+    int Pk_fact = Tb_fact * analysis->model->Tb_size();
+    int q_fact = Pk_fact * analysis->model->Pkz_size();
+    int lj_fact = q_fact * qmax;
+    int li_fact = lj_fact * lj_max;
+
+    // becaude li = lj, this is effectively setting lj = 0 here.
+    int index = li * li_fact + 0 * lj_fact + q * q_fact + Pk_index * Pk_fact + Tb_index * Tb_fact + q_index;
+    
+    if (theta_interpolants[index].li != li ||\
+            theta_interpolants[index].lj != lj ||\
+            theta_interpolants[index].q != q ||\
+            theta_interpolants[index].Pk_index != Pk_index ||\
+            theta_interpolants[index].Tb_index != Tb_index ||\
+            theta_interpolants[index].q_index != q_index)
+    {
+        /*
+        #pragma omp critical
+        {
+        cout << "index = "<< index << ", v_size = " << theta_interpolants.size() << ", li = " <<\
+            theta_interpolants[index].li << " != " << li <<\
+            ", lj = " << theta_interpolants[index].lj << " != " << lj <<\
+            ", q = " << theta_interpolants[index].q << " != " << q <<\
+            ", Pk = " << theta_interpolants[index].Pk_index << " != " << Pk_index <<\
+            ", Tb = " << theta_interpolants[index].Tb_index << " != " << Tb_index <<\
+            ", qi = " << theta_interpolants[index].q_index << " != " << q_index << endl;
+        }
+        */
+        cout << "ERROR: The index calculated does not correspond to the right vector element." << endl;
+        //cout << "l max = " << lj_max << ", qi max = " << analysis->model->q_size() << ", Pk max = " <<\
+        //    analysis->model->Pkz_size() << ", Tb max = " << analysis->model->Tb_size() << endl;
+        return 0;
+    }
+    else
+    {
+        return index;
+    }
+    
+    
+    
+    
+    /*
+    int index = -1;
+    for (unsigned int i = 0; i < theta_interpolants.size(); i++)
+    {
+        if (theta_interpolants[i].li == li &&\
+                theta_interpolants[i].lj == lj &&\
+                theta_interpolants[i].q == q &&\
+                theta_interpolants[i].Pk_index == Pk_index &&\
+                theta_interpolants[i].Tb_index == Tb_index &&\
+                theta_interpolants[i].q_index == q_index)
+        {
+            index = i;
+            break;
+        }
+    }
+    if (index < 0)
+    {
+        cout << "ERROR: trying to access a theta that has not been precomputed." << endl;
+        return 0;
+    }
+    else
+    {
+        return index;
+    }*/
+
+}
 
 double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, double delta_z, int Pk_index, int Tb_index, int q_index)
 {
+    int index = -1;
+    //
+    // Determine the index of the vector
+    //
+  
+    for (unsigned int i = 0; i < theta_interpolants.size(); i++)
+    {
+        if (theta_interpolants[i].li == li &&\
+                theta_interpolants[i].lj == lj &&\
+                theta_interpolants[i].q == q &&\
+                theta_interpolants[i].Pk_index == Pk_index &&\
+                theta_interpolants[i].Tb_index == Tb_index &&\
+                theta_interpolants[i].q_index == q_index)
+        {
+            index = i;
+            break;
+        }
+    }
+   
+    if (index < 0)
+    {
+        cout << "ERROR: trying to access a theta that has not been precomputed." << endl;
+        return 0;
+    }
+    else
+    {
+        return spline2dcalc(this->theta_interpolants[index].interpolator, z, z_centre);
+    }
     //return 0;
-    
+    /*
     int index = 0;
     bool pre_calc = false;
     for (int i = 0; i < theta_interpolants.size(); i++)
@@ -761,6 +883,7 @@ double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, doubl
         }
         return spline1dcalc(theta_interpolants[index].interpolator,z);
     }
+    */
     
 }
 
@@ -1832,3 +1955,144 @@ vector<vector<double>> Bispectrum::build_triangle(int lmax, string filename)
     return result;
 }
 
+void Bispectrum::update_THETAS(vector<vector<Theta>> transfer_vec)
+{
+    vector<Theta> temp;
+    for (unsigned int i = 0; i < transfer_vec.size(); i++)
+    {
+        for (unsigned int j = 0; j < transfer_vec[i].size(); j++)
+        {
+            temp.push_back(transfer_vec[i][j]);
+        }
+    }
+    for (unsigned int i = 0; i < temp.size(); i++)
+        this->theta_interpolants.push_back(temp[i]);
+    sort_theta();
+}
+
+void Bispectrum::sort_theta()
+{
+    cout << "Now sorting Theta intepolators with vector of length = " << theta_interpolants.size() << endl;
+    std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_qi);
+    std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_tb);
+    std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_pk);
+    std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_q);
+    std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_lj);
+    std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_li);
+    /*
+    for (int i = 0; i < theta_interpolants.size(); i++)
+    {
+        cout << "li = " << theta_interpolants[i].li << ", lj = " << theta_interpolants[i].lj << ", q = " <<\
+            theta_interpolants[i].q << ", Pk = " << theta_interpolants[i].Pk_index << ", Tb = " <<\
+            theta_interpolants[i].Tb_index << ", qi = " << theta_interpolants[i].q_index << endl;
+    }
+    */
+}
+
+Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, int q_i,\
+        double zc_max, double zc_min, double delta_zc)
+{
+    /////////////////////////
+    double delta_z_loc = 0.1;
+    double zmin = zc_min - 1.5 * delta_z_loc;
+    double zmax = zc_max + 1.5 * delta_z_loc;
+    int z_steps = ceil((zmax - zmin)/delta_z_loc);
+    double z_stepsize = 3.0 * delta_z_loc/(double)z_steps;
+    ////////////////////////
+    int zc_steps = ceil((zc_max - zc_min)/delta_zc);
+    vector<double> zs, zcs, vals;
+    /////////////
+    //This determines the lower bound of the kappa integral
+    double low = 0;
+    if (li < 50){
+        low = 0.0001;
+    } else if (li < 1000){
+        low = (double)li/(2.0*10000.0);
+    } else {
+        low = (double)li/(2.0*10000.0);
+    }
+    double lower_k_bound = 0;// = k_low;
+    if (low > 0.0001)
+        lower_k_bound = low;
+    else
+        lower_k_bound = 0.0001;
+
+    //This determines the upper bound of the kappa integral
+    double higher_k_bound = lower_k_bound + 0.5;
+    /////////////
+
+    for (int i = 0; i <= zc_steps; i++)
+    {
+        double zc = zc_min + i * delta_zc;
+        zcs.push_back(zc); 
+    }
+    for (int i = 0; i <= z_steps; i++)
+    {
+        double z = zmin + i * z_stepsize;
+        zs.push_back(z); 
+    }
+    for (int i = 0; i <= zc_steps; i++)
+    {
+        for (int j = 0; j <= z_steps; j++)
+        {
+            
+            double z = zs[j];
+            double zc = zcs[i];
+            //do calc
+            double r = analysis->model->q_interp(z,q_i);
+            auto integrand = [&](double k)
+            {
+                double res = pow(k, 2+q) *\
+                         alpha(li, k, zc, delta_z_loc, Pk_i, Tb_i, q_i);
+                double P = power(k, Pk_i);
+                double jl = sph_bessel_camb(lj, k*r);
+                res *= P*jl;
+                return res;
+            };
+            
+            
+            double res = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
+            vals.push_back(res);
+        }
+    }
+
+    real_1d_array v_zs, v_zcs, v_vals;
+    v_zs.setlength(zs.size());
+    v_zcs.setlength(zcs.size());
+    v_vals.setlength(vals.size());
+    for (unsigned int i = 0; i < zs.size(); i++){
+        v_zs[i] = zs[i];
+    }
+    for (unsigned int i = 0; i < zcs.size(); i++){
+        v_zcs[i] = zcs[i];
+    }
+    for (unsigned int i = 0; i < vals.size(); i++){
+        v_vals[i] = vals[i];
+    }
+
+    spline2dinterpolant interp;
+    try 
+    {
+        spline2dbuildbicubicv(v_zs, zs.size(), v_zcs, zcs.size(), v_vals, 1, interp);
+    }
+    catch(alglib::ap_error e_msg)
+    {
+        log<LOG_ERROR>("---- Error: %1%") % e_msg.msg.c_str();
+    }
+
+    Theta TH;
+    TH.li = li;
+    TH.lj = lj;
+    TH.q = q;
+    TH.Pk_index = Pk_i;
+    TH.Tb_index = Tb_i;
+    TH.q_index = q_i;
+    TH.interpolator = interp;
+
+    return TH;
+}
+
+int Bispectrum::theta_size()
+{
+    return theta_interpolants.size();
+}

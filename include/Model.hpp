@@ -28,6 +28,10 @@ class ModelInterface : public CosmoBasis {
                 int *Pk_index, int *Tb_index, int *q_index); 
         virtual double hubble_h(int q_index);
         virtual void writePK_T21_q();
+        virtual int Pkz_size();
+        virtual int Tb_size();
+        virtual int q_size();
+
         string give_modelID();
     protected:
         virtual void update_Pkz(map<string,double> params, int *Pk_index);
@@ -54,6 +58,9 @@ class ModelParent : public ModelInterface {
                 int *Pk_index, int *Tb_index, int *q_index); 
         double hubble_h(int q_index);
         void writePK_T21_q();
+        int Pkz_size();
+        int Tb_size();
+        int q_size();
     protected:
         
         vector<Pk_interpolator> Pkz_interpolators;
@@ -204,6 +211,7 @@ class Model_Intensity_Mapping : public ModelParent<Tb_interpolator_IM> {
         /* Variables */
         double M_normalization;
         CAMB_CALLER* CAMB;
+        // Contains the minimum/maximum Halomass that is used in the interpolation.
         // Contains the minimum/maximum Halomass that is used in the interpolation.
         double zmin_Ml, zmax_Ml, stepsize_Ml;
         int zsteps_Ml;

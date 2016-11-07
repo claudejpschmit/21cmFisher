@@ -24,7 +24,7 @@ vpath .base build
 # including -ffast-math may not be as bad as anticipated.
 CXX = g++ -Wall -std=c++11 -ffast-math -Wno-deprecated -fopenmp -g
 
-OPTFLAG = -O0
+OPTFLAG = -O2
 ARMAFLAGS = -larmadillo
 GSLFLAGS = -lgsl -lgslcblas
 WIGNERFLAGS = -lwignerSymbols

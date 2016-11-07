@@ -117,7 +117,7 @@ struct Ellipse {
  */
 struct Theta {
     int li, lj, q, Pk_index, Tb_index, q_index;
-    spline1dinterpolant interpolator;
+    spline2dinterpolant interpolator;
 };
 
 /**
@@ -144,4 +144,30 @@ enum Bispectrum_Effects {
     LISW_eff,
     ALL_eff
 };
+
+static bool Compare_li(const Theta& l, const Theta& r)
+{
+    return l.li < r.li;
+}
+static bool Compare_lj(const Theta& l, const Theta& r)
+{
+    return l.lj < r.lj;
+}
+static bool Compare_q(const Theta& l, const Theta& r)
+{
+    return l.q < r.q;
+}
+static bool Compare_pk(const Theta& l, const Theta& r)
+{
+    return l.Pk_index < r.Pk_index;
+}
+static bool Compare_tb(const Theta& l, const Theta& r)
+{
+    return l.Tb_index < r.Tb_index;
+}
+static bool Compare_qi(const Theta& l, const Theta& r)
+{
+    return l.q_index < r.q_index;
+}
+
 

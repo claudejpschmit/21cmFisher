@@ -293,6 +293,7 @@ double Bispectrum_NLG::f1(double z, int Tb_index)
 
 double Bispectrum_NLG::theta(int li, int lj, double z, int q, double z_centre, double delta_z, int Pk_index, int Tb_index, int q_index)
 {
+    /*
     //cout << "uuu" << endl;
     int index = 0;
     bool pre_calc = false;
@@ -387,6 +388,8 @@ double Bispectrum_NLG::theta(int li, int lj, double z, int q, double z_centre, d
         //cout << " --- read" << endl; 
         return spline1dcalc(theta_interpolants[index].interpolator,z);
     }
+    */
+    return 0;
 }
 double Bispectrum_NLG::power(double k, int Pk_index)
 {
