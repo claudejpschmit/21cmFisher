@@ -2,6 +2,7 @@
 #include "Log.hpp"
 #include "wignerSymbols.h"
 #include <omp.h>
+#include <time.h>
 
 /*********************************/
 /**     Bispectrum_Fisher       **/
@@ -64,13 +65,13 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
         int Tb = 0;
         int q = 0;
         string param_key = model_param_keys[i];
-        cout << param_key << endl;
+        log<LOG_BASIC>("%1%") % param_key;
         map<string,double> working_params = fiducial_params;
         double h = this->var_params[param_key];
         double x = working_params[param_key];
         working_params[param_key] = x + h;
         analysis->model->update(working_params, &Pk, &Tb, &q);
-        cout << "model updated for Pk_i = " << Pk << " Tb = " << Tb << " q = " << q << endl;
+        log<LOG_BASIC>("model updated for Pk_i = %1%, Tb = %2%, q = %3%.") % Pk % Tb % q;
     }
     log<LOG_BASIC>(" -----> done");
     log<LOG_BASIC>(" -> Interpolating all possible growth functions.");
@@ -224,6 +225,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             // set bispectrum.THETA_interps = transfer;
             // done!
             log<LOG_BASIC>("Precomputing all theta interpolators.");
+            double start = clock();
             double zmax = (1420.4/this->nu_min_CLASS) - 1.0;
             double zmin = (1420.4/(this->nu_min_CLASS + this->nu_steps_CLASS * this->nu_stepsize_CLASS) - 1.0);
             double delta_z = (zmax - ((1420.4/(this->nu_min_CLASS+this->nu_stepsize_CLASS)) - 1.0));
@@ -275,8 +277,10 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                 }
             }
             NLG->update_THETAS(global_vec);
-
-            log<LOG_BASIC>(" --> thetas are interpolated.");
+            double finish = clock();
+            double time = (finish - start)/CLOCKS_PER_SEC;
+            
+            log<LOG_BASIC>(" --> thetas are interpolated. Time taken = %1%.") % time;
             interpolation_done = true;
         }
         else
@@ -497,9 +501,9 @@ double Bispectrum_Fisher::Cl(int l, double nu)
 {
     // Noise now included
     double cl = analysis->Cl(l,nu,nu,0,0,0);
-    //double noise = analysis->Cl_noise(l, nu, nu);
+    double noise = analysis->Cl_noise(l, nu, nu);
     //cout << cl << " --- " << noise << endl; 
-    return cl;//+noise;
+    return cl+noise;
 }
 
 double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string param_key,\
@@ -549,16 +553,11 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     if (effects == NLG_eff)
     {
         working_params[param_key] = x + h;
-        //#pragma omp critical
-        //{
-            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        //}
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        
         B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
         working_params[param_key] = x;
-        //#pragma omp critical
-        //{
-            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        //}
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
         B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
         
         //cout << B1_NLG << endl;
@@ -569,16 +568,10 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     else if (effects == LISW_eff)
     {
         working_params[param_key] = x + h;
-        //#pragma omp critical
-        //{
-            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        //}
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
         B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
         working_params[param_key] = x;
-        //#pragma omp critical
-        //{
-            analysis->model->update(working_params, Pk_index, Tb_index, q_index);
-        //}
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
         B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
      
         return (B1 - B2)/h;

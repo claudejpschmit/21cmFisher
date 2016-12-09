@@ -8,11 +8,68 @@
 using namespace std;
 typedef std::complex<double> dcomp;
 
+/**
+ * The Bispectrum class computes the contribution to the bispectrum
+ * from non-linear gravitational collapse.
+ */
 class Bispectrum {
 
     public:
+        /**
+         * The class constructor uses a pointer to an AnalysisInterface that 
+         * computes the power spectra for it.
+         *
+         * The constructor precomputes values for the growth function D(z) for 
+         * redshifts up to z = 100, and stores them into growth_function_interpolator.
+         *
+         * This also precomputes the g1 function, though I think that is not being used atm.
+         * 
+         * The constructor sets the D_growth function interpolator to the fiducial model. 
+         *
+         */
         Bispectrum(AnalysisInterface *analysis);
+
+        /**
+         * Standard class destructor
+         */
         ~Bispectrum();
+
+        /**
+         * Function to compute the NLG contribution to the bispectrum.
+         * It is evaluated at z for the model defined by pk,tb and q indecies.
+         * It uses the functions calc_Blll(l1,l2,l3,z,{indecies}) and 
+         * thus B_ll(l1,l2,l3, z, {indecies}) to  determine the Bispectrum.
+         *
+         * I think this function can only be used when the make_theta_interp 
+         * function has been called to interpolate all the thetas that will be 
+         * needed to compute the Bllls.
+         * 
+         */
+        double calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3,\
+                                double z, int Pk_index, int Tb_index, int q_index);
+        
+        /**
+         * This Function computes the NLG contribution to the bispectrum for
+         * the fiducial model WITHOUT needing to interpolate the thetas.
+         */
+        double calc_angular_B_noInterp(int l1, int l2, int l3, int m1, int m2, int m3, double z);
+
+        /**
+         * This function determines on the basis of the l values whether multiple or a
+         * single call of B_ll(...) are necessary to compute the bispectrum amplitude.
+         * 
+         * Use this when thetas have been interpolated.
+         */
+        double calc_Blll(int l1, int l2, int l3, double z, int Pk_index, int Tb_index, int q_index);
+
+        /**
+         * Same as above.
+         *
+         * This function does NOT use the Theta interpolation method.
+         */
+        double calc_Blll_noInterp(int l1, int l2, int l3, double z);
+
+        
         void build_signal_triangles(int lmin, int lmax, int delta_l, double z);
         vector<vector<double>> build_triangle(int lmax, string filename);
 
@@ -21,15 +78,10 @@ class Bispectrum {
         Theta make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, int q_i,\
                 double zc_max, double zc_min, double delta_zc);
         
-        double calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3);
-        double calc_angular_B(int l1, int l2, int l3, int m1, int m2, int m3,\
-                                double z, int Pk_index, int Tb_index, int q_index);
-
+       
         double D_Growth_interp(double z);
         double D_Growth_interp(double z, int q_index);
-        double calc_Blll(int l1, int l2, int l3);
-        double calc_Blll(int l1, int l2, int l3, double z, int Pk_index, int Tb_index, int q_index);
-
+        
         double g1(double z);
         AnalysisInterface* analysis;
         double Wnu(double r, double z_centre, double delta_z);
@@ -63,13 +115,27 @@ class Bispectrum {
         double Gamma_integral(int l);
         
         void update_D_Growth(int q_index); 
+        void plot_theta_integrand(int li, double z, string filename);
+
 
     private:
-        double x_bar(double z);
-        dcomp B_ll(int la, int lb, int lc);
+        /**
+         * Main work function to compute the NLG bispectrum contribution.
+         *
+         * Currently only the first order contribution is included, validity is to be tested.
+         *
+         * This can only be used when thetas have been interpolated.
+         */
         dcomp B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_index, int q_index);
 
-        dcomp B_ll_direct(int la, int lb, int lc);
+        /**
+         * Main function to compute the NLG bispectrum when thetas aren't interpolated.
+         * This method only produces results for the fiducial model.
+         */
+        dcomp B_ll_direct(int la, int lb, int lc, double z);
+        
+        
+        double x_bar(double z);
         double z_centre_CLASS;
         double delta_z_CLASS;
         int determine_theta_index(int li, int lj, int q, int Pk_index, int Tb_index, int q_index);
@@ -78,6 +144,7 @@ class Bispectrum {
         double theta(int li, int lj, double z, int q, double z_centre, double delta_z);
         double theta(int li, int lj, double z, int q, double z_centre, double delta_z,\
                 int Pk_index, int Tb_index, int q_index);
+        double theta_calc(int li, int lj, double z, int q, double z_centre, double delta_z);
         double F(double z);
         double D_Growth(double z);
         double D_Growth(double z, int q_index);

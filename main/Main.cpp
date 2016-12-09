@@ -47,7 +47,6 @@ int main (int argc, char* argv[])
     string matrixPath = parser.giveMatrixPath();
     string fisherPath = parser.giveFisherPath();
     GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
-    cout << params["zmax"] << endl;
     bool ERROR = false;
     int Pk_index = 0;
     int Tb_index = 0;
@@ -133,7 +132,9 @@ int main (int argc, char* argv[])
             int l = exp(i*0.1);
             if (l < 10000)
             {
-                file << l << " " << (l+1)*l*analysis->Cl(l,800,800,0,0,0)/(2.0*M_PI) << endl;
+                double res = (l+1)*l*analysis->Cl(l,800,800,0,0,0)/(2.0*M_PI);
+                cout << l << " " << res << endl;
+                file << l << " " << res << endl;
                 file2 << l << " " << (l+1)*l*analysis->Cl(l,900,900,0,0,0)/(2.0*M_PI) << endl;
                 file3 << l << " " << (l+1)*l*analysis->Cl(l,1000,1000,0,0,0)/(2.0*M_PI) << endl;
                 file4 << l << " " << (l+1)*l*analysis->Cl(l,1100,1100,0,0,0)/(2.0*M_PI) << endl;
@@ -147,6 +148,7 @@ int main (int argc, char* argv[])
 
             }
         }
+        
     }
 
     return 0;

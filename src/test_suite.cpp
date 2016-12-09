@@ -25,68 +25,27 @@
 
 using namespace std;
 
-log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_NOTHING;
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_ERROR;
 
-struct Interpol{
-    bool computed;
-    spline1dinterpolant* interpolator;
-};
+/** 
+ * RUN: ./test --log_level=test_suite --run_test=check_TESTCASE
+ *  for more detail from the framework.
+ */
 
-BOOST_AUTO_TEST_CASE(test_interp)
-{
-    int lmax_CLASS = 100;
-    int num_indecies = 5;
-
-    for (int l = 0; l < lmax_CLASS+1; l++)
-        {
-            //vector<vector<vector<Interpol>>> subvec3;
-            //Cls_interpolators_large2[l].resize(num_indecies);
-            for (int i = 0; i < num_indecies; i++)
-            {
-                //Cls_interpolators_large2[l][i].resize(num_indecies);
-                //vector<vector<Interpol>> subvec2;
-                for (int j = 0; j < num_indecies; j++)
-                {
-                    //Cls_interpolators_large2[l][i][j].resize(num_indecies);
-                    vector<Interpol> subvec1;
-                    for (int k = 0; k < num_indecies; k++)
-                    {    
-                        Interpol I;
-                        real_1d_array x;                        
-                        real_1d_array y;
-                        x.setlength(2);
-                        y.setlength(2);
-                        x[0] = 0;
-                        x[1] = 1;
-                        y[0] = 0;
-                        y[1] = 1;
-                        spline1dinterpolant interpol;
-                        spline1dbuildlinear(x, y, 2, interpol);
-                        I.computed = false;
-                        I.interpolator = &interpol;
-                        //(*Cls_interpolators_large)[l][i][j][k].computed = false;
-                        subvec1.push_back(I);//Cls_interpolators_large2[l][i][j][k].computed = false;
-                    }
-                    //subvec2.push_back(subvec1);
-                }
-                //subvec3.push_back(subvec2);
-            }
-            //Cls_interpolators_large2.push_back(subvec3);
-        }
-        cout << "here" << endl;
-
-
-
-    cout << " END TEST INTERPOLATION " << endl;
-}
-
+/**     
+ * This test case checks whether all the parameters from 
+ * the params.ini file are read in correctly.
+ * A test file: "UnitTestData/test_params_check_parser.ini"
+ * is used here, the parameter values are just set equal
+ * to the position they are within the file for simplicity.
+ */
 BOOST_AUTO_TEST_CASE(check_parser)
 {
     /**     SETUP   **/
     // ini file to which the output will be compared.
     string iniFilename = "UnitTestData/test_params_check_parser.ini";
     IniReader parser(iniFilename);
-    
+
     map<string,double> params = parser.giveRunParams();
     vector<string> keys = parser.giveParamKeys();
     string matrixPath = parser.giveMatrixPath();
@@ -96,20 +55,20 @@ BOOST_AUTO_TEST_CASE(check_parser)
     GLOBAL_VERBOSITY_LEVEL = parser.giveVerbosity();
     ModelAnalysis model_case = parser.giveModelAndAnalysis()[0];
     ModelAnalysis analyse_case = parser.giveModelAndAnalysis()[1];
-   
+
     vector<string> parameter_keys = {"interp_Cls", "lmax_Fisher_Bispectrum", "gaps_bispectrum",\
-                                    "lambda_LISW","Bias_included", "Bispectrum_numin",\
-                                    "Bispectrum_numax","ombh2","omch2","omnuh2","omk","hubble","A_s",\
-                                    "n_s","sigma8","tau_reio","T_CMB","w_DE","100*theta_s","k_pivot","YHe",\
-                                    "z_pk","omega_lambda","zmin","zmax","zsteps","zmax_interp","gamma",\
-                                    "beta","alpha",\
-                                    "RLy","Santos_const_abg","Santos_interval_size","fstar","fesc",\
-                                    "nion","fx","flya","popflag","xrayflag","lyaxrayflag","IM_zlow",\
-                                    "IM_zhigh","zbin_size","rsd","limber","noise","Ae","df","Tsys",\
-                                    "fcover","lmax_noise","tau_noise","foreground","kmin","kmax","k_stepsize",\
-                                    "Pk_steps","lmin","lmax","lstepsize","n_threads","n_points_per_thread",\
-                                    "n_threads_bispectrum", "nested","sub_threads"};
-                                    
+        "lambda_LISW","Bias_included", "Bispectrum_numin",\
+            "Bispectrum_numax","ombh2","omch2","omnuh2","omk","hubble","A_s",\
+            "n_s","sigma8","tau_reio","T_CMB","w_DE","100*theta_s","k_pivot","YHe",\
+            "z_pk","omega_lambda","zmin","zmax","zsteps","zmax_interp","gamma",\
+            "beta","alpha",\
+            "RLy","Santos_const_abg","Santos_interval_size","fstar","fesc",\
+            "nion","fx","flya","popflag","xrayflag","lyaxrayflag","IM_zlow",\
+            "IM_zhigh","zbin_size","rsd","limber","noise","Ae","df","Tsys",\
+            "fcover","lmax_noise","tau_noise","foreground","kmin","kmax","k_stepsize",\
+            "Pk_steps","lmin","lmax","lstepsize","n_threads","n_points_per_thread",\
+            "n_threads_bispectrum", "nested","sub_threads"};
+
     // Now test IniReaderAnalysis
     string iniFilename2 = "UnitTestData/analysis_check_parser.ini";
     // Initialize inireader.
@@ -133,7 +92,7 @@ BOOST_AUTO_TEST_CASE(check_parser)
     BOOST_CHECK(keys[0] == "ombh2");
     BOOST_CHECK(keys[1] == "omch2");
     BOOST_REQUIRE(parameter_keys.size() == params.size());
-   
+
     // check the value of all parameters, as given in the .ini file
     BOOST_CHECK(params["interp_Cls"] == 1);
     BOOST_CHECK(params["lmax_Fisher_Bispectrum"] == 2);
@@ -209,11 +168,17 @@ BOOST_AUTO_TEST_CASE(check_parser)
     BOOST_CHECK(UsePseudoInv);
     BOOST_CHECK(UseInterpolation);
     BOOST_CHECK(AnalysisMode == bispectrum);
-    
+
     BOOST_CHECK(Priors["ombh2"] == 1);
     BOOST_CHECK(Priors["n_s"] == 3);
 }
 
+/**
+ * This test case checks whether the integration methods 
+ * implemented in Integrator.hpp are working as expected.
+ * This is important as the code is using integration methods
+ * extensively.
+ */
 BOOST_AUTO_TEST_CASE(check_integrator)
 {
     /**     SETUP   **/
@@ -226,7 +191,7 @@ BOOST_AUTO_TEST_CASE(check_integrator)
 
     //this one has a very narrow range where it actually works...
     double I4 = qgaus(test_f1, 0.0, 20);
-        
+
     auto test_f2 = [&](double x){
         return cos(x)*cos(x);
     };
@@ -252,13 +217,21 @@ BOOST_AUTO_TEST_CASE(check_integrator)
     //BOOST_CHECK(I8 > ans2 - 0.001 && I8 < ans2 + 0.001);
 }
 
+/**
+ * This test case checks whether the basic cosmology functions
+ * implemented in the CosmoBasis class are working as expected.
+ * Functions s.a. luminosity distance or the age of the universe.
+ * As a comparison I have taken the values quoted by Ned Wright's
+ * online cosmology calculator, for equivalent parametrisations 
+ * of the cosmological parameters.
+ */
 BOOST_AUTO_TEST_CASE(check_cosmobasis)
 {
     /**     SETUP     **/
-    
+
     string iniFilename = "UnitTestData/test_params_check_cosmobasis.ini";
     IniReader parser(iniFilename);
-    
+
     map<string,double> params = parser.giveRunParams();
 
     CosmoBasis Basis(params);
@@ -270,10 +243,9 @@ BOOST_AUTO_TEST_CASE(check_cosmobasis)
     double vol = Basis.comoving_volume(3) * 1E-9;
     double ang_dist = Basis.angular_diam_dist(3);
     double lum = Basis.luminosity_dist(3);
-    
-    
+
     /**     CHECKS   **/
-    
+
     // Most of these checks compare to Ned Wrights calculator with H0 = 69.6,
     // OmegaM = 0.308908, flat, at redshift z = 3.
     BOOST_REQUIRE(Basis.Omega_M(0) < 0.3095 && Basis.Omega_M(0) > 0.3085);
@@ -286,60 +258,133 @@ BOOST_AUTO_TEST_CASE(check_cosmobasis)
     BOOST_CHECK(lum < 25343.5 && lum > 25342.5);
 }
 
+/**
+ * This test case should check whether the power spectrum computed 
+ * by CAMB actually corresponds to the right power spectrum. 
+ * Here I compare the locally obtained P(k,z) to a power spectrum
+ * obtained from a freshly installed copy of CAMB for the same 
+ * cosmological parameters.
+ * I compare a P(k) at z = 0, and a P(k) at z = 5.
+ */
 BOOST_AUTO_TEST_CASE(check_CAMB_CALLER)
 {
     /**     SETUP   **/
     // ini file to which the output will be compared.
     string iniFilename = "UnitTestData/test_params_check_cambcaller.ini";
     IniReader parser(iniFilename);
-    
+
     map<string,double> params = parser.giveRunParams();
 
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = NULL;
+    model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
     CAMB_CALLER CAMB;
-   
+
     CAMB.call(params);    
     vector<double> vk = CAMB.get_k_values();
     vector<vector<double>> Pz = CAMB.get_Pz_values();
-    //cout << Pz.size() << " " << Pz[0].size() << endl; 
-    //for (int i = 0; i < Pz.size();i++)
-    //    cout << vk[i] << " " << Pz[i][0] << " " << Pz[i][1]<< endl;
+
+    ifstream pk0file;
+    ifstream pk5file;
+    double k, Pk;
+    vector<double> k0_vals, Pk0_vals, k5_vals, Pk5_vals;
+    pk0file.open("UnitTestData/PK_z0_check_cambcaller.dat");
+    pk5file.open("UnitTestData/PK_z5_check_cambcaller.dat");
+    while (pk0file >> k >> Pk)
+    {
+        k0_vals.push_back(k);
+        Pk0_vals.push_back(Pk);
+    }
+    while (pk5file >> k >> Pk)
+    {
+        k5_vals.push_back(k);
+        Pk5_vals.push_back(Pk);
+    }
     // don't quite know what appropriate test cases are here.
     // Maybe I could have a fiducial Pz result here that I could compare each value in the 
     // Pz container with. This should best be computed by some other source, not my local CAMB 
     // copy, eg. iCosmo.
+    // Currently this is using the output from a controlled copy of CAMB, I whink this test should be fine.
+    // It checks whether these values agree to 1 part in 1000.
     /**     CHECKS      **/
 
     //TODO: Write checks
+    BOOST_CHECK(Pk0_vals[0] < model->Pkz_interp(k0_vals[0], 0, Pk_index) +\
+            model->Pkz_interp(k0_vals[0], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[0] > model->Pkz_interp(k0_vals[0], 0, Pk_index) -\
+            model->Pkz_interp(k0_vals[0], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[10] < model->Pkz_interp(k0_vals[10], 0, Pk_index) +\
+            model->Pkz_interp(k0_vals[10], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[10] > model->Pkz_interp(k0_vals[10], 0, Pk_index) -\
+            model->Pkz_interp(k0_vals[10], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[20] < model->Pkz_interp(k0_vals[20], 0, Pk_index) +\
+            model->Pkz_interp(k0_vals[20], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[20] > model->Pkz_interp(k0_vals[20], 0, Pk_index) -\
+            model->Pkz_interp(k0_vals[20], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[30] < model->Pkz_interp(k0_vals[30], 0, Pk_index) +\
+            model->Pkz_interp(k0_vals[30], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[30] > model->Pkz_interp(k0_vals[30], 0, Pk_index) -\
+            model->Pkz_interp(k0_vals[30], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[40] < model->Pkz_interp(k0_vals[40], 0, Pk_index) +\
+            model->Pkz_interp(k0_vals[40], 0, Pk_index)/1000.0);
+    BOOST_CHECK(Pk0_vals[40] > model->Pkz_interp(k0_vals[40], 0, Pk_index) -\
+            model->Pkz_interp(k0_vals[40], 0, Pk_index)/1000.0);
 
+    BOOST_CHECK(Pk5_vals[0] < model->Pkz_interp(k5_vals[0], 5, Pk_index) +\
+            model->Pkz_interp(k5_vals[0], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[0] > model->Pkz_interp(k5_vals[0], 5, Pk_index) -\
+            model->Pkz_interp(k5_vals[0], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[10] < model->Pkz_interp(k5_vals[10], 5, Pk_index) +\
+            model->Pkz_interp(k5_vals[10], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[10] > model->Pkz_interp(k5_vals[10], 5, Pk_index) -\
+            model->Pkz_interp(k5_vals[10], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[20] < model->Pkz_interp(k5_vals[20], 5, Pk_index) +\
+            model->Pkz_interp(k5_vals[20], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[20] > model->Pkz_interp(k5_vals[20], 5, Pk_index) -\
+            model->Pkz_interp(k5_vals[20], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[30] < model->Pkz_interp(k5_vals[30], 5, Pk_index) +\
+            model->Pkz_interp(k5_vals[30], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[30] > model->Pkz_interp(k5_vals[30], 5, Pk_index) -\
+            model->Pkz_interp(k5_vals[30], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[40] < model->Pkz_interp(k5_vals[40], 5, Pk_index) +\
+            model->Pkz_interp(k5_vals[40], 5, Pk_index)/1000.0);
+    BOOST_CHECK(Pk5_vals[40] > model->Pkz_interp(k5_vals[40], 5, Pk_index) -\
+            model->Pkz_interp(k5_vals[40], 5, Pk_index)/1000.0);
+
+    delete model;
 }
 
 BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
 {
     /**     SETUP       **/
-    
+
     // ini file to which the output will be compared.
     string iniFilename = "UnitTestData/test_params_check_Fisher_Bispectrum.ini";
     IniReader parser(iniFilename);
-    
+
     map<string,double> params = parser.giveRunParams();
-    
+
     vector<string> keys = parser.giveParamKeys();
     string matrixPath = parser.giveMatrixPath();
     string fisherPath = parser.giveFisherPath();
-    
+
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0; 
-    
+
     TEST_Model_Intensity_Mapping* model = NULL;
     model = new TEST_Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
-    
+
     TEST_IntensityMapping* analysis = NULL;
     analysis = new TEST_IntensityMapping(model, keys.size());
-    
+
     Bispectrum* NLG = NULL;
     NLG = new Bispectrum(analysis);
-        
+
     Bispectrum_LISW* LISW = NULL;
     LISW = new Bispectrum_LISW(analysis, keys.size());
 
@@ -348,14 +393,14 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
 
     /**     CHECKS      **/
     double nu_min = 650;
-    
+
     //nu_max = 790, so between z = 0.8 and z = 1.2
     double nu_stepsize = 10;
     int n_points_per_thread = 2;
     int n_threads = 1;
-         
+
     fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects);
-    
+
     stringstream filename1, filename2, filename3;
     filename1 << fisherPath << "/Fl_ombh2_ombh2.dat";
     filename2 << fisherPath << "/Fl_ombh2_omch2.dat";
@@ -373,7 +418,7 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     omch1 = sqrt(sqrt(1.0/val3));
     ombh2 = omch1*omch1*val2/2.0;
     omch2 = sqrt(2.0*ombh1/val2);
-    
+
     double ombh2_ref, omch2_ref;
     ombh2_ref = 0.022;
     omch2_ref = 0.127;
@@ -381,18 +426,555 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     /**     CHECKS      **/
 
     // The right values are recovered to within 1% of the true value.
-    BOOST_CHECK(ombh1 > ombh2_ref - 0.01 * ombh2_ref);
-    BOOST_CHECK(ombh1 < ombh2_ref + 0.01 * ombh2_ref);
-    BOOST_CHECK(ombh2 > ombh2_ref - 0.01 * ombh2_ref);
-    BOOST_CHECK(ombh2 < ombh2_ref + 0.01 * ombh2_ref);
-    
-    BOOST_CHECK(omch1 > omch2_ref - 0.01 * omch2_ref);
-    BOOST_CHECK(omch1 < omch2_ref + 0.01 * omch2_ref);
-    BOOST_CHECK(omch2 > omch2_ref - 0.01 * omch2_ref);
-    BOOST_CHECK(omch2 < omch2_ref + 0.01 * omch2_ref);
+    /*
+       BOOST_CHECK(ombh1 > ombh2_ref - 0.01 * ombh2_ref);
+       BOOST_CHECK(ombh1 < ombh2_ref + 0.01 * ombh2_ref);
+       BOOST_CHECK(ombh2 > ombh2_ref - 0.01 * ombh2_ref);
+       BOOST_CHECK(ombh2 < ombh2_ref + 0.01 * ombh2_ref);
+
+       BOOST_CHECK(omch1 > omch2_ref - 0.01 * omch2_ref);
+       BOOST_CHECK(omch1 < omch2_ref + 0.01 * omch2_ref);
+       BOOST_CHECK(omch2 > omch2_ref - 0.01 * omch2_ref);
+       BOOST_CHECK(omch2 < omch2_ref + 0.01 * omch2_ref);
+       */
+}
+
+/**
+ * This check checks the Ql and Cl functions used in the LISW bispectrum calculation.
+ * There are 2 different ways this class interpolates these functions, it is checked
+ * that both give the same result.
+ */
+BOOST_AUTO_TEST_CASE(check_LISW)
+{
+    /**     SETUP       **/
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_LISW.ini";
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    TEST_Model_Intensity_Mapping* model = NULL;
+    model = new TEST_Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    TEST_IntensityMapping* analysis = NULL;
+    analysis = new TEST_IntensityMapping(model, keys.size());
+
+    Bispectrum_LISW* LISW = NULL;
+    LISW = new Bispectrum_LISW(analysis, keys.size());
+
+    Bispectrum_LISW* LISW_small = NULL;
+    LISW_small = new Bispectrum_LISW(analysis);
+
+    TEST_LISW_SN* SN = NULL;
+    SN = new TEST_LISW_SN(analysis, keys.size());
+
+    TEST_LISW_SN* SN_small = NULL;
+    SN_small = new TEST_LISW_SN(analysis);
+
+    double z = 0.9;
+    int l1 = 10;
+    int l2 = 50;
+    int l3 = 100;
+    int l4 = 200;
+    int l5 = 500;
+    /**     CHECKS      **/
+
+    // Check that both Ql interpolators return the same values.
+    double ql1 = LISW_small->Ql(l1,z);
+    double ql3 = LISW_small->Ql(l2,z);
+    double ql5 = LISW_small->Ql(l3,z);
+    double ql7 = LISW_small->Ql(l4,z);
+    double ql9 = LISW_small->Ql(l5,z);
+    double ql2 = LISW->Ql(l1,z,0,0,0);
+    double ql4 = LISW->Ql(l2,z,0,0,0);
+    double ql6 = LISW->Ql(l3,z,0,0,0);
+    double ql8 = LISW->Ql(l4,z,0,0,0);
+    double ql10 = LISW->Ql(l5,z,0,0,0);
+
+    BOOST_CHECK(abs(ql1) <= abs(ql2 + ql2*0.01));
+    BOOST_CHECK(abs(ql1) >= abs(ql2 - ql2*0.01));
+    BOOST_CHECK(abs(ql3) <= abs(ql4 + ql4*0.01));
+    BOOST_CHECK(abs(ql3) >= abs(ql4 - ql4*0.01));
+    BOOST_CHECK(abs(ql5) <= abs(ql6 + ql6*0.01));
+    BOOST_CHECK(abs(ql5) >= abs(ql6 - ql6*0.01));
+    BOOST_CHECK(abs(ql7) <= abs(ql8 + ql8*0.01));
+    BOOST_CHECK(abs(ql7) >= abs(ql8 - ql8*0.01));
+    BOOST_CHECK(abs(ql9) <= abs(ql10 + ql10*0.01));
+    BOOST_CHECK(abs(ql9) >= abs(ql10 - ql10*0.01));
+
+    // Check that both Ql interpolators return the same values.
+    double nu = 1420.0/(1.0+z);
+    double cl1 = LISW_small->Cl(l1,nu,nu);
+    double cl3 = LISW_small->Cl(l2,nu,nu);
+    double cl5 = LISW_small->Cl(l3,nu,nu);
+    double cl7 = LISW_small->Cl(l4,nu,nu);
+    double cl9 = LISW_small->Cl(l5,nu,nu);
+    double cl2 = LISW->Cl(l1,nu,nu,0,0,0);
+    double c2up = cl2 + cl2*0.01;
+    double c2d = cl2 - cl2*0.01;
+
+    double cl4 = LISW->Cl(l2,nu,nu,0,0,0);
+    double c4up = cl4 + cl4*0.01;
+    double c4d = cl4 - cl4*0.01;
+
+    double cl6 = LISW->Cl(l3,nu,nu,0,0,0);
+    double c6up = cl6 + cl6*0.01;
+    double c6d = cl6 - cl6*0.01;
+
+    double cl8 = LISW->Cl(l4,nu,nu,0,0,0);
+    double c8up = cl8 + cl8*0.01;
+    double c8d = cl8 - cl8*0.01;
+
+    double cl10 = LISW->Cl(l5,nu,nu,0,0,0);
+    double c10up = cl10 + cl10*0.01;
+    double c10d = cl10 - cl10*0.01;
+
+    BOOST_CHECK(abs(cl1) <= abs(c2up));
+    BOOST_CHECK(abs(cl1) >= abs(c2d));
+    BOOST_CHECK(abs(cl3) <= abs(c4up));
+    BOOST_CHECK(abs(cl3) >= abs(c4d));
+    BOOST_CHECK(abs(cl5) <= abs(c6up));
+    BOOST_CHECK(abs(cl5) >= abs(c6d));
+    BOOST_CHECK(abs(cl7) <= abs(c8up));
+    BOOST_CHECK(abs(cl7) >= abs(c8d));
+    BOOST_CHECK(abs(cl9) <= abs(c10up));
+    BOOST_CHECK(abs(cl9) >= abs(c10d));
+
+    // Check that both Blll methods are the same for the fiducial model, to within 1%.
+    double b1 = LISW_small->calc_Blll(l1,l1,l1,z,z,z);
+    double b2 = LISW->calc_angular_Blll_all_config(l1,l1,l1,z,z,z,0,0,0);
+    double b3 = LISW_small->calc_Blll(l2,l2,l2,z,z,z);
+    double b4 = LISW->calc_angular_Blll_all_config(l2,l2,l2,z,z,z,0,0,0);
+    double b5 = LISW_small->calc_Blll(l3,l3,l3,z,z,z);
+    double b6 = LISW->calc_angular_Blll_all_config(l3,l3,l3,z,z,z,0,0,0);
+    double b7 = LISW_small->calc_Blll(l4,l4,l4,z,z,z);
+    double b8 = LISW->calc_angular_Blll_all_config(l4,l4,l4,z,z,z,0,0,0);
+    double b9 = LISW_small->calc_Blll(l5,l5,l5,z,z,z);
+    double b10 = LISW->calc_angular_Blll_all_config(l5,l5,l5,z,z,z,0,0,0);
+
+    BOOST_CHECK(abs(b1) <= abs(b2 + b2*0.01));
+    BOOST_CHECK(abs(b1) >= abs(b2 - b2*0.01));
+    BOOST_CHECK(abs(b3) <= abs(b4 + b4*0.01));
+    BOOST_CHECK(abs(b3) >= abs(b4 - b4*0.01));
+    BOOST_CHECK(abs(b5) <= abs(b6 + b6*0.01));
+    BOOST_CHECK(abs(b5) >= abs(b6 - b6*0.01));
+    BOOST_CHECK(abs(b7) <= abs(b8 + b8*0.01));
+    BOOST_CHECK(abs(b7) >= abs(b8 - b8*0.01));
+    BOOST_CHECK(abs(b9) <= abs(b10 + b10*0.01));
+    BOOST_CHECK(abs(b9) >= abs(b10 - b10*0.01));
+
+    delete model;
+    delete analysis;
+    delete LISW;
+    delete LISW_small;
+}
+
+/**
+ * This check should check various functionalities of the Bispectrum class.
+ */
+BOOST_AUTO_TEST_CASE(check_NLG)
+{
+    // check whether calc_angular_B and calc_angular_B_nointerp give the same result. 
+
+    /**     SETUP       **/
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_NLG.ini";
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = NULL;
+    model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = NULL;
+    analysis = new IntensityMapping(model, keys.size());
+
+    Bispectrum* NLG = NULL;
+    NLG = new Bispectrum(analysis);
+
+
+    // In order to check whether the two bispectrum calculations are equivalent, 
+    // the THETAs need to be precomputed for the method used by the fisher analysis.
+    int lmax_CLASS = params["lmax_Fisher_Bispectrum"];
+
+    // TODO: these need to be initialized to some sensible value.
+    double zmax = 0;
+    double zmin = 0;
+    double delta_z = 0;
+    vector<vector<Theta>> global_vec;
+    #pragma omp parallel
+    {
+        vector<Theta> local_vec;
+        #pragma omp for 
+        for (int li = 0; li <= lmax_CLASS; li++) 
+        {
+            #pragma omp critical
+            {
+                log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated.") % li;
+            }
+            // Doing it for li = lj, as we compute only the first term of the bispectrum for now.
+            // Also, for the same reason, we only need the q = 0 term.
+            int q = 0;
+            for (int Pk_i = 0; Pk_i < analysis->model->Pkz_size(); Pk_i++)
+            {
+                for (int Tb_i = 0; Tb_i < analysis->model->Tb_size(); Tb_i++)
+                {
+                    for (int q_i = 0; q_i < analysis->model->q_size(); q_i++)
+                    {
+                        Theta interp_loc;
+                        interp_loc = NLG->make_Theta_interp(li, li, q,\
+                                Pk_i, Tb_i, q_i, zmax, zmin, delta_z); 
+                        local_vec.push_back(interp_loc);
+                    }
+                }
+            }
+        }
+        #pragma omp critical
+        {
+            global_vec.push_back(local_vec);
+        }
+    }
+    NLG->update_THETAS(global_vec);
+    double finish = clock();
+    double time = (finish - start)/CLOCKS_PER_SEC;
+
+    log<LOG_BASIC>(" --> thetas are interpolated. Time taken = %1%.") % time;
+    interpolation_done = true;
+
+    /**     CHECKS      **/
 
 }
 
+/**
+ * This check makes sure that the 2 ways that the SN for the LISW effect is being computed
+ * are equivalent.
+ * A given triangle is computed and compared.
+ */
+BOOST_AUTO_TEST_CASE(check_SN)
+{
+    /**     SETUP       **/
 
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_SN.ini";
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = NULL;
+    model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = NULL;
+    analysis = new IntensityMapping(model, keys.size());
+
+    TEST_LISW_SN* SN = NULL;
+    SN = new TEST_LISW_SN(analysis, keys.size());
+
+    TEST_LISW_SN* SN_small = NULL;
+    SN_small = new TEST_LISW_SN(analysis);
+
+    /**     CHECKS      **/
+
+    // These first checks are to determine whether both ways of computing the triangles are equivalent.
+    double z = 1.0;
+    int lmax = 8;
+    vector<vector<double>> triangle_new = SN->TEST_build_triangle_new(lmax, z, "TEST.tmp", 1);
+    vector<vector<double>> triangle = SN_small->TEST_build_triangle(lmax, z, "TEST.tmp", 1);
+
+    BOOST_CHECK(triangle.size() == triangle_new.size());
+    BOOST_CHECK(triangle[0].size() == triangle_new[0].size());
+
+    for (unsigned int i = 0; i < triangle.size(); i++)
+    {
+        for (unsigned int j = 0; j < triangle[0].size(); j++)
+        {
+            double up = triangle_new[i][j] + 0.01 * triangle_new[i][j];
+            double down = triangle_new[i][j] - 0.01 * triangle_new[i][j];
+
+            BOOST_CHECK(triangle[i][j] <= up);
+            BOOST_CHECK(triangle[i][j] >= down);
+        }
+    }
+
+    z = 1.3;
+    lmax = 82;
+    triangle_new = SN->TEST_build_triangle_new(lmax, z, "TEST.tmp", 1);
+    triangle = SN_small->TEST_build_triangle(lmax, z, "TEST.tmp", 1);
+
+    BOOST_CHECK(triangle.size() == triangle_new.size());
+    BOOST_CHECK(triangle[0].size() == triangle_new[0].size());
+
+    for (unsigned int i = 0; i < triangle.size(); i++)
+    {
+        for (unsigned int j = 0; j < triangle[0].size(); j++)
+        {
+            double up = triangle_new[i][j] + 0.01 * triangle_new[i][j];
+            double down = triangle_new[i][j] - 0.01 * triangle_new[i][j];
+            BOOST_CHECK(triangle[i][j] <= up);
+            BOOST_CHECK(triangle[i][j] >= down);
+        }
+    }
+
+    z = 1.0;
+    lmax = 61;
+    triangle_new = SN->TEST_build_triangle_new(lmax, z, "TEST.tmp", 1);
+    triangle = SN_small->TEST_build_triangle(lmax, z, "TEST.tmp", 1);
+
+    BOOST_CHECK(triangle.size() == triangle_new.size());
+    BOOST_CHECK(triangle[0].size() == triangle_new[0].size());
+
+    for (unsigned int i = 0; i < triangle.size(); i++)
+    {
+        for (unsigned int j = 0; j < triangle[0].size(); j++)
+        {
+            double up = triangle_new[i][j] + 0.01 * triangle_new[i][j];
+            double down = triangle_new[i][j] - 0.01 * triangle_new[i][j];
+            BOOST_CHECK(triangle[i][j] <= up);
+            BOOST_CHECK(triangle[i][j] >= down);
+        }
+    }
+
+    delete SN;
+    delete SN_small;
+}
+
+/**
+ * This is not really a test per say, but it gives a static way to produce all the data to be plotted 
+ * in the paper. 
+ * Any additional plots done should be added here. Commenting code out should only be done to working
+ * code that is not desired to computed every time. 
+ */
+BOOST_AUTO_TEST_CASE(make_paper_plots)
+{
+    /**     SETUP       **/
+
+    /**
+     * Simple non-computational intensive plots should be implemented here.
+     */
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_make_paper_plots.ini";
+
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename;
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+
+    Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+
+    Bispectrum* NLG = new Bispectrum(analysis);
+
+    /** plotting LISW Bispectrum **/
+    name = "LISW_bispectrum";
+    outfilename << base << name << suffix;
+    ofstream file1(outfilename.str());
+    outfilename.str("");
+
+    double z = 1.0;
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l < 10000)
+        {
+
+            // All odd modes are 0.
+            if (l % 2 == 1)
+                l++;
+            double b_lisw = LISW->calc_angular_Blll_all_config(l,l,l, z, z, z, 0, 0, 0);
+            file1 << l << " " << abs(b_lisw) << endl;
+        }
+    }
+
+    /** plotting NLG Bispectrum **/
+    // Uncomment this section if the NLG bispectrum should be computed too.
+    // Careful, this takes quite long.
+    /*
+       name = "NLG_bispectrum";
+       outfilename << base << name << suffix;
+       ofstream file2(outfilename.str());
+       outfilename.str("");
+       cout << "Careful: NLG may take a while as we take a high k\
+       resolution to get a good measure of theta." << endl; 
+       vector<int> ls;
+       z = 1.0;
+       for (int i = 1; i < 100; i++)
+       {
+       int l = exp(i*0.1);
+       if (l % 2 == 1)
+       l++;
+
+       bool calc = true;
+       for (int j = 0; j < ls.size(); j++)
+       {
+       if (ls[j] == l)
+       calc = false;
+       }
+       if (calc)
+       ls.push_back(l);
+       if (l < 10000 && calc)
+       {
+       double nlg = NLG->calc_angular_B_noInterp(l,l,l,0,0,0,z);
+       cout << l << " " << nlg << endl;
+       file2 << l << " " << abs(nlg) << endl;
+       }
+       }
+       */
+    /** plotting Cls **/
+    name = "Cls_z08";
+    outfilename << base << name << suffix;
+    ofstream file3_1(outfilename.str());
+    outfilename.str("");
+    name = "Cls_z1";
+    outfilename << base << name << suffix;
+    ofstream file3_2(outfilename.str());
+    outfilename.str("");
+    name = "Cls_z15";
+    outfilename << base << name << suffix;
+    ofstream file3_3(outfilename.str());
+    outfilename.str("");
+    name = "Cls_z2";
+    outfilename << base << name << suffix;
+    ofstream file3_4(outfilename.str());
+    outfilename.str("");
+    name = "Cls_z25";
+    outfilename << base << name << suffix;
+    ofstream file3_5(outfilename.str());
+    outfilename.str("");
+
+    z = 0.8;
+    double nu = 1420.0/(1.0+z);
+    cout << "Cls for nu = " << nu << " computed" << endl;
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l < 10000)
+        {
+            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+            double res = l*(l+1)*cl/(2.0*M_PI);
+            file3_1 << l << " " << res << endl;
+        }
+    }
+
+    z = 1.0;
+    nu = 1420.0/(1.0+z);
+    cout << "Cls for nu = " << nu << " computed" << endl;
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l < 10000)
+        {
+            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+            double res = l*(l+1)*cl/(2.0*M_PI);
+            file3_2 << l << " " << res << endl;
+        }
+    }
+
+    z = 1.5;
+    nu = 1420.0/(1.0+z);
+    cout << "Cls for nu = " << nu << " computed" << endl;
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l < 10000)
+        {
+            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+            double res = l*(l+1)*cl/(2.0*M_PI);
+            file3_3 << l << " " << res << endl;
+        }
+    }
+
+    z = 2.0;
+    nu = 1420.0/(1.0+z);
+    cout << "Cls for nu = " << nu << " computed" << endl;
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l < 10000)
+        {
+            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+            double res = l*(l+1)*cl/(2.0*M_PI);
+            file3_4 << l << " " << res << endl;
+        }
+    }
+
+    z = 2.5;
+    nu = 1420.0/(1.0+z);
+    cout << "Cls for nu = " << nu << " computed" << endl;
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l < 10000)
+        {
+            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+            double res = l*(l+1)*cl/(2.0*M_PI);
+            file3_5 << l << " " << res << endl;
+        }
+    }
+
+
+
+    /** plotting Qls **/
+    name = "Qls";
+    outfilename << base << name << suffix;
+    ofstream file4(outfilename.str());
+    outfilename.str("");
+
+    z = 1.0;
+
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l < 10000)
+        {
+            double ql = LISW->Ql(l, z, 0, 0, 0); 
+            file4 << l << " " << l*(l+1)*ql/(2.0*M_PI) << endl;
+        }
+    }
+}
 
 // EOF

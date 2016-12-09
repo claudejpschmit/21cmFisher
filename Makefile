@@ -28,7 +28,7 @@ OPTFLAG = -O2
 ARMAFLAGS = -larmadillo
 GSLFLAGS = -lgsl -lgslcblas
 WIGNERFLAGS = -lwignerSymbols
-CUBAFLAGS = -lcuba
+#CUBAFLAGS = -lcuba
 
 # This decreases the precision of the bessel functions significantly if 
 # added to the compilation of the files containing boost->sph_bess(l,x).
@@ -44,7 +44,7 @@ INCLUDES += -I../$(LIBRARIES)GLOBAL21CM_include
 INCLUDES += -I../$(LIBRARIES)ODE_include
 
 INCLUDES += -I/usr/include/boost
-BOOSTFLAGS = -lboost_filesystem -lboost_system 
+#BOOSTFLAGS = -lboost_filesystem -lboost_system 
 BOOSTTESTFLAGS = -lboost_unit_test_framework
 
 # Including GSL
@@ -52,7 +52,7 @@ INCLUDES += -I/usr/include
 LINKER += -L/usr/lib
 
 %.o: %.cpp .base
-	cd $(WRKDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(CCFLAG) $(INCLUDES) -c ../$< -o $*.o $(ARMAFLAGS) $(GSLFLAGS) $(CUBAFLAGS) -lm
+	cd $(WRKDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(CCFLAG) $(INCLUDES) -c ../$< -o $*.o $(ARMAFLAGS) $(GSLFLAGS)  -lm
 
 ALGLIB = alglibinternal.o alglibmisc.o ap.o dataanalysis.o diffequations.o\
 		 fasttransforms.o integration.o interpolation.o linalg.o optimization.o\
@@ -75,13 +75,14 @@ TEST = test_suite.o
 
 all: calc analyse sortFiles bispectrum test
 
+#$(BOOSTFLAGS) analyse calc bispectrum & test
 analyse: $(ALGLIB) $(INIREADER) $(ANALYSE) 
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
-		-o analyse $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(BOOSTFLAGS)
+		-o analyse $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) 
 
 calc: $(SOURCE) $(INIREADER) $(MAIN) $(ALGLIB) $(GLOBAL21CM)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
-		-o calc $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(BOOSTFLAGS)
+		-o calc $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS)
 
 sortFiles: $(SORTING)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
@@ -89,11 +90,11 @@ sortFiles: $(SORTING)
 
 bispectrum: $(BISPECTRUM_MAIN) $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM) $(ODE)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
-		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(CUBAFLAGS) $(BOOSTFLAGS)
+		-o bispectrum $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) 
 
 test: $(TEST) $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM) $(ODE)
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
-		-o test $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(CUBAFLAGS) $(BOOSTFLAGS) $(BOOSTTESTFLAGS)
+		-o test $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(BOOSTTESTFLAGS) 
 
 clean: .base
 	rm -rf $(WRKDIR);

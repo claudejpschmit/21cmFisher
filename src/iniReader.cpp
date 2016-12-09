@@ -4,7 +4,7 @@
 #include <sstream>
 #include "stdafx.h"
 #include <string.h>
-#include "boost/filesystem.hpp"
+//#include "boost/filesystem.hpp"
 #include "Log.hpp"
 
 /////////////////////
@@ -53,19 +53,39 @@ void IniReader::parse()
 
 void IniReader::genOutputFolders()
 {
-    boost::filesystem::path p1(matPath);
-    boost::filesystem::path p2(fishPath);
-    if (!boost::filesystem::create_directories(p1))
-        log<LOG_DEBUG>("Path: %1% already exists.") % matPath;
-    if (!boost::filesystem::create_directories(p2))
-        log<LOG_DEBUG>("Path: %1% already exists.") % fishPath;
+    stringstream command1, command2;
+    command1 << "mkdir -p " << matPath;
+    command2 << "mkdir -p " << fishPath;
+    char* command_buff1 = new char[command1.str().length() + 1];
+    char* command_buff2 = new char[command2.str().length() + 1];
+    strcpy(command_buff1, command1.str().c_str());
+    strcpy(command_buff2, command2.str().c_str());
+    int r1 = system(command_buff1);
+    int r2 = system(command_buff2);
+
+    //boost::filesystem::path p1(matPath);
+    //boost::filesystem::path p2(fishPath);
+    //if (!boost::filesystem::create_directories(p1))
+    //    log<LOG_DEBUG>("Path: %1% already exists.") % matPath;
+    //if (!boost::filesystem::create_directories(p2))
+    //    log<LOG_DEBUG>("Path: %1% already exists.") % fishPath;
 }
 
 void IniReader::cpToOutput()
 {
     // Copies the params.ini file to both the fisher and matrix 
     // output directories.
-    boost::filesystem::path filepath(iniFilename);
+    stringstream command1, command2;
+    command1 << "cp " << iniFilename << " " << matPath << "/PARAMS.INI.dat";
+    command2 << "cp " << iniFilename << " " << fishPath << "/PARAMS.INI.dat";
+    char* command_buff1 = new char[command1.str().length() + 1];
+    char* command_buff2 = new char[command2.str().length() + 1];
+    strcpy(command_buff1, command1.str().c_str());
+    strcpy(command_buff2, command2.str().c_str());
+    int r1 = system(command_buff1);
+    int r2 = system(command_buff2);
+
+    /*boost::filesystem::path filepath(iniFilename);
     
     stringstream outpath_mat, outpath_fish;
     outpath_mat << matPath << "/PARAMS.INI.dat";
@@ -87,6 +107,7 @@ void IniReader::cpToOutput()
     //   boost::filesystem::remove(p2);
     //    boost::filesystem::copy(filepath, p2);
     //}
+    */
 }
 
 vector<ModelAnalysis> IniReader::determineMA()
