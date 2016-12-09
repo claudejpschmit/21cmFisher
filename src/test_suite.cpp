@@ -616,11 +616,11 @@ BOOST_AUTO_TEST_CASE(check_NLG)
     // In order to check whether the two bispectrum calculations are equivalent, 
     // the THETAs need to be precomputed for the method used by the fisher analysis.
     int lmax_CLASS = params["lmax_Fisher_Bispectrum"];
-
-    // TODO: these need to be initialized to some sensible value.
-    double zmax = 0;
-    double zmin = 0;
-    double delta_z = 0;
+   
+    // having in mind that I want to be comparing stuff at z = 1.
+    double zmax = 1.1;
+    double zmin = 0.9;
+    double delta_z = 0.1;
     vector<vector<Theta>> global_vec;
     #pragma omp parallel
     {
@@ -630,24 +630,18 @@ BOOST_AUTO_TEST_CASE(check_NLG)
         {
             #pragma omp critical
             {
-                log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated.") % li;
+                cout << " -> Thetas for li = lj = " << li << " are being interpolated." << endl;
             }
             // Doing it for li = lj, as we compute only the first term of the bispectrum for now.
             // Also, for the same reason, we only need the q = 0 term.
             int q = 0;
-            for (int Pk_i = 0; Pk_i < analysis->model->Pkz_size(); Pk_i++)
-            {
-                for (int Tb_i = 0; Tb_i < analysis->model->Tb_size(); Tb_i++)
-                {
-                    for (int q_i = 0; q_i < analysis->model->q_size(); q_i++)
-                    {
-                        Theta interp_loc;
-                        interp_loc = NLG->make_Theta_interp(li, li, q,\
-                                Pk_i, Tb_i, q_i, zmax, zmin, delta_z); 
-                        local_vec.push_back(interp_loc);
-                    }
-                }
-            }
+            Theta interp_loc;
+            // different to the interpolation called in the fisher analysis part of the code,
+            // here it is sufficient to interpolate the fiducial model only, as we are not 
+            // varying any parameters here, and really just want to prove that the direct 
+            // calculation gives the same result as this interpolated method.
+            interp_loc = NLG->make_Theta_interp(li, li, q, 0, 0, 0, zmax, zmin, delta_z); 
+            local_vec.push_back(interp_loc);
         }
         #pragma omp critical
         {
@@ -655,11 +649,7 @@ BOOST_AUTO_TEST_CASE(check_NLG)
         }
     }
     NLG->update_THETAS(global_vec);
-    double finish = clock();
-    double time = (finish - start)/CLOCKS_PER_SEC;
 
-    log<LOG_BASIC>(" --> thetas are interpolated. Time taken = %1%.") % time;
-    interpolation_done = true;
 
     /**     CHECKS      **/
 
