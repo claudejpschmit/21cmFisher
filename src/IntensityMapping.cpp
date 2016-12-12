@@ -220,8 +220,9 @@ int IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double 
     
     if (do_calc)
     {
-/////////////
-
+     /////////////
+        log<LOG_BASIC>("... Interpolating for Pk_index = %1%, Tb_index = %2%, q_index = %3% ...") %\
+            Pk_index % Tb_index % q_index;
         double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
         vector<double> vnu, vl;
         vector<double> vCls;
@@ -272,8 +273,8 @@ int IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double 
 
         Cls_interpolators_large.push_back(I);
         index = Cls_interpolators_large.size() - 1;
-        
-/////////////
+       
+    /////////////
     }
     return index;
     //if ((*Cls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
@@ -485,6 +486,7 @@ double IntensityMapping::Cl_noise(int l, double nu1, double nu2)
     //TODO: write this function
     //      currently I have just taken the same noise function as 
     //      Tomography2D as I don't know how to get this for IM
+    //
     if (nu1==nu2) {
         // in mK
         double Tsys = model->give_fiducial_params("Tsys");

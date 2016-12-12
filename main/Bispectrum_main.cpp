@@ -106,12 +106,12 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        Bispectrum* NLG = new Bispectrum(analysis);
-        Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+        //Bispectrum* NLG = new Bispectrum(analysis);
+        //Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
        
-        //LISW_SN* SN = new LISW_SN(analysis);
-        //SN->detection_SN(20, 10000, 100, 1, "SN_20_10000_delta100.dat");
-        
+        LISW_SN* SN = new LISW_SN(analysis);
+        SN->detection_SN(2, 1000, 1, 1, "SN_2_1000_delta1.dat");
+        /*
         Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
         double nu_min = 650;
         //nu_max = 790, so between z = 0.8 and z = 1.2
@@ -122,9 +122,9 @@ int main(int argc, char* argv[])
         Bispectrum_Effects effects = parser.giveBispectrumEffects();
         fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects);
         //cout << NLG->calc_angular_B(2,2,2,0,0,0,1.0,0,0,0) << endl; 
-        
-        delete NLG;
-        delete LISW;
+        */
+        //delete NLG;
+        //delete LISW;
     }
     if (model)
         delete model;
