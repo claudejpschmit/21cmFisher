@@ -615,6 +615,7 @@ BOOST_AUTO_TEST_CASE(check_NLG)
 
     // In order to check whether the two bispectrum calculations are equivalent, 
     // the THETAs need to be precomputed for the method used by the fisher analysis.
+    // lmax = 15. This means each core interpolates 2 lmodes.
     int lmax_CLASS = params["lmax_Fisher_Bispectrum"];
    
     // having in mind that I want to be comparing stuff at z = 1.
@@ -652,6 +653,60 @@ BOOST_AUTO_TEST_CASE(check_NLG)
 
 
     /**     CHECKS      **/
+    int l1 = 14;
+    int l2 = 14;
+    int l3 = 14;
+    int m1 = 0;
+    int m2 = 0;
+    int m3 = 0;
+    double z = 1.0;
+
+    double a = NLG->calc_angular_B(l1, l2, l3, m1, m2, m3, z, 0, 0, 0);
+    double b = NLG->calc_angular_B_noInterp(l1, l2, l3, m1, m2, m3, z);
+    double r1 = abs(a-b)/abs(b);
+    cout << "l = " << l1 << ", Interp = " << a << ", noInterp = " << b << ", difference = " << r1 << endl;
+    l1 = 30;
+    l2 = 30;
+    l3 = 30;
+    a = NLG->calc_angular_B(l1, l2, l3, m1, m2, m3, z, 0, 0, 0);
+    b = NLG->calc_angular_B_noInterp(l1, l2, l3, m1, m2, m3, z);
+    double r2 = abs(a-b)/abs(b);
+    cout << "l = " << l1 << ", Interp = " << a << ", noInterp = " << b << ", difference = " << r2 << endl;
+    l1 = 60;
+    l2 = 60;
+    l3 = 60;
+    a = NLG->calc_angular_B(l1, l2, l3, m1, m2, m3, z, 0, 0, 0);
+    b = NLG->calc_angular_B_noInterp(l1, l2, l3, m1, m2, m3, z);
+    double r3 = abs(a-b)/abs(b);
+    cout << "l = " << l1 << ", Interp = " << a << ", noInterp = " << b << ", difference = " << r3 << endl;
+    l1 = 100;
+    l2 = 100;
+    l3 = 100;
+    a = NLG->calc_angular_B(l1, l2, l3, m1, m2, m3, z, 0, 0, 0);
+    b = NLG->calc_angular_B_noInterp(l1, l2, l3, m1, m2, m3, z);
+    double r4 = abs(a-b)/abs(b);
+    cout << "l = " << l1 << ", Interp = " << a << ", noInterp = " << b << ", difference = " << r4 << endl;
+    l1 = 180;
+    l2 = 180;
+    l3 = 180;
+    a = NLG->calc_angular_B(l1, l2, l3, m1, m2, m3, z, 0, 0, 0);
+    b = NLG->calc_angular_B_noInterp(l1, l2, l3, m1, m2, m3, z);
+    double r5 = abs(a-b)/abs(b);
+    cout << "l = " << l1 << ", Interp = " << a << ", noInterp = " << b << ", difference = " << r5 << endl;
+    l1 = 240;
+    l2 = 240;
+    l3 = 240;
+    a = NLG->calc_angular_B(l1, l2, l3, m1, m2, m3, z, 0, 0, 0);
+    b = NLG->calc_angular_B_noInterp(l1, l2, l3, m1, m2, m3, z);
+    double r6 = abs(a-b)/abs(b);
+    cout << "l = " << l1 << ", Interp = " << a << ", noInterp = " << b << ", difference = " << r6 << endl;
+    // let's check whether we are within 5% of each other.
+    BOOST_CHECK(r1 <= 0.05);
+    BOOST_CHECK(r2 <= 0.05);
+    BOOST_CHECK(r3 <= 0.05);
+    BOOST_CHECK(r4 <= 0.05);
+    BOOST_CHECK(r5 <= 0.05);
+    BOOST_CHECK(r6 <= 0.05);
 
 }
 
