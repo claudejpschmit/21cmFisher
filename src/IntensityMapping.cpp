@@ -483,10 +483,7 @@ double IntensityMapping::I(int l, double k, double nu_0)
 
 double IntensityMapping::Cl_noise(int l, double nu1, double nu2)
 {
-    //TODO: write this function
-    //      currently I have just taken the same noise function as 
-    //      Tomography2D as I don't know how to get this for IM
-    //
+    // This is the thermal noise.
     if (nu1==nu2) {
         // in mK
         double Tsys = model->give_fiducial_params("Tsys");
