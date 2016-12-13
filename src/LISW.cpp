@@ -592,7 +592,7 @@ double Bispectrum_LISW::Ql_calc(int l, double z, int Pk_index, int Tb_index, int
             double h2 = 0.01;
             double P0 = analysis->model->Pkz_interp(k,zp,Pk_index);
             double P1 = analysis->model->Pkz_interp(k,zp+h2,Pk_index);
-            double deriv = pre2 * (2 * (1.0+zp) * P0 + pow(1.0+zp,2) * (P1-P0)/h);
+            double deriv = pre2 * (2.0 * (1.0+zp) * P0 + pow(1.0+zp,2) * (P1-P0)/h2);
             //if (z < 0.5)
             //    cout << k << endl;
             return pre*deriv;//analysis->model->Pkz_interp(k, z,0);//*pre;
@@ -967,3 +967,29 @@ void TEST_LISW_SN::TEST_build_signal_triangles(int lmin, int lmax, int delta_l, 
     return build_signal_triangles(lmin, lmax, delta_l, z);
 }
 
+double TEST_LISW_SN::TEST_lensing_kernel(double z, double z_fixed)
+{
+    double r = analysis->model->q_interp(z_fixed, 0);
+    double rzp = analysis->model->q_interp(z, 0);
+    return (r - rzp)/(r*pow(rzp,3));
+}
+
+double TEST_LISW_SN::TEST_grav_pot(int l, double z, double z_fixed)
+{
+    //double h = 0.001;
+    //double dTbdz = analysis->model->T21_interp(z_fixed+h,0) -\
+    //           analysis->model->T21_interp(z_fixed,0);
+    //dTbdz /= h;
+    //double eta =-(1.0+z_fixed) * dTbdz;
+    double rzp = analysis->model->q_interp(z,0);
+    double k = l/rzp;
+    double Omega_M = analysis->model->Omega_M(0);
+    double H_0 = analysis->model->give_fiducial_params()["hubble"]*1000.0;    
+    double pre2 = pow(3.0 * Omega_M/2.0,2) * pow(H_0/(k* analysis->model->c),4);
+    double h2 = 0.01;
+    double P0 = analysis->model->Pkz_interp(k,z,0);
+    double P1 = analysis->model->Pkz_interp(k,z+h2,0);
+    double deriv = pre2 * (2 * (1.0+z) * P0 + pow(1.0+z,2) * (P1-P0)/h2);
+    return deriv;
+
+}

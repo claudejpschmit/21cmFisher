@@ -573,6 +573,24 @@ BOOST_AUTO_TEST_CASE(check_LISW)
     BOOST_CHECK(abs(b9) <= abs(b10 + b10*0.01));
     BOOST_CHECK(abs(b9) >= abs(b10 - b10*0.01));
 
+    ofstream file1("plots/data/test_lensing_kernel_z1.dat");
+    ofstream file2("plots/data/test_grav_potential_deriv_z1_l100.dat");
+   
+    double z_fixed = 1;
+    for (int i = 0; i < 1000; i++)
+    {
+        double z = i * 0.1;
+        file1 << z << " " << SN->TEST_lensing_kernel(z,z_fixed) << endl;
+    }
+    
+    int l = 100;
+    for (int i = 0; i < 1000; i++)
+    {
+        double z = i * 0.1;
+        file1 << z << " " << SN->TEST_grav_pot(l,z,z_fixed) << endl;
+    }
+
+
     delete model;
     delete analysis;
     delete LISW;
@@ -890,7 +908,7 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     for (int i = 1; i < 100; i++)
     {
         int l = exp(i*0.1);
-        if (l < 10000)
+        if (l < 1000)
         {
             
             // All odd modes are 0.

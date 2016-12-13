@@ -310,4 +310,7 @@ class TEST_LISW_SN : public LISW_SN {
                 string filename, bool variance_included);
         
         void TEST_build_signal_triangles(int lmin, int lmax, int delta_l, double z);
+
+        double TEST_lensing_kernel(double z, double z_fixed);
+        double TEST_grav_pot(int l, double z, double z_fixed);
 };
