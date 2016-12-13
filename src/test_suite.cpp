@@ -577,17 +577,17 @@ BOOST_AUTO_TEST_CASE(check_LISW)
     ofstream file2("plots/data/test_grav_potential_deriv_z1_l100.dat");
    
     double z_fixed = 1;
-    for (int i = 0; i < 1000; i++)
+    for (int i = 0; i < 10000; i++)
     {
-        double z = i * 0.1;
+        double z = i * 0.01;
         file1 << z << " " << SN->TEST_lensing_kernel(z,z_fixed) << endl;
     }
     
-    int l = 100;
-    for (int i = 0; i < 1000; i++)
+    int l = 10;
+    for (int i = 0; i < 10000; i++)
     {
-        double z = i * 0.1;
-        file1 << z << " " << SN->TEST_grav_pot(l,z,z_fixed) << endl;
+        double z = i * 0.01;
+        file2 << z << " " << SN->TEST_grav_pot(l,z,z_fixed) << endl;
     }
 
 

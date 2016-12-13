@@ -14,13 +14,21 @@ class ModelInterface : public CosmoBasis {
     public:
         ModelInterface(map<string,double> params);
         virtual ~ModelInterface();
+        // The units should be: MPc^3
         virtual double Pkz_interp(double k, double z, int Pk_index);     
+        // The units should be: mK
         virtual double T21_interp(double z, int Tb_index);
+        // The units should be: MPc
         virtual double q_interp(double z, int q_index);
+        // The units should be:
         virtual double r_interp(double z);
+        // The units should be:
         virtual double Hf_interp(double z);
+        // The units should be:
         virtual double H_interp(double z, int q_index);
+        // The units should be:
         virtual double qp_interp(double z, int q_index);
+        // The units should be:
         virtual double fz_interp(double z, int Tb_index);
         virtual void set_Santos_params(double *alpha, double *beta,\
                 double *gamma, double *RLy, int Tb_index);
