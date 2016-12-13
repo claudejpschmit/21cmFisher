@@ -496,6 +496,7 @@ double IntensityMapping::Cl_noise(int l, double nu1, double nu2)
         double t0 = model->give_fiducial_params("tau_noise");
         double res = pow(2.0*model->pi,3) * Tsys*Tsys/(fcover*fcover *\
                 model->give_fiducial_params("df") * lmax * lmax * t0);
+        // the result is in (mK)^2
         return res;
     } else {
         return 0.0;
