@@ -111,6 +111,7 @@ int main(int argc, char* argv[])
        
         LISW_SN* SN = new LISW_SN(analysis);
         SN->detection_SN(2, 1000, 1, 1, "SN_2_1000_delta1.dat");
+        
         /*
         Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
         double nu_min = 650;
