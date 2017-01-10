@@ -7,7 +7,10 @@
 #include <fstream>
 #include "ODEs.hpp"
 #include "ODE_Solver.hpp"
+#include <ctime>
+#include <chrono>
 
+using namespace chrono;
 
 Bispectrum::Bispectrum(AnalysisInterface* analysis)
 {
@@ -2056,12 +2059,16 @@ void Bispectrum::update_THETAS(vector<vector<Theta>> transfer_vec)
 void Bispectrum::sort_theta()
 {
     cout << "Now sorting Theta intepolators with vector of length = " << theta_interpolants.size() << endl;
+    steady_clock::time_point t1 = steady_clock::now();
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_qi);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_tb);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_pk);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_q);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_lj);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_li);
+    steady_clock::time_point t2 = steady_clock::now();
+    duration<double> dt = duration_cast<duration<double>>(t2-t1);
+    cout << "Time taken for sorting = " << dt.count() << endl;
     /*
     for (int i = 0; i < theta_interpolants.size(); i++)
     {

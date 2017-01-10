@@ -2,7 +2,10 @@
 #include "Log.hpp"
 #include "wignerSymbols.h"
 #include <omp.h>
-#include <time.h>
+#include <ctime>
+#include <chrono>
+
+using namespace chrono;
 
 /*********************************/
 /**     Bispectrum_Fisher       **/
@@ -60,6 +63,8 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
     // Exhaust all the possible models and interpolate them, so that the 
     // code is thread safe later on.
     log<LOG_BASIC>(" -> Interpolating all possible models.");
+    steady_clock::time_point t1 = steady_clock::now();
+    system_clock::time_point t11 = system_clock::now();
     for (unsigned int i = 0; i < model_param_keys.size(); i++) {
         int Pk = 0;
         int Tb = 0;
@@ -73,15 +78,21 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
         analysis->model->update(working_params, &Pk, &Tb, &q);
         log<LOG_BASIC>("model updated for Pk_i = %1%, Tb = %2%, q = %3%.") % Pk % Tb % q;
     }
-    log<LOG_BASIC>(" -----> done");
+    steady_clock::time_point t2 = steady_clock::now();
+    system_clock::time_point t22 = system_clock::now();
+
+    duration<double> dt = duration_cast<duration<double>>(t2-t1);
+    duration<double> dt2 = duration_cast<duration<double>>(t22-t11);
+    log<LOG_BASIC>(" -----> done. T = %1%s") % dt.count();
     log<LOG_BASIC>(" -> Interpolating all possible growth functions.");
+    t1 = steady_clock::now();
     for (int i = 0; i < analysis->model->q_size(); i++)
     {
         NLG->update_D_Growth(i);
     }
-    log<LOG_BASIC>(" -----> done");
-
-
+    t2 = steady_clock::now();
+    dt = duration_cast<duration<double>>(t2-t1);
+    log<LOG_BASIC>(" -----> done. T = %1%s") % dt.count();
     
     // now compute F_ab's (symmetric hence = F_ba's)
     for (unsigned int i = 0; i < model_param_keys.size(); i++) {
@@ -225,7 +236,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             // set bispectrum.THETA_interps = transfer;
             // done!
             log<LOG_BASIC>("Precomputing all theta interpolators.");
-            double start = clock();
+            steady_clock::time_point t1 = steady_clock::now();
             double zmax = (1420.4/this->nu_min_CLASS) - 1.0;
             double zmin = (1420.4/(this->nu_min_CLASS + this->nu_steps_CLASS * this->nu_stepsize_CLASS) - 1.0);
             double delta_z = (zmax - ((1420.4/(this->nu_min_CLASS+this->nu_stepsize_CLASS)) - 1.0));
@@ -236,16 +247,76 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             cout << "pkz size = " << analysis->model->Pkz_size() << endl;
             cout << "tb size = " << analysis->model->Tb_size() << endl;
             cout << "q size = " << analysis->model->q_size() << endl;
+            int lmodes_interp = lmax_CLASS + 1;
+            int imax_interp = ceil((double)lmodes_interp/(double)n_threads) * n_threads;
+            int modmax_interp = imax_interp - 1;
             #pragma omp parallel num_threads(n_threads)
             {
                 vector<Theta> local_vec;
+                bool calc = false;
+                #pragma omp for 
+                for (int i = 0; i < imax_interp; i++)
+                {
+                    int l = (n_threads*i) % (modmax_interp);
+                    if (i != 0 && n_threads*i % (modmax_interp) == 0)
+                        l = modmax_interp;
+                        
+                    if (l <= lmax_CLASS) 
+                    {
+                        steady_clock::time_point t11 = steady_clock::now();
+                        calc = true;
+                        //#pragma omp critical
+                        //{
+                        //    log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated.") % li;
+                        //}
+                        // Doing it for li = lj, as we compute only the first term of the bispectrum for now.
+                        // Also, for the same reason, we only need the q = 0 term.
+                        int q = 0;
+                        for (int Pk_i = 0; Pk_i < analysis->model->Pkz_size(); Pk_i++)
+                        {
+                            for (int Tb_i = 0; Tb_i < analysis->model->Tb_size(); Tb_i++)
+                            {
+                                for (int q_i = 0; q_i < analysis->model->q_size(); q_i++)
+                                {
+                                    Theta interp_loc;
+                                    //try 
+                                    //{
+                                        interp_loc = NLG->make_Theta_interp(l, l, q,\
+                                            Pk_i, Tb_i, q_i, zmax, zmin, delta_z); 
+                                    //}
+                                    //catch(alglib::ap_error e)
+                                    //{
+                                    //    log<LOG_ERROR>("---- Error: %1%") % e.msg.c_str();
+                                    //}
+
+                                    local_vec.push_back(interp_loc);
+                                }
+                            }
+                        }
+                        steady_clock::time_point t22 = steady_clock::now();
+                        duration<double> dt2 = duration_cast<duration<double>>(t22-t11);
+                        #pragma omp critical
+                        {
+                            log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated.\
+                                    T = %2%s, thread = %3%.")% l % dt2.count() % omp_get_thread_num();
+                        }
+                    }
+                }
+                #pragma omp critical
+                {
+                    if (calc)
+                        global_vec.push_back(local_vec);
+                }
+
+                /*
                 #pragma omp for 
                 for (int li = 0; li <= lmax_CLASS; li++) 
                 {
-                    #pragma omp critical
-                    {
-                        log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated.") % li;
-                    }
+                    steady_clock::time_point t11 = steady_clock::now();
+                    //#pragma omp critical
+                    //{
+                    //    log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated.") % li;
+                    //}
                     // Doing it for li = lj, as we compute only the first term of the bispectrum for now.
                     // Also, for the same reason, we only need the q = 0 term.
                     int q = 0;
@@ -270,17 +341,25 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                             }
                         }
                     }
+                    steady_clock::time_point t22 = steady_clock::now();
+                    duration<double> dt2 = duration_cast<duration<double>>(t22-t11);
+                    #pragma omp critical
+                    {
+                        log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated. T = %2%s")\
+                            % li % dt2.count();
+                    }
+
                 }
                 #pragma omp critical
                 {
                     global_vec.push_back(local_vec);
-                }
+                }*/
             }
             NLG->update_THETAS(global_vec);
-            double finish = clock();
-            double time = (finish - start)/CLOCKS_PER_SEC;
+            steady_clock::time_point t2 = steady_clock::now();
+            duration<double> dt = duration_cast<duration<double>>(t2-t1);
             
-            log<LOG_BASIC>(" --> thetas are interpolated. Time taken = %1%.") % time;
+            log<LOG_BASIC>(" --> thetas are interpolated. Time taken = %1%.") % dt.count();
             interpolation_done = true;
         }
         else

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <map>
 #include <ctime>
+#include <chrono>
 
 #include "Log.hpp"
 #include "Model.hpp"
@@ -18,6 +19,7 @@
 #include "Bispectrum_Fisher.hpp"
 
 using namespace std;
+using namespace chrono;
 typedef std::complex<double> dcomp;
 
 
@@ -25,6 +27,7 @@ log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
 int main(int argc, char* argv[])
 {
+    steady_clock::time_point t1 = steady_clock::now();
     string iniFilename = "";
     if (argc < 2)
     {
@@ -106,26 +109,35 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        //Bispectrum* NLG = new Bispectrum(analysis);
-        //Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
-       
-        LISW_SN* SN = new LISW_SN(analysis);
-        SN->detection_SN(2, 1000, 1, 1, "SN_2_1000_delta1.dat");
-        
-        /*
+        Bispectrum* NLG = new Bispectrum(analysis);
+        Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
         Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
-        double nu_min = 650;
+        steady_clock::time_point t2 = steady_clock::now();
+        duration<double> dt = duration_cast<duration<double>>(t2-t1);
+        cout << " --- time taken for class instantiation = " << dt.count() << endl;
+
+        //LISW_SN* SN = new LISW_SN(analysis);
+        //SN->detection_SN(2, 1000, 1, 1, "SN_2_1000_delta1.dat");
+        
+        
+        double nu_min = 400;
         //nu_max = 790, so between z = 0.8 and z = 1.2
         double nu_stepsize = 10;
-        int n_points_per_thread = 2;
+        int n_points_per_thread = 40;
         int n_threads = 1;
         
         Bispectrum_Effects effects = parser.giveBispectrumEffects();
+        t1 = steady_clock::now();
         fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects);
+        t2 = steady_clock::now();
+        dt = duration_cast<duration<double>>(t2-t1);
+
+        cout << " --- total time taken = " << dt.count() << endl;
+
         //cout << NLG->calc_angular_B(2,2,2,0,0,0,1.0,0,0,0) << endl; 
-        */
-        //delete NLG;
-        //delete LISW;
+        
+        delete NLG;
+        delete LISW;
     }
     if (model)
         delete model;
