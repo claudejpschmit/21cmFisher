@@ -297,8 +297,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                         duration<double> dt2 = duration_cast<duration<double>>(t22-t11);
                         #pragma omp critical
                         {
-                            log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated.\
-                                    T = %2%s, thread = %3%.")% l % dt2.count() % omp_get_thread_num();
+                            log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated. T = %2%s, thread = %3%.")% l % dt2.count() % omp_get_thread_num();
                         }
                     }
                 }
@@ -415,6 +414,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     log<LOG_VERBOSE>("Entering Parallel regime");
     #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
     {
+        steady_clock::time_point t1 = steady_clock::now();
         // ! Imporant: each private variable needs to be initialized within the OMP block!!!
         Pk_index2 = 0;
         Tb_index2 = 0;
@@ -476,6 +476,12 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             {
                 sum+=0;
             }
+        }
+        steady_clock::time_point t2 = steady_clock::now();
+        duration<double> dt = duration_cast<duration<double>>(t2-t1);
+        #pragma omp critical
+        {
+            cout << "Thread #" << omp_get_thread_num() << " took t = " << dt.count() << endl;
         }
     }
     return res+sum;
