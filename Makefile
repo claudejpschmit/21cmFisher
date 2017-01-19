@@ -22,7 +22,8 @@ vpath .base build
 
 # Compiler required for c++ code.
 # including -ffast-math may not be as bad as anticipated.
-CXX = g++ -Wall -std=c++11 -ffast-math -Wno-deprecated -fopenmp -g
+COMP = mpic++
+CXX = $(COMP) -Wall -std=c++11 -ffast-math -Wno-deprecated -fopenmp -g
 
 OPTFLAG = -O2
 ARMAFLAGS = -larmadillo
@@ -70,10 +71,14 @@ ODE = ODEs.o ODE_Solver.o
 BISPECTRUM = Bispectrum.o LISW.o Bispectrum_Fisher.o Bispectrum_NLG.o
 BISPECTRUM_MAIN = Bispectrum_main.o
 TEST = test_suite.o 
+MPI_FILES = MPI_main.o Models_MPI.o CosmoBasis.o AnalysisInterface_MPI.o\
+		 IntensityMapping_MPI.o HighZAnalysis.o Integrator.o Bispectrum_MPI.o\
+		 CAMB_interface.o Zygelman.o LISW_MPI.o Bispectrum_Fisher_MPI.o
+
 
 # ---------------------------------------------------------------------------------------------------------------#
 
-all: calc analyse sortFiles bispectrum test
+all: calc analyse sortFiles bispectrum test mpi_run
 
 #$(BOOSTFLAGS) analyse calc bispectrum & test
 analyse: $(ALGLIB) $(INIREADER) $(ANALYSE) 
@@ -96,6 +101,10 @@ test: $(TEST) $(BISPECTRUM) $(INIREADER) $(SOURCE) $(ALGLIB) $(GLOBAL21CM) $(ODE
 	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
 		-o test $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) $(BOOSTTESTFLAGS) 
 
+mpi_run: $(MPI_FILES) $(INIREADER) $(ALGLIB) $(GLOBAL21CM) $(ODE)
+	cd $(MDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(LDFLAG) $(LINKER)\
+		-o mpi_run $(addprefix build/, $(notdir $^)) -lm $(ARMAFLAGS) $(GSLFLAGS) $(WIGNERFLAGS) 
+
 clean: .base
 	rm -rf $(WRKDIR);
 	rm calc;
@@ -103,3 +112,4 @@ clean: .base
 	rm sortFiles;
 	rm bispectrum;
 	rm test;
+	rm mpi_run;

@@ -668,8 +668,7 @@ BOOST_AUTO_TEST_CASE(check_NLG)
         }
     }
     NLG->update_THETAS(global_vec);
-
-
+    
     /**     CHECKS      **/
     int l1 = 14;
     int l2 = 14;
@@ -726,7 +725,6 @@ BOOST_AUTO_TEST_CASE(check_NLG)
     BOOST_CHECK(r4 <= 0.05);
     BOOST_CHECK(r5 <= 0.05);
     BOOST_CHECK(r6 <= 0.05);
-
 }
 
 /**
