@@ -51,6 +51,10 @@ BOOSTTESTFLAGS = -lboost_unit_test_framework
 INCLUDES += -I/usr/include
 LINKER += -L/usr/lib
 
+INCLUDES += -I/home/cjs213/Projects/WignerSymbols/include
+LINKER += -L /home/cjs213/Projects/WignerSymbols/lib
+
+
 %.o: %.cpp .base
 	cd $(WRKDIR);$(CXX) $(OPTFLAG) $(OMPFLAG) $(CCFLAG) $(INCLUDES) -c ../$< -o $*.o $(ARMAFLAGS) $(GSLFLAGS)  -lm
 
