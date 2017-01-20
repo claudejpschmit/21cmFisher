@@ -2136,7 +2136,6 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
     //This determines the upper bound of the kappa integral
     double higher_k_bound = lower_k_bound + 0.5;
     /////////////
-    
     for (int i = 0; i <= zc_steps; i++)
     {
         double zc = zc_min + i * delta_zc;
@@ -2147,32 +2146,53 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
         double z = zmin + i * z_stepsize;
         zs.push_back(z); 
     }
-    for (int i = 0; i <= zc_steps; i++)
+       
+    bool read_from_file = true; 
+    stringstream filename;
+   
+    filename << "Theta_interpolation/thetas_Pk" << Pk_i <<\
+        "_Tb" << Tb_i << "_q" << q_i << "_l" << li <<".dat";
+    if (read_from_file)
     {
-        for (int j = 0; j <= z_steps; j++)
+        ifstream infile(filename.str());
+        double res;
+        while (infile >> res)
         {
-            double z = zs[j];
-            double zc = zcs[i];
-            //do calc
-            double r = analysis->model->q_interp(z,q_i);
-            auto integrand = [&](double k)
-            {
-                double res = pow(k, 2+q) *\
-                         alpha(li, k, zc, delta_z_loc, Pk_i, Tb_i, q_i);
-                double P = power(k, Pk_i);
-                double jl = sph_bessel_camb(lj, k*r);
-                res *= P*jl;
-                return res;
-            };
-            double res;
-            if (li < 200)
-                res = integrate(integrand, lower_k_bound, higher_k_bound, 1000, simpson());
-            else
-                res = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
             vals.push_back(res);
         }
     }
-
+    else
+    {
+        ofstream outfile(filename.str());
+        for (int i = 0; i <= zc_steps; i++)
+        {
+            for (int j = 0; j <= z_steps; j++)
+            {
+                double z = zs[j];
+                double zc = zcs[i];
+                //do calc
+                double r = analysis->model->q_interp(z,q_i);
+                auto integrand = [&](double k)
+                {
+                    double res = pow(k, 2+q) *\
+                         alpha(li, k, zc, delta_z_loc, Pk_i, Tb_i, q_i);
+                    double P = power(k, Pk_i);
+                    double jl = sph_bessel_camb(lj, k*r);
+                    res *= P*jl;
+                    return res;
+                };
+                double res;
+            
+                if (li < 200)
+                    res = integrate(integrand, lower_k_bound, higher_k_bound, 1000, simpson());
+                else
+                    res = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
+                vals.push_back(res);
+                outfile << res << endl;
+            }
+        }
+        outfile.close();
+    }
     real_1d_array v_zs, v_zcs, v_vals;
     v_zs.setlength(zs.size());
     v_zcs.setlength(zcs.size());

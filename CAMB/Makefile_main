@@ -93,8 +93,5 @@ cleanCR:
 libCosmoRec.a:
 	cd $(COSMOREC_PATH); make lib;
 
-
 libhyrec.a:
 	cd $(HYREC_PATH); make libhyrec.a;
-
-

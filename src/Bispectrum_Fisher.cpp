@@ -36,12 +36,14 @@ Bispectrum_Fisher::Bispectrum_Fisher(AnalysisInterface* analysis, Bispectrum_LIS
     
     // Determines the largest l-mode to be computed.
     lmax_CLASS = analysis->model->give_fiducial_params("lmax_Fisher_Bispectrum");
-
+    time_file.open("Timing_logger.dat");
     log<LOG_BASIC>("... Bispectrum_Fisher Class initialized ...");
 }
 
 Bispectrum_Fisher::~Bispectrum_Fisher()
-{}
+{
+    time_file.close();
+}
 
 double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
         int n_points_per_thread, int n_threads, Bispectrum_Effects effects)
@@ -414,6 +416,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     log<LOG_VERBOSE>("Entering Parallel regime");
     #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
     {
+        int npoint = 0;
         steady_clock::time_point t1 = steady_clock::now();
         // ! Imporant: each private variable needs to be initialized within the OMP block!!!
         Pk_index2 = 0;
@@ -424,6 +427,8 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
         #pragma omp for reduction (+:sum)
         for (int i = 1; i <= imax; i++)
         {
+            npoint++;
+            steady_clock::time_point t11 = steady_clock::now();
             int l1 = 3 + (n_threads*stepsize*(i-1) % (modmax));
             if (i != 1 && n_threads*stepsize*(i-1) % (modmax) == 0)
                 l1 = modmax + 3;
@@ -434,10 +439,10 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             //cout << i << " -- " << l1 << endl;
             if (l1 <= lmax_CLASS)
             {
-                #pragma omp critical 
-                {
-                    log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
-                }
+                //#pragma omp critical 
+                //{
+                //    log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
+                //}
                 //#pragma omp parallel num_threads(n_threads_2) private(Pk_index2, Tb_index2, q_index2)
                 //{
                 //  Pk_index2 = 0;
@@ -476,12 +481,29 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             {
                 sum+=0;
             }
+            steady_clock::time_point t22 = steady_clock::now();
+            duration<double> dt1 = duration_cast<duration<double>>(t22-t11);
+            #pragma omp critical 
+            {
+                log<LOG_BASIC>("Computation with lmax = %1% is done. Thread #%2% took T = %3%s.") %\
+                    l1 % omp_get_thread_num() % dt1.count();
+                log<LOG_BASIC>(" --- this is the %1%th point computed by thread #%2%.") % npoint %\
+                    omp_get_thread_num();
+            }
+            
+
+
         }
         steady_clock::time_point t2 = steady_clock::now();
         duration<double> dt = duration_cast<duration<double>>(t2-t1);
         #pragma omp critical
         {
             cout << "Thread #" << omp_get_thread_num() << " took t = " << dt.count() << endl;
+            if (omp_get_thread_num() == 0)
+            {
+                time_file << "Calculation done for " << param_key1 << " and " << param_key2 <<\
+                    ". It took t = " << dt.count() << "s." << endl; 
+            }
         }
     }
     return res+sum;

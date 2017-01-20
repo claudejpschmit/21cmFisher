@@ -278,12 +278,9 @@ BOOST_AUTO_TEST_CASE(check_CAMB_CALLER)
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0; 
-
     Model_Intensity_Mapping* model = NULL;
     model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
-
     CAMB_CALLER CAMB;
-
     CAMB.call(params);    
     vector<double> vk = CAMB.get_k_values();
     vector<vector<double>> Pz = CAMB.get_Pz_values();
@@ -668,7 +665,6 @@ BOOST_AUTO_TEST_CASE(check_NLG)
         }
     }
     NLG->update_THETAS(global_vec);
-
 
     /**     CHECKS      **/
     int l1 = 14;

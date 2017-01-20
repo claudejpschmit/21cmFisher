@@ -22,7 +22,7 @@ endif
 #if pre v4.3 add -D__GFORTRAN__
 #With v4.6+ try -Ofast -march=native -fopenmp
 #On my machine v4.5 is about 20% slower than ifort
-F90C     = gfortran
+F90C     = gfortran-4.8
 FFLAGS =  -O3 -fopenmp -ffast-math -funroll-loops
 
 

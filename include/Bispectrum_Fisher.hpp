@@ -34,6 +34,7 @@ class Bispectrum_Fisher {
         virtual double calc_mu(int l1, int l2, int l3, double nu, string param_key,\
                 int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects);
         double Cl(int l, double nu);
+        ofstream time_file;
 
         AnalysisInterface* analysis;
         Bispectrum_LISW* LISW;
