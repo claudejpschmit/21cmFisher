@@ -376,7 +376,7 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
             
             if (rank == 0)
             { 
-                cout << "running CAMB on rank = " << rank << endl;
+                log<LOG_BASIC>("running CAMB on rank = %1%") % rank << endl;
                 CAMB->call(params);    
                 vk = CAMB->get_k_values();
                 Pz = CAMB->get_Pz_values();
@@ -397,7 +397,7 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
                         aPz[i * Pz_elems2 + j] = Pz[i][j];
                     }
                 }
-                cout << " ----------------- CAMB DONE --------------------------" << endl;
+                log<LOG_BASIC>(" ----------------- CAMB DONE --------------------------");
             }
             MPI_Bcast(&vk_elems, 1, MPI_INT, 0, communicator);
             MPI_Bcast(&Pz_elems1, 1, MPI_INT, 0, communicator);

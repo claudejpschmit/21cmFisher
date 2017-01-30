@@ -99,7 +99,7 @@ void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double
         spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
 
         Clnu_interpolators.push_back(interpolator);
-        cout << "Cl for l = " << l << " is interpolated." << endl;
+        log<LOG_BASIC>("Cl for l = %1% is interpolated.") % l;
     }
 }
 

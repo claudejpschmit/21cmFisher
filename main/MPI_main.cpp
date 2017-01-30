@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     int rank, comm_size;
     MPI_Comm_size(communicator, &comm_size);
     MPI_Comm_rank(communicator, &rank);
-    cout << "rank = " << rank << ", size = " << comm_size << endl;
+    log<LOG_BASIC>("rank = %1%, size = %2%") % rank % comm_size;
     ///////////////////////////////////////////////////////////////////
 
     string iniFilename = "";
@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 
     double res = fish->compute_F_matrix(nu_min, nu_stepsize, n_frequency_bins, 1, effects);
 
-    cout << "rank " << rank << " is done with Fischer calculation " << endl;
+    log<LOG_BASIC>("rank %1% is done with the Fischer calculation") % rank;
     if (NLG) 
         delete NLG;
     if (LISW)
