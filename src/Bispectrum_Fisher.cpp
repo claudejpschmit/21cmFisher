@@ -5,6 +5,8 @@
 #include <ctime>
 #include <chrono>
 
+#define READ_FROM_FILE false // determines whether Theta_interpolations are read from file.
+
 using namespace chrono;
 
 /*********************************/
@@ -18,7 +20,7 @@ Bispectrum_Fisher::Bispectrum_Fisher(AnalysisInterface* analysis, Bispectrum_LIS
     interpolation_done = false;
     omp_set_nested(analysis->model->give_fiducial_params("nested"));
     this->fisherPath = fisherPath;
-    model_param_keys = param_keys_considered;
+    this->model_param_keys = param_keys_considered;
     this->analysis = analysis;
     this->LISW = LISW;
     this->NLG = NLG;
@@ -284,7 +286,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                                     //try 
                                     //{
                                         interp_loc = NLG->make_Theta_interp(l, l, q,\
-                                            Pk_i, Tb_i, q_i, zmax, zmin, delta_z); 
+                                            Pk_i, Tb_i, q_i, zmax, zmin, delta_z, READ_FROM_FILE); 
                                     //}
                                     //catch(alglib::ap_error e)
                                     //{

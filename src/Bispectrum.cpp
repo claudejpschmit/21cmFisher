@@ -2080,7 +2080,7 @@ void Bispectrum::sort_theta()
 }
 
 Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, int q_i,\
-        double zc_max, double zc_min, double delta_zc)
+        double zc_max, double zc_min, double delta_zc, bool read_from_file)
 {
     /////////////////////////
     double delta_z_loc = 0.1;
@@ -2147,7 +2147,6 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
         zs.push_back(z); 
     }
        
-    bool read_from_file = true; 
     stringstream filename;
    
     filename << "Theta_interpolation/thetas_Pk" << Pk_i <<\

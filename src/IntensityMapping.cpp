@@ -221,7 +221,7 @@ int IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double 
     if (do_calc)
     {
      /////////////
-        log<LOG_BASIC>("... Interpolating for Pk_index = %1%, Tb_index = %2%, q_index = %3% ...") %\
+        log<LOG_BASIC>("... Interpolating Cls for Pk_index = %1%, Tb_index = %2%, q_index = %3% ...") %\
             Pk_index % Tb_index % q_index;
         double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
         vector<double> vnu, vl;
@@ -273,60 +273,11 @@ int IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double 
 
         Cls_interpolators_large.push_back(I);
         index = Cls_interpolators_large.size() - 1;
-       
+        
+        log<LOG_BASIC>("... Interpolating Cls is done ...");
     /////////////
     }
     return index;
-    //if ((*Cls_interpolators_large)[lmax][Pk_index][Tb_index][q_index].computed == false)
-    /*if (Cls_interpolators_large2[lmax][Pk_index][Tb_index][q_index].computed == false)
-    { 
-        cout << "here" << endl;
-        double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
-       
-        // CAUTION: This causes a possible memory leak in Valgrind.
-        //#pragma omp parallel num_threads(6) 
-        //{
-        //     #pragma omp for
-            for (int l = lmin; l <= lmax; l++)
-            {
-                cout << l << endl;
-                vector<double> vnu, vCl;
-                for (int i = 0; i <= nu_steps; i++)
-                {
-                    double nu = nu_min + i*nu_stepsize;
-                    vCl.push_back(this->calc_Cl(l,nu,nu,0,0,0));
-                    vnu.push_back(nu);
-                }
-        
-                cout << l << endl;
-                real_1d_array nu_arr, Cl_arr;
-                nu_arr.setlength(vnu.size());
-                Cl_arr.setlength(vCl.size());
-
-                for (unsigned int i = 0; i < vnu.size(); i++){
-                    nu_arr[i] = vnu[i];
-                }
-                for (unsigned int i = 0; i < vCl.size(); i++){
-                    Cl_arr[i] = vCl[i];
-                }
-                cout << l << endl;
-
-                spline1dinterpolant interpolator;
-                cout << l << endl;
-                spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
-                cout << l << endl;
-            
-                Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].interpolator = interpolator;
-                Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].computed = true;
-
-                cout << l << endl;
-                cout << "end" << endl;
-                //(*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].interpolator = &interpolator;
-                //(*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed = true;
-                //cout << "Cl for l = " << l << " is interpolated." << endl;
-            }
-        //}
-    }*/
 }
 
 double IntensityMapping::Cl_interp(int l,double nu1)

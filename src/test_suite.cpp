@@ -22,10 +22,10 @@
 #include "Bispectrum_Fisher.hpp"
 #include "Integrator.hpp"
 #include "interpolation.h"
-
+#include <omp.h>
 using namespace std;
 
-log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_ERROR;
+log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
 
 /** 
  * RUN: ./test --log_level=test_suite --run_test=check_TESTCASE
@@ -572,14 +572,14 @@ BOOST_AUTO_TEST_CASE(check_LISW)
 
     ofstream file1("plots/data/test_lensing_kernel_z1.dat");
     ofstream file2("plots/data/test_grav_potential_deriv_z1_l100.dat");
-   
+
     double z_fixed = 1;
     for (int i = 0; i < 10000; i++)
     {
         double z = i * 0.01;
         file1 << z << " " << SN->TEST_lensing_kernel(z,z_fixed) << endl;
     }
-    
+
     int l = 10;
     for (int i = 0; i < 10000; i++)
     {
@@ -632,16 +632,16 @@ BOOST_AUTO_TEST_CASE(check_NLG)
     // the THETAs need to be precomputed for the method used by the fisher analysis.
     // lmax = 15. This means each core interpolates 2 lmodes.
     int lmax_CLASS = params["lmax_Fisher_Bispectrum"];
-   
+
     // having in mind that I want to be comparing stuff at z = 1.
     double zmax = 1.1;
     double zmin = 0.9;
     double delta_z = 0.1;
     vector<vector<Theta>> global_vec;
-    #pragma omp parallel
+#pragma omp parallel
     {
         vector<Theta> local_vec;
-        #pragma omp for 
+#pragma omp for 
         for (int li = 0; li <= lmax_CLASS; li++) 
         {
             //#pragma omp critical
@@ -656,10 +656,10 @@ BOOST_AUTO_TEST_CASE(check_NLG)
             // here it is sufficient to interpolate the fiducial model only, as we are not 
             // varying any parameters here, and really just want to prove that the direct 
             // calculation gives the same result as this interpolated method.
-            interp_loc = NLG->make_Theta_interp(li, li, q, 0, 0, 0, zmax, zmin, delta_z); 
+            interp_loc = NLG->make_Theta_interp(li, li, q, 0, 0, 0, zmax, zmin, delta_z, false); 
             local_vec.push_back(interp_loc);
         }
-        #pragma omp critical
+#pragma omp critical
         {
             global_vec.push_back(local_vec);
         }
@@ -887,7 +887,7 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             file1 << l << " " << abs(b_lisw) << endl;
         }
     }
-    
+
     /** plotting Bispectrum Noise **/
     name = "Bispectrum_noise";
     outfilename << base << name << suffix;
@@ -898,13 +898,13 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     double nu1 = 1420.0/(1.0+z);
     // DELTA = 6 for l1 = l2 = l3, if ls are the same, then Delta = 3, 1 otherwise.
     double DELTA = 6.0;
-   
+
     for (int i = 1; i < 100; i++)
     {
         int l = exp(i*0.1);
         if (l < 1000)
         {
-            
+
             // All odd modes are 0.
             if (l % 2 == 1)
                 l++;
@@ -1068,7 +1068,7 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     outfilename << base << name << suffix;
     ofstream file5(outfilename.str());
     outfilename.str("");
-    
+
     z = 1;
     nu = 1420.0/(1.0+z);
     cout << "Cls noise for nu = " << nu << " computed" << endl;
@@ -1080,6 +1080,408 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             double cl = analysis->Cl_noise(l, nu, nu);
             double res = l*(l+1)*cl/(2.0*M_PI);
             file5 << l << " " << res << endl;
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(check_Fl)
+{
+    /**     SETUP       **/
+
+    /**
+     * Simple non-computational intensive plots should be implemented here.
+     */
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_Fl.ini";
+
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename;
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+
+    Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+
+    Bispectrum* NLG = new Bispectrum(analysis);
+
+    Bispectrum_Effects effects = ALL_eff;
+    Bispectrum_Fisher* fish = new Bispectrum_Fisher(analysis, LISW, NLG, keys, fisherPath);
+
+    int nu_steps = 1;
+    int n_threads = 1;
+    double nu_stepsize = 10;
+    double nu_min = 400;
+    /************************************************************/
+    
+    fish->nu_steps_CLASS = nu_steps;
+    fish->nu_min_CLASS = nu_min;
+    fish->nu_stepsize_CLASS = nu_stepsize;
+
+    // Exhaust all the possible models and interpolate them, so that the 
+    // code is thread safe later on.
+    log<LOG_BASIC>(" -> Interpolating all possible models.");
+    for (unsigned int i = 0; i < fish->model_param_keys.size(); i++) {
+        int Pk = 0;
+        int Tb = 0;
+        int q = 0;
+        string param_key = fish->model_param_keys[i];
+        log<LOG_BASIC>("%1%") % param_key;
+        map<string,double> working_params = fish->fiducial_params;
+        double h = fish->var_params[param_key];
+        double x = working_params[param_key];
+        working_params[param_key] = x + h;
+        analysis->model->update(working_params, &Pk, &Tb, &q);
+        log<LOG_BASIC>("model updated for Pk_i = %1%, Tb = %2%, q = %3%.") % Pk % Tb % q;
+    }
+
+    log<LOG_BASIC>(" -> Interpolating all possible growth functions.");
+    cout << analysis->model->q_size() << endl;
+    for (int i = 0; i < analysis->model->q_size(); i++)
+    {
+        NLG->update_D_Growth(i);
+    }
+    log<LOG_BASIC>(" -----> done. ");
+
+    // now compute F_ab's (symmetric hence = F_ba's)
+    cout << fish->model_param_keys.size() << endl;
+    for (unsigned int i = 0; i < fish->model_param_keys.size(); i++) {
+        for (unsigned int j = i; j < fish->model_param_keys.size(); j++) {
+            string param_key1 = fish->model_param_keys[i];
+            string param_key2 = fish->model_param_keys[j];
+
+            log<LOG_BASIC>("----> STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
+
+            int Pk_index = 0;
+            int Tb_index = 0;
+            int q_index = 0;
+            /*
+               if (param_key1 == param_key2) {
+               initializer(param_key1, &Pk_index, &Tb_index, &q_index);
+               } else {
+               initializer(param_key1, &Pk_index, &Tb_index, &q_index);
+               initializer(param_key2, &Pk_index, &Tb_index, &q_index);
+               }
+               */
+
+            double sum = 0;
+
+            // This matrix contains the results.
+            mat output(nu_steps, 2);
+
+            // IMPORTANT! l has to start at 1 since Nl_bar has j_(l-1) in it!
+
+            // The following line parallelizes the code
+            // use #pragma omp parallel num_threads(4) private(Pk_index, Tb_index, q_index) 
+            // to define how many threads should be used.
+
+            log<LOG_VERBOSE>("Entering Parallel regime");
+            //#pragma omp parallel num_threads(n_threads) private(Pk_index, Tb_index, q_index) 
+            //{
+            //    Pk_index = 0;
+            //    Tb_index = 0;
+            //    q_index = 0;
+
+            //    #pragma omp for reduction (+:sum)
+            for (int k = 1; k <= nu_steps; ++k) {
+                // note: k has nothing to do with scale here, just an index!
+                int m = 0;
+                if (k == nu_steps)
+                    m = nu_steps;
+                else
+                    m = ((k-1)*n_threads) % (nu_steps - 1) + 1;
+                int nu = nu_min + m * nu_stepsize;
+                stringstream ss;
+                ss << "Computation of F_nu starts for nu = " << nu << "\n";
+                log<LOG_VERBOSE>("%1%") % ss.str().c_str();
+                ofstream Fl_file;
+                stringstream filename;
+                filename << "Fl_nu" << nu << "_" << param_key1 << "_" << param_key2 << ".dat";
+                cout << "file which is written to: " << filename.str() << endl;
+                Fl_file.open(filename.str());
+                Fl_file.close();
+                /*************** Compute Fnu   *************/
+                //double fnu = fish->compute_Fnu(nu, param_key1, param_key2,\
+                //        &Pk_index, &Tb_index, &q_index, effects);
+
+                double res = 0;
+                int Pk_index2 = Pk_index;
+                int Tb_index2 = Tb_index;
+                int q_index2 = q_index;
+                int n_threads = analysis->model->give_fiducial_params("n_threads_bispectrum");
+                int gaps = analysis->model->give_fiducial_params("gaps_bispectrum");
+                int stepsize = gaps + 1;
+                int lmodes = ceil((fish->lmax_CLASS-2.0)/(double)stepsize);
+                int imax = ceil((double)lmodes/(double)n_threads) * n_threads;
+                //cout << "nthreads = " << n_threads << endl;
+                //cout << "lmodes = " << lmodes << endl;
+                //cout << "imax = " << imax << endl;
+                int modmax = (imax-1)*stepsize;//lmax_CLASS-3;// ceil((lmax_CLASS-2)/n_threads) * n_threads - 1;
+                double sum = 0;
+                // This will only be used if omp_nested is set to 1 in the constructor above.
+                //int n_threads_2 = analysis->model->give_fiducial_params("sub_threads");
+
+                /**         READ THIS!!! -> for NLG
+                 *          ------------
+                 *
+                 * Similarly to before, in order to be thread safe, I need to make sure that 
+                 * each THETA interpolator has been precomputed safely before I let multiple threads 
+                 * access the vector. So that they will never be in a situation where they want to 
+                 * create a new element, thus making sure that 2 threads don't try and make the same 
+                 * vector element, or push something to the vector at the exact same time.
+                 *
+                 */
+                if (effects == NLG_eff || effects == ALL_eff)
+                {   
+                    if (!fish->interpolation_done)
+                    {
+                        // Update all possible THETA interpolators.
+
+                        /** I am currently thinking that this should be doable on multiple cores.
+                         * This means that I separate the lranges that each core needs to update and add
+                         * their updated interpolator structures to local vectors.
+                         */
+                        //      PROTOCODE:
+                        //
+                        // vector<vector<THETA>> global_vec;
+                        // # pragma omp parallel
+                        // {
+                        // vector<THETA> local_vec;
+                        // # pragma omp for
+                        // for each li lj q pk tb and q index:
+                        //      THETA interpolator = update();
+                        //      local_vec.push_back(interpolator);
+                        // 
+                        //  # pragma omp critical
+                        //  global_vec.push_back(local_vec)
+                        // }    
+                        // 
+                        // vector<THETA> transfer;
+                        // set transfer = global_vec; // ie. collapse it down.
+                        // set bispectrum.THETA_interps = transfer;
+                        // done!
+                        log<LOG_BASIC>("Precomputing all theta interpolators.");
+                        double zmax = (1420.4/fish->nu_min_CLASS) - 1.0;
+                        double zmin = (1420.4/(fish->nu_min_CLASS + fish->nu_steps_CLASS * fish->nu_stepsize_CLASS) - 1.0);
+                        double delta_z = (zmax - ((1420.4/(fish->nu_min_CLASS+fish->nu_stepsize_CLASS)) - 1.0));
+
+
+                        // need to be careful that this is not repeated when doing a different parameter pair.
+                        vector<vector<Theta>> global_vec;
+                        cout << "pkz size = " << analysis->model->Pkz_size() << endl;
+                        cout << "tb size = " << analysis->model->Tb_size() << endl;
+                        cout << "q size = " << analysis->model->q_size() << endl;
+                        int lmodes_interp = fish->lmax_CLASS + 1;
+                        int imax_interp = ceil((double)lmodes_interp/(double)n_threads) * n_threads;
+                        int modmax_interp = imax_interp - 1;
+
+                        #pragma omp parallel num_threads(n_threads)
+                        {
+                            vector<Theta> local_vec;
+                            bool calc = false;
+                            #pragma omp for 
+                            for (int i = 0; i < imax_interp; i++)
+                            {
+                                int l = (n_threads*i) % (modmax_interp);
+                                if (i != 0 && n_threads*i % (modmax_interp) == 0)
+                                    l = modmax_interp;
+
+                                if (l <= fish->lmax_CLASS) 
+                                {
+                                    calc = true;
+                                    //#pragma omp critical
+                                    //{
+                                    //    log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated.") % li;
+                                    //}
+                                    // Doing it for li = lj, as we compute only the first term of the bispectrum for now.
+                                    // Also, for the same reason, we only need the q = 0 term.
+                                    int q = 0;
+                                    for (int Pk_i = 0; Pk_i < analysis->model->Pkz_size(); Pk_i++)
+                                    {
+                                        for (int Tb_i = 0; Tb_i < analysis->model->Tb_size(); Tb_i++)
+                                        {
+                                            for (int q_i = 0; q_i < analysis->model->q_size(); q_i++)
+                                            {
+                                                Theta interp_loc;
+                                                //try 
+                                                //{
+                                                interp_loc = NLG->make_Theta_interp(l, l, q,\
+                                                        Pk_i, Tb_i, q_i, zmax, zmin, delta_z, true); 
+                                                //}
+                                                //catch(alglib::ap_error e)
+                                                //{
+                                                //    log<LOG_ERROR>("---- Error: %1%") % e.msg.c_str();
+                                                //}
+
+                                                local_vec.push_back(interp_loc);
+                                            }
+                                        }
+                                    }
+                                    #pragma omp critical
+                                    {
+                                        log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated. thread = %2%.")%\
+                                            l % omp_get_thread_num();
+                                    }
+                                }
+                            }
+                            #pragma omp critical
+                            {
+                                if (calc)
+                                    global_vec.push_back(local_vec);
+                            }
+                        }
+                        NLG->update_THETAS(global_vec);
+
+                        log<LOG_BASIC>(" --> thetas are interpolated.");
+                        fish->interpolation_done = true;
+                    }
+                    else
+                    {
+                        log<LOG_BASIC>("Interpolation of thetas has been done before. Nothing to be done.");
+                    }
+                }
+
+                /**     READ THIS !!!
+                 *      -------------
+                 *
+                 * Important, in order to be thread safe, I am computing the l1=2 case on a single core.
+                 * This insures that all Pkz, Tb and q interpolation vectors have been exhaustively 
+                 * filled, such that later on, when I have multiple threads calling model->update(params)
+                 * they will never have to create a new vector element. It could be that multiple threads 
+                 * would try and create the same model interpolator, which is BAD!.
+                 **/
+
+                int lmin1 = 1;
+                log<LOG_BASIC>("Starting computation with lmax = %1%.") % 2;
+                for (int l2 = lmin1; l2 <= 2; l2++)
+                {
+                    for (int l3 = 0; l3 <= 2; l3++)
+                    {
+                        double F = 0;
+                        if (l3 >= (2-l2) and l3 <= l2)
+                        {   
+                            if (2 == l2 and l3 == 0)
+                            {
+                                F = 0;
+                            }
+                            else
+                            {  
+                                F = fish->Fisher_element(2,l2,l3,nu,param_key1,param_key2,\
+                                        &Pk_index2, &Tb_index2, &q_index2, effects);
+                            }
+                        }
+                        else
+                        {
+                            //enter 0
+                            F = 0;
+                        }
+                        res += (2.0 * 2 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * abs(F);
+                    }
+                }
+                log<LOG_VERBOSE>("Entering Parallel regime");
+                
+                #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
+                {
+                    int npoint = 0;
+                    // ! Imporant: each private variable needs to be initialized within the OMP block!!!
+                    Pk_index2 = 0;
+                    Tb_index2 = 0;
+                    q_index2 = 0;
+                    //cout << "modmax = " << modmax << endl;
+                    //cout << modmax << endl;
+                    #pragma omp for reduction (+:sum)
+                    for (int i = 1; i <= imax; i++)
+                    {
+                        npoint++;
+                        int l1 = 3 + (n_threads*stepsize*(i-1) % (modmax));
+                        if (i != 1 && n_threads*stepsize*(i-1) % (modmax) == 0)
+                            l1 = modmax + 3;
+                        /*
+                           if (l1 > lmax_CLASS)
+                           l1 = modmax;*/
+                        int lmin = l1/2;
+                        //cout << i << " -- " << l1 << endl;
+                        double fl = 0;
+                        if (l1 <= fish->lmax_CLASS)
+                        {
+                            //#pragma omp critical 
+                            //{
+                            //    log<LOG_BASIC>("Starting computation with lmax = %1%.") % l1;
+                            //}
+                            //#pragma omp parallel num_threads(n_threads_2) private(Pk_index2, Tb_index2, q_index2)
+                            //{
+                            //  Pk_index2 = 0;
+                            //  Tb_index2 = 0;
+                            //  q_index2 = 0;     
+                            //  //#pragma omp for reduction (+:sum)
+                            for (int l2 = lmin; l2 <= l1; l2++)
+                            {
+                                for (int l3 = 0; l3 <= l1; l3++)
+                                {
+                                    double F = 0;
+                                    if (l3 >= (l1-l2) and l3 <= l2)
+                                    {   
+
+                                        if (l1 == l2 and l3 == 0)
+                                        {
+                                            F = 0;
+                                        }
+                                        else
+                                        {
+                                            F = fish->Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
+                                                    &Pk_index2, &Tb_index2, &q_index2, effects);
+                                            //cout << l1 << " " << l2 << " " << l3 << endl;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        //enter 0
+                                        F = 0;
+                                    }
+                                    sum += (2.0 * l1 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) * stepsize * F;
+                                    fl += (2.0 * l1 + 1.0) * (2.0 * l2 + 1.0) * (2.0 * l3 + 1.0) *\
+                                          stepsize * abs(F);
+                                }
+                            }
+                            //}
+                        }
+                        else
+                        {
+                            sum+=0;
+                        }
+                        #pragma omp critical 
+                        {
+                            //log<LOG_BASIC>("Computation with lmax = %1% is done. Thread #%2% took T = %3%s.") %\
+                            //    l1 % omp_get_thread_num();
+                            //log<LOG_BASIC>(" --- this is the %1%th point computed by thread #%2%.") % npoint %\
+                            //    omp_get_thread_num();
+                            // write fl to file.
+                            Fl_file.open(filename.str(),ios_base::app);
+                            Fl_file << l1 << " " << fl << endl;
+                            Fl_file.close();
+                        }
+                    }
+                }
+                /*******************************************/
+            }
+            log<LOG_BASIC>("Calculations done for %1% and %2%.") %\
+                param_key1.c_str() % param_key2.c_str();
         }
     }
 }

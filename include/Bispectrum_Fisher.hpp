@@ -29,7 +29,12 @@ class Bispectrum_Fisher {
                 int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects);
         vector<double> set_range(int l, double xmin, double xmax);
         
-    protected:
+        
+        // this needs to be here for test-suite purposes.
+        map<string,double> fiducial_params, var_params;
+        vector<string> model_param_keys;
+        
+    //protected:
         virtual double calc_mu(int l1, int l2, int l3, double nu, string param_key,\
                 int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects);
         double Cl(int l, double nu);
@@ -44,9 +49,7 @@ class Bispectrum_Fisher {
         int lmax_CLASS;
         int nu_steps_CLASS;
         double nu_min_CLASS, nu_stepsize_CLASS;
-        vector<string> model_param_keys;
         string fisherPath;
-        map<string,double> fiducial_params, var_params;
 };
 
 class TEST_Bispectrum_Fisher : public Bispectrum_Fisher {
