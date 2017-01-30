@@ -376,7 +376,7 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
             
             if (rank == 0)
             { 
-                log<LOG_BASIC>("running CAMB on rank = %1%") % rank << endl;
+                log<LOG_BASIC>("running CAMB on rank = %1%") % rank;
                 CAMB->call(params);    
                 vk = CAMB->get_k_values();
                 Pz = CAMB->get_Pz_values();
