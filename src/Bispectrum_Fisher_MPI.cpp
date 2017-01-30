@@ -450,7 +450,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     {
         if (i % mod_ref == 0)
         {
-            log<LOG_BASIC>("rank %1% is %2% \% done.") % rank % ceil((double)i/(double)todo_list.size() *100.0)
+            log<LOG_BASIC>("rank %1% is %2% \% done.") % rank % ceil((double)i/(double)todo_list.size() *100.0);
         }
         F_res = Fisher_element(todo_list[i].l1,todo_list[i].l2,todo_list[i].l3,nu,param_key1,param_key2,\
                &Pk_index2, &Tb_index2, &q_index2, effects);

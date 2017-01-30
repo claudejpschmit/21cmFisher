@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include "Log.hpp"
+#include <stdlib.h>
+#include <string.h>
 
 // What to do about Dark Energy w???
 
