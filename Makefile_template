@@ -22,10 +22,10 @@ vpath .base build
 
 # Compiler required for c++ code.
 # including -ffast-math may not be as bad as anticipated.
-COMP = mpicc
-CXX = $(COMP) -Wall -std=c++11 -Wno-deprecated 
+COMP = mpic++
+CXX = $(COMP) -Wall -std=c++11 -ffast-math -Wno-deprecated -fopenmp -g
 
-OPTFLAG = -O3
+OPTFLAG = -O2
 ARMAFLAGS = -larmadillo
 GSLFLAGS = -lgsl -lgslcblas
 WIGNERFLAGS = -lwignerSymbols
@@ -34,7 +34,7 @@ WIGNERFLAGS = -lwignerSymbols
 # This decreases the precision of the bessel functions significantly if 
 # added to the compilation of the files containing boost->sph_bess(l,x).
 OPTFLAG_CLASS = -ffast-math
-OMPFLAG = -qopenmp
+OMPFLAG = -fopenmp
 CCFLAG = -fPIC -g
 LDFLAG = -fPIC -g
 
@@ -49,31 +49,11 @@ INCLUDES += -I/usr/include/boost
 BOOSTTESTFLAGS = -lboost_unit_test_framework
 
 # Including GSL
-#INCLUDES += -I/usr/include
-#LINKER += -L/usr/lib
+INCLUDES += -I/usr/include
+LINKER += -L/usr/lib
 
-#INCLUDES += -I/home/cjs213/Projects/WignerSymbols/include
-#LINKER += -L /home/cjs213/Projects/WignerSymbols/lib
-
-# These lines seem to be unnecessary, but I leave them in anyways.
-INCLUDES += -I$(BOOST_HOME)/include
-LINKER = -L$(BOOST_HOME)/libs #-lboost_filesystem
-
-# Linking Armadillo
-INCLUDES += -I$(ARMADILLO_HOME)/build/armadillo-6.200.2/include/ -DARMA_DONT_USE_WRAPPER
-#INCLUDES += -I$(ARMADILLO_HOME)/include -DARMA_DONT_USE_WRAPPER
-LINKER += -L$(ARMADILLO_HOME)/lib
-
-# Linking GSL
-INCLUDES += -I$(GSL_HOME)/include/
-LINKER += -L$(GSL_HOME)/lib/
-
-LINKER += -L$(INTEL_HOME)/mkl/lib/intel64/libmkl_rt.so
-#LINKER += -L/usr/lib64/libblas.so.3
-
-# Linking Wignersymbols
-INCLUDES += -I/home/cjs213/WignerSymbols_library/include/
-LINKER += -L/home/cjs213/WignerSymbols_library/lib/ 
+INCLUDES += -I/home/cjs213/Projects/WignerSymbols/include
+LINKER += -L /home/cjs213/Projects/WignerSymbols/lib
 
 
 %.o: %.cpp .base
