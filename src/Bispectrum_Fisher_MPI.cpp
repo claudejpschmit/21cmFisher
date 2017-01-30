@@ -180,7 +180,7 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
             }
         }
     }
-    cout << "rank " << rank << " has reached the end." << endl;
+    log<LOG_BASIC>("rank %1% has reached the end.") % rank;
     return 0;
 }
 
@@ -254,9 +254,9 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
 
             // need to be careful that this is not repeated when doing a different parameter pair.
             vector<vector<Theta>> global_vec;
-            cout << "pkz size = " << analysis->model->Pkz_size() << endl;
-            cout << "tb size = " << analysis->model->Tb_size() << endl;
-            cout << "q size = " << analysis->model->q_size() << endl;
+            log<LOG_BASIC>("pkz size = %1%") % analysis->model->Pkz_size();
+            log<LOG_BASIC>("tb size = %1%") % analysis->model->Tb_size();
+            log<LOG_BASIC>("q size = %1%") % analysis->model->q_size();
             vector<Theta> local_vec;
             bool calc = false;
             vector<CONTAINER> vec_vals;
@@ -375,7 +375,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                 global_vec.push_back(thetas); 
                 delete vals;
             }
-            cout << "rank " << rank << " now sorting the interpolators " << endl; 
+            log<LOG_BASIC>("rank %1% now sorting the interpolators.") % rank; 
             NLG->update_THETAS(global_vec);
             steady_clock::time_point t2 = steady_clock::now();
             duration<double> dt = duration_cast<duration<double>>(t2-t1);
@@ -402,7 +402,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     if (!todo_determined)
     {
         if (rank == 0)
-            cout << "Now trying to determine which modes each rank needs to compute." << endl;
+            log<LOG_BASIC>("Now trying to determine which modes each rank needs to compute.");
         int counter = -1;
         for (int l1 = 0; l1 <= lmax_CLASS; l1++)
         {
@@ -432,7 +432,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             }
         }
         todo_determined = true;
-        cout << "rank " << rank << " has computed its todo list, it contains "<< todo_list.size() << " elements" << endl;
+        log<LOG_BASIC>("rank %1% has computed its todo list, it contains %2% elements.") % rank % todo_list.size();
         MPI_Barrier(communicator); 
     }
     double local_sum = 0;
@@ -450,7 +450,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     {
         if (i % mod_ref == 0)
         {
-            cout << "rank " << rank << " is " << ceil((double)i/(double)todo_list.size() *100.0) << "\% done." << endl;
+            log<LOG_BASIC>("rank %1% is %2% \% done.") % rank % ceil((double)i/(double)todo_list.size() *100.0)
         }
         F_res = Fisher_element(todo_list[i].l1,todo_list[i].l2,todo_list[i].l3,nu,param_key1,param_key2,\
                &Pk_index2, &Tb_index2, &q_index2, effects);
