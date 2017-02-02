@@ -35,12 +35,14 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis)
     log<LOG_BASIC>("... LISW Class initialized ...");
 }
 
-Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
+Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params, MPI_Comm communicator)
     :
         interpolate_large(false),
         ql_interpolated(false)
 {
-    log<LOG_BASIC>("... Beginning LISW constructor ...");
+    MPI_Comm_rank(communicator, &rank);
+    if (rank == 0)
+        log<LOG_BASIC>("... Beginning LISW constructor ...");
 
     this->analysis = analysis;
     SN_calculation = false;
@@ -94,8 +96,8 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
     {
         Cls_noise.push_back(-1);
     }
-    
-    log<LOG_BASIC>("... LISW Class initialized ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... LISW Class initialized ...");
 }
 
 Bispectrum_LISW::~Bispectrum_LISW()
@@ -487,7 +489,8 @@ void Bispectrum_LISW::make_Ql_interps(int lmax, double numin, double numax)
         spline1dbuildcubic(z_arr, Ql_arr, interpolator);
 
         Qls_interpolators.push_back(interpolator);
-        log<LOG_BASIC>("Ql for l = %1% is interpolated.") % l;
+        if (rank == 0)
+            log<LOG_BASIC>("Ql for l = %1% is interpolated.") % l;
     }
 
     ql_interpolated = true;

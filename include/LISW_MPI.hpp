@@ -1,4 +1,5 @@
 #pragma once
+#include <mpi.h>
 #include "Analysis_MPI.hpp"
 #include "boost/multi_array.hpp"
 using namespace std;
@@ -41,7 +42,7 @@ class Bispectrum_LISW {
          *          the large interpolator vector, but instead uses a small container
          *          for the (0,0,0) case only.
          */
-        Bispectrum_LISW(AnalysisInterface* analysis, int num_params);
+        Bispectrum_LISW(AnalysisInterface* analysis, int num_params, MPI_Comm communicator);
         
         /**
          * Standard Destructor
@@ -161,4 +162,5 @@ class Bispectrum_LISW {
         vector<vector<vector<vector<Interpol>>>> Qls_interpolators_large;
         double numin_CLASS, numax_CLASS;
         int lmax_CLASS;
+        int rank;
 };

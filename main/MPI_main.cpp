@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     int rank, comm_size;
     MPI_Comm_size(communicator, &comm_size);
     MPI_Comm_rank(communicator, &rank);
-    log<LOG_BASIC>("rank = %1%, size = %2%") % rank % comm_size;
+    log<LOG_BASIC>(" Hello from rank = %1%, comm_size = %2%") % rank % comm_size;
     ///////////////////////////////////////////////////////////////////
 
     string iniFilename = "";
@@ -65,9 +65,9 @@ int main(int argc, char* argv[])
     Bispectrum_LISW* LISW = NULL;
     Bispectrum_Fisher* fish = NULL;
     model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index, communicator);
-    analysis = new IntensityMapping(model, keys.size());
+    analysis = new IntensityMapping(model, keys.size(), communicator);
     NLG = new Bispectrum(analysis, communicator);
-    LISW = new Bispectrum_LISW(analysis, keys.size());
+    LISW = new Bispectrum_LISW(analysis, keys.size(), communicator);
     fish = new Bispectrum_Fisher(analysis, LISW, NLG, keys, fisherPath, communicator);
     stringstream name;
     name << "Pkz_" << rank;
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
     double nu_min = 400;
     //nu_max = 790, so between z = 0.8 and z = 1.2
     double nu_stepsize = 10;
-    int n_frequency_bins = 3;
+    int n_frequency_bins = 40;
 
     Bispectrum_Effects effects = parser.giveBispectrumEffects();
 

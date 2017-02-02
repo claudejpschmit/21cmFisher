@@ -1,4 +1,5 @@
 #pragma once
+#include <mpi.h>
 #include "Model_MPI.hpp"
 #include "boost/multi_array.hpp"
 
@@ -31,7 +32,7 @@ class AnalysisInterface {
 class IntensityMapping : public AnalysisInterface {
     public:
         IntensityMapping(ModelInterface* model);
-        IntensityMapping(ModelInterface* model, int num_params);
+        IntensityMapping(ModelInterface* model, int num_params, MPI_Comm communicator);
         ~IntensityMapping();
         
         double Cl(int l, double nu1, double nu2,\
@@ -68,5 +69,6 @@ class IntensityMapping : public AnalysisInterface {
         int num_params;
         int lmax_CLASS,lmin_CLASS, nu_steps_CLASS;
         double numax_CLASS,numin_CLASS;
+        int rank;
 
 };

@@ -300,21 +300,29 @@ Model_Intensity_Mapping::Model_Intensity_Mapping(map<string, double> params,\
     CAMB = new CAMB_CALLER;
 
     modelID = "IM";
-
-    log<LOG_BASIC>("... precalculating q ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... precalculating q ...");
     update_q(fiducial_params, q_index);
-    log<LOG_BASIC>("... q done, rank = %1% ...") % rank;
 
-    log<LOG_BASIC>("... precalculating Pkz ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... q done ...");
+
+    if (rank == 0)
+        log<LOG_BASIC>("... precalculating Pkz ...");
     update_Pkz(fiducial_params, Pk_index);
-    log<LOG_BASIC>("... Pkz done ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... Pkz done ...");
 
-    log<LOG_BASIC>("... precalculating 21cm interface ...");
-    log<LOG_BASIC>("...  -> IM Model for 21cm signal ...");
+    if (rank == 0){
+        log<LOG_BASIC>("... precalculating 21cm interface ...");
+        log<LOG_BASIC>("...  -> IM Model for 21cm signal ...");
+    }
     update_T21(fiducial_params, Tb_index);
 
-    log<LOG_BASIC>("... 21cm interface built ...");
-    log<LOG_BASIC>("... Model_Intensity_Mapping built for rank %1%...") % rank;
+    if (rank == 0){
+        log<LOG_BASIC>("... 21cm interface built ...");
+        log<LOG_BASIC>("... Model_Intensity_Mapping built ...");
+    }
 }
 
 Model_Intensity_Mapping::~Model_Intensity_Mapping()
