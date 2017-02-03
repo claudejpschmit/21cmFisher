@@ -246,9 +246,9 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
         
             // need to be careful that this is not repeated when doing a different parameter pair.
             vector<vector<Theta>> global_vec;
-            cout << "pkz size = " << analysis->model->Pkz_size() << endl;
-            cout << "tb size = " << analysis->model->Tb_size() << endl;
-            cout << "q size = " << analysis->model->q_size() << endl;
+            //cout << "pkz size = " << analysis->model->Pkz_size() << endl;
+            //cout << "tb size = " << analysis->model->Tb_size() << endl;
+            //cout << "q size = " << analysis->model->q_size() << endl;
             int lmodes_interp = lmax_CLASS + 1;
             int imax_interp = ceil((double)lmodes_interp/(double)n_threads) * n_threads;
             int modmax_interp = imax_interp - 1;
@@ -299,7 +299,8 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                         duration<double> dt2 = duration_cast<duration<double>>(t22-t11);
                         #pragma omp critical
                         {
-                            log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated. T = %2%s, thread = %3%.")% l % dt2.count() % omp_get_thread_num();
+                            log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated. T = %2%s, thread = %3%.")%\
+                                l % dt2.count() % omp_get_thread_num();
                         }
                     }
                 }

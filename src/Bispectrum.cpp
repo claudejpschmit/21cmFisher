@@ -2147,7 +2147,7 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
         zs.push_back(z); 
     }
        
-    bool read_from_file = true; 
+    bool read_from_file = false; 
     stringstream filename;
    
     filename << "Theta_interpolation/thetas_Pk" << Pk_i <<\
