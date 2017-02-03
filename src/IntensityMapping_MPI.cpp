@@ -1,6 +1,7 @@
 #include "Analysis_MPI.hpp"
 #include "Integrator.hpp"
 #include "Log.hpp"
+#include <mpi.h>
 
 
 IntensityMapping::IntensityMapping(ModelInterface* model)
@@ -34,9 +35,11 @@ IntensityMapping::IntensityMapping(ModelInterface* model)
     // I need to then create another function so that Cl(...) just returns the interpolated values.
 }
 
-IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
+IntensityMapping::IntensityMapping(ModelInterface* model, int num_params, MPI_Comm communicator)
 {
-    log<LOG_BASIC>("... Entering IntensityMapping constructor ...");
+    MPI_Comm_rank(communicator, &rank);
+    if (rank == 0)
+        log<LOG_BASIC>("... Entering IntensityMapping constructor ...");
     this->model = model;
     
     log<LOG_DEBUG>("-> You better be using camb_ares_2D or camb_ares as your model!");
@@ -54,9 +57,11 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
     
     if (interpolating)
     {
-        log<LOG_BASIC>("... Cls are being interpolated for the fiducial cosmology ...");
-        log<LOG_BASIC>("... -> parameters used: lmin = %1%, lmax = %2%, numin = %3%, numax = %4%, nu_steps = %5% ...") %\
-            lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
+        if (rank == 0) {
+            log<LOG_BASIC>("... Cls are being interpolated for the fiducial cosmology ...");
+            log<LOG_BASIC>("... -> parameters used: lmin = %1%, lmax = %2%, numin = %3%, numax = %4%, nu_steps = %5% ...") %\
+                lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
+        }
         make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS, nu_steps_CLASS,0,0,0);
     }
     else
@@ -64,7 +69,8 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
     // Here I could include a code that precomputes the Cls between some lmin and lmax,
     // and nu_min and nu_max, then it stores this in a 2D interpolator.
     // I need to then create another function so that Cl(...) just returns the interpolated values.  
-    log<LOG_BASIC>("... IntensityMapping class built ...");
+    if (rank == 0) 
+        log<LOG_BASIC>("... IntensityMapping class built ...");
 }
 
 IntensityMapping::~IntensityMapping()
@@ -99,7 +105,8 @@ void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double
         spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
 
         Clnu_interpolators.push_back(interpolator);
-        cout << "Cl for l = " << l << " is interpolated." << endl;
+        if (rank == 0) 
+            log<LOG_BASIC>("Cl for l = %1% is interpolated.") % l;
     }
 }
 
@@ -123,8 +130,9 @@ int IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double 
     if (do_calc)
     {
      /////////////
-        log<LOG_BASIC>("... Interpolating for Pk_index = %1%, Tb_index = %2%, q_index = %3% ...") %\
-            Pk_index % Tb_index % q_index;
+        if (rank == 0) 
+            log<LOG_BASIC>("... Interpolating for Pk_index = %1%, Tb_index = %2%, q_index = %3% ...") %\
+                Pk_index % Tb_index % q_index;
         double nu_stepsize = abs(nu_max-nu_min)/(double)nu_steps;
         vector<double> vnu, vl;
         vector<double> vCls;

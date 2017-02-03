@@ -15,11 +15,13 @@ using namespace chrono;
 Bispectrum_Fisher::Bispectrum_Fisher(AnalysisInterface* analysis, Bispectrum_LISW* LISW, Bispectrum* NLG,\
         vector<string> param_keys_considered, string fisherPath, MPI_Comm communicator)
 {
-    log<LOG_BASIC>("... Beginning Bispectrum_Fisher constructor ...");
     this->communicator = communicator;
     int r;
     MPI_Comm_rank(communicator, &r);
     this->rank = r;
+    if (rank == 0)
+        log<LOG_BASIC>("... Beginning Bispectrum_Fisher constructor ...");
+    
     todo_determined = false;
     interpolation_done = false;
     this->fisherPath = fisherPath;
@@ -41,7 +43,9 @@ Bispectrum_Fisher::Bispectrum_Fisher(AnalysisInterface* analysis, Bispectrum_LIS
 
     // Determines the largest l-mode to be computed.
     lmax_CLASS = analysis->model->give_fiducial_params("lmax_Fisher_Bispectrum");
-    log<LOG_BASIC>("... Bispectrum_Fisher Class initialized ...");
+
+    if (rank == 0)
+        log<LOG_BASIC>("... Bispectrum_Fisher Class initialized ...");
 }
 
 Bispectrum_Fisher::~Bispectrum_Fisher()
@@ -66,7 +70,8 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
 
     // Exhaust all the possible models and interpolate them, so that the 
     // code is thread safe later on.
-    log<LOG_BASIC>(" -> Interpolating all possible models.");
+    if (rank == 0)
+        log<LOG_BASIC>(" -> Interpolating all possible models.");
     steady_clock::time_point t1 = steady_clock::now();
     system_clock::time_point t11 = system_clock::now();
     for (unsigned int i = 0; i < model_param_keys.size(); i++) {
@@ -74,21 +79,27 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
         int Tb = 0;
         int q = 0;
         string param_key = model_param_keys[i];
-        log<LOG_BASIC>("%1%") % param_key;
+        if (rank == 0)
+            log<LOG_BASIC>("%1%") % param_key;
         map<string,double> working_params = fiducial_params;
         double h = this->var_params[param_key];
         double x = working_params[param_key];
         working_params[param_key] = x + h;
         analysis->model->update(working_params, &Pk, &Tb, &q);
-        log<LOG_BASIC>("model updated for Pk_i = %1%, Tb = %2%, q = %3%.") % Pk % Tb % q;
+
+        if (rank == 0)
+            log<LOG_BASIC>("model updated for Pk_i = %1%, Tb = %2%, q = %3%.") % Pk % Tb % q;
     }
     steady_clock::time_point t2 = steady_clock::now();
     system_clock::time_point t22 = system_clock::now();
 
     duration<double> dt = duration_cast<duration<double>>(t2-t1);
     duration<double> dt2 = duration_cast<duration<double>>(t22-t11);
-    log<LOG_BASIC>(" -----> done. T = %1%s") % dt.count();
-    log<LOG_BASIC>(" -> Interpolating all possible growth functions.");
+    if (rank == 0)
+    {
+        log<LOG_BASIC>(" -----> done. T = %1%s") % dt.count();
+        log<LOG_BASIC>(" -> Interpolating all possible growth functions.");
+    }
     t1 = steady_clock::now();
     for (int i = 0; i < analysis->model->q_size(); i++)
     {
@@ -96,7 +107,8 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
     }
     t2 = steady_clock::now();
     dt = duration_cast<duration<double>>(t2-t1);
-    log<LOG_BASIC>(" -----> done. T = %1%s") % dt.count();
+    if (rank == 0)
+        log<LOG_BASIC>(" -----> done. T = %1%s") % dt.count();
 
     // now compute F_ab's (symmetric hence = F_ba's)
     for (unsigned int i = 0; i < model_param_keys.size(); i++) {
@@ -105,7 +117,8 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
             string param_key1 = model_param_keys[i];
             string param_key2 = model_param_keys[j];
 
-            log<LOG_BASIC>("----> STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
+            if (rank == 0)
+                log<LOG_BASIC>("----> STARTING with %1% and %2%.") % param_key1.c_str() % param_key2.c_str();
             filename << filename_prefix << param_key1 << "_" << param_key2 << ".dat";
 
             int Pk_index = 0;
@@ -175,12 +188,13 @@ double Bispectrum_Fisher::compute_F_matrix(double nu_min, double nu_stepsize,\
                 }
                 outfile.close();
 
-                log<LOG_BASIC>("Calculations done for %1% and %2%.") %\
-                    param_key1.c_str() % param_key2.c_str();
+                if (rank == 0)
+                    log<LOG_BASIC>("Calculations done for %1% and %2%.") %\
+                        param_key1.c_str() % param_key2.c_str();
             }
         }
     }
-    cout << "rank " << rank << " has reached the end." << endl;
+    log<LOG_BASIC>("rank %1% has reached the end.") % rank;
     return 0;
 }
 
@@ -245,8 +259,9 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             // set transfer = global_vec; // ie. collapse it down.
             // set bispectrum.THETA_interps = transfer;
             // done!
-            log<LOG_BASIC>("Precomputing all theta interpolators.");
-            steady_clock::time_point t1 = steady_clock::now();
+            if (rank == 0)
+                log<LOG_BASIC>("Precomputing all theta interpolators.");
+            //steady_clock::time_point t1 = steady_clock::now();
             double zmax = (1420.4/this->nu_min_CLASS) - 1.0;
             double zmin = (1420.4/(this->nu_min_CLASS + this->nu_steps_CLASS * this->nu_stepsize_CLASS) - 1.0);
             double delta_z = (zmax - ((1420.4/(this->nu_min_CLASS+this->nu_stepsize_CLASS)) - 1.0));
@@ -254,9 +269,11 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
 
             // need to be careful that this is not repeated when doing a different parameter pair.
             vector<vector<Theta>> global_vec;
-            cout << "pkz size = " << analysis->model->Pkz_size() << endl;
-            cout << "tb size = " << analysis->model->Tb_size() << endl;
-            cout << "q size = " << analysis->model->q_size() << endl;
+            if (rank == 0) {
+                log<LOG_BASIC>("pkz size = %1%") % analysis->model->Pkz_size();
+                log<LOG_BASIC>("tb size = %1%") % analysis->model->Tb_size();
+                log<LOG_BASIC>("q size = %1%") % analysis->model->q_size();
+            }
             vector<Theta> local_vec;
             bool calc = false;
             vector<CONTAINER> vec_vals;
@@ -375,20 +392,22 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                 global_vec.push_back(thetas); 
                 delete vals;
             }
-            cout << "rank " << rank << " now sorting the interpolators " << endl; 
+            //MPI_Barrier(communicator);
             NLG->update_THETAS(global_vec);
-            steady_clock::time_point t2 = steady_clock::now();
-            duration<double> dt = duration_cast<duration<double>>(t2-t1);
+            //steady_clock::time_point t2 = steady_clock::now();
+            //duration<double> dt = duration_cast<duration<double>>(t2-t1);
 
-            log<LOG_BASIC>(" --> thetas are interpolated. Time taken = %1%.") % dt.count();
+            log<LOG_BASIC>("rank %1% now sorting the interpolators.") % rank;
+            //log<LOG_BASIC>(" --> thetas are interpolated. Time taken = %1%.") % dt.count();
             interpolation_done = true;
         }
         else
         {
-            log<LOG_BASIC>("Interpolation of thetas has been done before. Nothing to be done.");
+            if (rank == 0)
+                log<LOG_BASIC>("Interpolation of thetas has been done before. Nothing to be done.");
         }
     }
-    MPI_Barrier(communicator);
+    //MPI_Barrier(communicator);
     /**     READ THIS !!!
      *      -------------
      *
@@ -402,7 +421,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     if (!todo_determined)
     {
         if (rank == 0)
-            cout << "Now trying to determine which modes each rank needs to compute." << endl;
+            log<LOG_BASIC>("Now trying to determine which modes each rank needs to compute.");
         int counter = -1;
         for (int l1 = 0; l1 <= lmax_CLASS; l1++)
         {
@@ -432,7 +451,8 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             }
         }
         todo_determined = true;
-        cout << "rank " << rank << " has computed its todo list, it contains "<< todo_list.size() << " elements" << endl;
+        log<LOG_BASIC>("rank %1% has computed its todo list, it contains %2% elements.") %\
+            rank % todo_list.size();
         MPI_Barrier(communicator); 
     }
     double local_sum = 0;
@@ -448,10 +468,10 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
     // each rank only computes all the modes it needs to and sums them up on their own.
     for (int i = 0; i < todo_list.size(); i++)
     {
-        if (i % mod_ref == 0)
-        {
-            cout << "rank " << rank << " is " << ceil((double)i/(double)todo_list.size() *100.0) << "\% done." << endl;
-        }
+        //if (i % mod_ref == 0)
+        //{
+            //log<LOG_BASIC>("rank %1% is %2% \% done.") % rank % ceil((double)i/(double)todo_list.size() *100.0);
+        //}
         F_res = Fisher_element(todo_list[i].l1,todo_list[i].l2,todo_list[i].l3,nu,param_key1,param_key2,\
                &Pk_index2, &Tb_index2, &q_index2, effects);
         F_res *= (2.0 * todo_list[i].l1 + 1.0) * (2.0 * todo_list[i].l2 + 1.0) * (2.0 * todo_list[i].l3 + 1.0);

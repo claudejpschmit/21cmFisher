@@ -17,9 +17,12 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis, MPI_Comm communicator)
     this->communicator = communicator;
     MPI_Comm_rank(communicator, &rank);
     this->analysis = analysis;
-    log<LOG_BASIC>("... Entering Bispectrum constructor ...");
-    log<LOG_BASIC>("Precalculating Growth function for fast integrations");
-    log<LOG_BASIC>("Growth function is precalculated between %1% and %2% using %3% points.") % 0 % 100 % 1000;
+    if (rank == 0)
+    {
+        log<LOG_BASIC>("... Entering Bispectrum constructor ...");
+        log<LOG_BASIC>("Precalculating Growth function for fast integrations");
+        log<LOG_BASIC>("Growth function is precalculated between %1% and %2% using %3% points.") % 0 % 100 % 1000;
+    }
     auto integrand = [&](double z)
     {
         double H3 = this->analysis->model->Hf_interp(z);
@@ -60,7 +63,8 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis, MPI_Comm communicator)
     }
     spline1dbuildcubic(zs, D_pluss, Growth_function_interpolator);
 
-    log<LOG_BASIC>("... Writing Growth function to file ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... Writing Growth function to file ...");
     stringstream name;
     name << "Growing_mode_r" << rank << ".dat";
     ofstream file(name.str());
@@ -72,7 +76,8 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis, MPI_Comm communicator)
 
 
     // G1 function currently not being used
-    log<LOG_BASIC>("... Precalculating g1 function ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... Precalculating g1 function ...");
 
     g1_ODE G1(2000.0);
     FORKMethod F_Method(-0.01, &G1, 2000.0);
@@ -100,7 +105,8 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis, MPI_Comm communicator)
     }
     spline1dbuildcubic(zs2, as, g1_interpolator);
 
-    log<LOG_BASIC>("... Writing g1 to file ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... Writing g1 to file ...");
     stringstream name1;
     name1 << "g1_BS_precalculated_r" << rank << ".dat";
     ofstream file2(name1.str());
@@ -127,11 +133,14 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis, MPI_Comm communicator)
 
     // Make sure that the integration bounds envelope the peak of r(z_c).
     double I2 = integrate(integrand3, 2000.0, 5000.0, 3000, simpson());
-    log<LOG_BASIC>("... Window function integral = %1% ...") % I2;
 
-    log<LOG_BASIC>("... D_GROWTH_INTERP is prepared for q_index = 0 ...");
+    if (rank == 0){
+        log<LOG_BASIC>("... Window function integral = %1% ...") % I2;
+        log<LOG_BASIC>("... D_GROWTH_INTERP is prepared for q_index = 0 ...");
+    }
     update_D_Growth(0);
-    log<LOG_BASIC>("... Bispectrum Class initialized rank = %1% ...") % rank;
+    if (rank == 0)
+        log<LOG_BASIC>("... Bispectrum Class initialized rank = %1% ...") % rank;
 }
 
 Bispectrum::~Bispectrum()
@@ -816,21 +825,7 @@ int Bispectrum::determine_theta_index(int li, int lj, int q, int Pk_index, int T
             theta_interpolants[index].Tb_index != Tb_index ||\
             theta_interpolants[index].q_index != q_index)
     {
-        /*
-        #pragma omp critical
-        {
-        cout << "index = "<< index << ", v_size = " << theta_interpolants.size() << ", li = " <<\
-            theta_interpolants[index].li << " != " << li <<\
-            ", lj = " << theta_interpolants[index].lj << " != " << lj <<\
-            ", q = " << theta_interpolants[index].q << " != " << q <<\
-            ", Pk = " << theta_interpolants[index].Pk_index << " != " << Pk_index <<\
-            ", Tb = " << theta_interpolants[index].Tb_index << " != " << Tb_index <<\
-            ", qi = " << theta_interpolants[index].q_index << " != " << q_index << endl;
-        }
-        */
         cout << "ERROR: The index calculated does not correspond to the right vector element." << endl;
-        //cout << "l max = " << lj_max << ", qi max = " << analysis->model->q_size() << ", Pk max = " <<\
-        //    analysis->model->Pkz_size() << ", Tb max = " << analysis->model->Tb_size() << endl;
         return 0;
     }
     else
@@ -842,7 +837,6 @@ int Bispectrum::determine_theta_index(int li, int lj, int q, int Pk_index, int T
 double Bispectrum::theta(int li, int lj, double z, int q, double z_centre, double delta_z, int Pk_index, int Tb_index, int q_index)
 {
     int index = -1;
-    cout << "hello Theta" << endl;
     //
     // Determine the index of the vector
     //
@@ -1104,7 +1098,8 @@ void Bispectrum::update_D_Growth(int q_index)
         D.interpolator = interp;
 
         growth_function_interps.push_back(D);
-        log<LOG_BASIC>("Growth function updated for q_index = %1%.") % q_index;
+        if (rank == 0)
+            log<LOG_BASIC>("Growth function updated for q_index = %1%.") % q_index;
     }
     /*
     int count = (int)growth_function_interps.size() - 1;
@@ -1560,8 +1555,8 @@ double Bispectrum::B0ll(int l)
     };
     double I = integrate(integrand, 49.5, 50.5, 50, simpson());
     double L = L_factor(l);
-    cout << "Integral = " << I << endl;
-    cout << "L factor = " << L << endl;
+    //cout << "Integral = " << I << endl;
+    //cout << "L factor = " << L << endl;
 
     return L*I;
 }
@@ -1591,7 +1586,7 @@ double Bispectrum::Blll_PNG_equilat(int l, double fNL)
     double W3J = WignerSymbols::wigner3j(l,l,l,0,0,0);
     double pre = (16.0/pow(pi,3)) * fNL *\
                  sqrt(((2.0*l+1.0) * (2.0*l+1.0) * (2.0*l+1.0))/(4.0*pi)) * W3J;
-    cout << l << " " << pre*I << endl;
+    //cout << l << " " << pre*I << endl;
     return pre * I;
 }
 
@@ -1616,7 +1611,7 @@ double Bispectrum::Blll_PNG(int la, int lb, int lc, double fNL)
     double W3J = WignerSymbols::wigner3j(la,lb,lc,0,0,0);
     double pre = (16.0/pow(pi,3)) * fNL *\
                  sqrt(((2.0*la+1.0) * (2.0*lb+1.0) * (2.0*lc+1.0))/(4.0*pi)) * W3J;
-    cout << la << " " << pre*I << endl;
+    //cout << la << " " << pre*I << endl;
     return pre * I;
 }
 
@@ -1984,7 +1979,7 @@ void Bispectrum::build_signal_triangles(int lmin, int lmax, int delta_l, double 
 
 vector<vector<double>> Bispectrum::build_triangle(int lmax, string filename)
 {
-    cout << "Triangle called for l = " << lmax << endl;
+    //cout << "Triangle called for l = " << lmax << endl;
 
     vector<vector<double>> result;
     bool debug = true;
@@ -1994,7 +1989,7 @@ vector<vector<double>> Bispectrum::build_triangle(int lmax, string filename)
     name << "output/Bispectrum/Triangle_plots/NLG_2/" << filename;
     ifstream infile(name.str());
     if (infile.good() && !debug){
-        cout << "Reading file " << name.str() << endl;
+        //cout << "Reading file " << name.str() << endl;
         string line;
         while (getline(infile,line))
         {
@@ -2049,31 +2044,40 @@ vector<vector<double>> Bispectrum::build_triangle(int lmax, string filename)
 void Bispectrum::update_THETAS(vector<vector<Theta>> transfer_vec)
 {
     vector<Theta> temp;
+    int i_size = transfer_vec.size();
+    int j_size = transfer_vec[0].size();
+    this->theta_interpolants.resize(i_size * j_size);
+    if (rank == 0)
+        cout << i_size << " " << j_size << endl;
     for (unsigned int i = 0; i < transfer_vec.size(); i++)
     {
-        for (unsigned int j = 0; j < transfer_vec[i].size(); j++)
+        if (j_size != transfer_vec[i].size())
+            cout << "Error: " << j_size << " != " << transfer_vec[i].size() << endl;
+        for (unsigned int j = 0; j < j_size; j++)
         {
-            temp.push_back(transfer_vec[i][j]);
+            this->theta_interpolants[i*j_size + j] = transfer_vec[i][j];
         }
     }
-    for (unsigned int i = 0; i < temp.size(); i++)
-        this->theta_interpolants.push_back(temp[i]);
-    sort_theta();
+    //for (unsigned int i = 0; i < temp.size(); i++)
+    //    this->theta_interpolants.push_back(temp[i]);
+    cout << "... Rank = " << rank << " done." << endl;
+    //sort_theta();
 }
 
 void Bispectrum::sort_theta()
 {
-    cout << "Now sorting Theta intepolators with vector of length = " << theta_interpolants.size() << endl;
-    steady_clock::time_point t1 = steady_clock::now();
+    log<LOG_BASIC>("Now rank %1% sorting Theta intepolators with vector of length = %2%.") % rank %\
+        theta_interpolants.size();
+    //steady_clock::time_point t1 = steady_clock::now();
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_qi);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_tb);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_pk);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_q);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_lj);
     std::stable_sort(theta_interpolants.begin(), theta_interpolants.end(), &Compare_li);
-    steady_clock::time_point t2 = steady_clock::now();
-    duration<double> dt = duration_cast<duration<double>>(t2-t1);
-    cout << "Time taken for sorting = " << dt.count() << endl;
+    //steady_clock::time_point t2 = steady_clock::now();
+    //duration<double> dt = duration_cast<duration<double>>(t2-t1);
+    //log<LOG_BASIC>("Time taken for sorting = %1%.") % dt.count();
     /*
     for (int i = 0; i < theta_interpolants.size(); i++)
     {
@@ -2170,10 +2174,13 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
                 return res;
             };
             double res;
+            /*
             if (li < 200)
                 res = integrate(integrand, lower_k_bound, higher_k_bound, 1000, simpson());
             else
                 res = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
+            */
+            res = 0.1;
             vals.push_back(res);
         }
     }
@@ -2286,12 +2293,11 @@ vector<double> Bispectrum::give_interp_theta_vals(int li, int lj, int q, int Pk_
                 return res;
             };
             double res;
-            // TODO: for testing purposes
             /*
             if (li < 200)
-                res = integrate(integrand, lower_k_bound, higher_k_bound, 50, simpson());
+                res = integrate(integrand, lower_k_bound, higher_k_bound, 1000, simpson());
             else
-                res = integrate(integrand, lower_k_bound, higher_k_bound, 50, simpson());
+                res = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
                 */
             res = 0.1;
             vals.push_back(res);

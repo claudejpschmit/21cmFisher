@@ -76,7 +76,7 @@ class Bispectrum {
         void update_THETAS(vector<vector<Theta>> transfer_vec);
         int theta_size();
         Theta make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, int q_i,\
-                double zc_max, double zc_min, double delta_zc);
+                double zc_max, double zc_min, double delta_zc, bool read_from_file);
         
        
         double D_Growth_interp(double z);

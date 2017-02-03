@@ -300,21 +300,29 @@ Model_Intensity_Mapping::Model_Intensity_Mapping(map<string, double> params,\
     CAMB = new CAMB_CALLER;
 
     modelID = "IM";
-
-    log<LOG_BASIC>("... precalculating q ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... precalculating q ...");
     update_q(fiducial_params, q_index);
-    log<LOG_BASIC>("... q done, rank = %1% ...") % rank;
 
-    log<LOG_BASIC>("... precalculating Pkz ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... q done ...");
+
+    if (rank == 0)
+        log<LOG_BASIC>("... precalculating Pkz ...");
     update_Pkz(fiducial_params, Pk_index);
-    log<LOG_BASIC>("... Pkz done ...");
+    if (rank == 0)
+        log<LOG_BASIC>("... Pkz done ...");
 
-    log<LOG_BASIC>("... precalculating 21cm interface ...");
-    log<LOG_BASIC>("...  -> IM Model for 21cm signal ...");
+    if (rank == 0){
+        log<LOG_BASIC>("... precalculating 21cm interface ...");
+        log<LOG_BASIC>("...  -> IM Model for 21cm signal ...");
+    }
     update_T21(fiducial_params, Tb_index);
 
-    log<LOG_BASIC>("... 21cm interface built ...");
-    log<LOG_BASIC>("... Model_Intensity_Mapping built for rank %1%...") % rank;
+    if (rank == 0){
+        log<LOG_BASIC>("... 21cm interface built ...");
+        log<LOG_BASIC>("... Model_Intensity_Mapping built ...");
+    }
 }
 
 Model_Intensity_Mapping::~Model_Intensity_Mapping()
@@ -376,7 +384,7 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
             
             if (rank == 0)
             { 
-                cout << "running CAMB on rank = " << rank << endl;
+                log<LOG_BASIC>("running CAMB on rank = %1%") % rank;
                 CAMB->call(params);    
                 vk = CAMB->get_k_values();
                 Pz = CAMB->get_Pz_values();
@@ -397,7 +405,7 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
                         aPz[i * Pz_elems2 + j] = Pz[i][j];
                     }
                 }
-                cout << " ----------------- CAMB DONE --------------------------" << endl;
+                log<LOG_BASIC>(" ----------------- CAMB DONE --------------------------");
             }
             MPI_Bcast(&vk_elems, 1, MPI_INT, 0, communicator);
             MPI_Bcast(&Pz_elems1, 1, MPI_INT, 0, communicator);
