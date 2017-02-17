@@ -2080,7 +2080,8 @@ void Bispectrum::sort_theta()
 }
 
 Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, int q_i,\
-        double zc_max, double zc_min, double delta_zc, bool read_from_file)
+        double zc_max, double zc_min, double delta_zc, bool read_from_file, int l_div, int integrationStepsLow,\
+        int integrationStepsHigh)
 {
     /////////////////////////
     double delta_z_loc = 0.1;
@@ -2149,8 +2150,9 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
        
     stringstream filename;
    
-    filename << "Theta_interpolation/thetas_Pk" << Pk_i <<\
-        "_Tb" << Tb_i << "_q" << q_i << "_l" << li <<".dat";
+    filename << "Theta_interpolation/NEW/thetas_Pk" << Pk_i <<\
+        "_Tb" << Tb_i << "_q" << q_i << "_l" << li <<"_LDIV"<< l_div << "_NLOW" <<\
+        integrationStepsLow << "_NHIGH"<< integrationStepsHigh << ".dat";
     if (read_from_file)
     {
         ifstream infile(filename.str());
@@ -2181,11 +2183,12 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
                     return res;
                 };
                 double res;
-            
-                if (li < 200)
-                    res = integrate(integrand, lower_k_bound, higher_k_bound, 1000, simpson());
+           
+                
+                if (li < l_div)
+                    res = integrate(integrand, lower_k_bound, higher_k_bound, integrationStepsLow, simpson());
                 else
-                    res = integrate(integrand, lower_k_bound, higher_k_bound, 100, simpson());
+                    res = integrate(integrand, lower_k_bound, higher_k_bound, integrationStepsHigh, simpson());
                 vals.push_back(res);
                 outfile << res << endl;
             }

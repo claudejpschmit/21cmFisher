@@ -5,8 +5,10 @@
 #include <ctime>
 #include <chrono>
 
-#define READ_FROM_FILE false // determines whether Theta_interpolations are read from file.
-
+#define READ_FROM_FILE false    // determines whether Theta_interpolations are read from file.
+#define LDIV 200                // determines where the split in resolution in the l-interplotation occurs.
+#define NLOW 1000               // Number of integration steps used for low l values of theta interpolation
+#define NHIGH 1000              // Number of integration steps used for high l values of theta interpolation
 using namespace chrono;
 
 /*********************************/
@@ -286,7 +288,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                                     //try 
                                     //{
                                         interp_loc = NLG->make_Theta_interp(l, l, q,\
-                                            Pk_i, Tb_i, q_i, zmax, zmin, delta_z, READ_FROM_FILE); 
+                                            Pk_i, Tb_i, q_i, zmax, zmin, delta_z, READ_FROM_FILE, LDIV, NLOW, NHIGH); 
                                     //}
                                     //catch(alglib::ap_error e)
                                     //{

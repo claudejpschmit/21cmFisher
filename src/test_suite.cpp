@@ -656,7 +656,7 @@ BOOST_AUTO_TEST_CASE(check_NLG)
             // here it is sufficient to interpolate the fiducial model only, as we are not 
             // varying any parameters here, and really just want to prove that the direct 
             // calculation gives the same result as this interpolated method.
-            interp_loc = NLG->make_Theta_interp(li, li, q, 0, 0, 0, zmax, zmin, delta_z, false); 
+            interp_loc = NLG->make_Theta_interp(li, li, q, 0, 0, 0, zmax, zmin, delta_z, false, 200, 1000,100); 
             local_vec.push_back(interp_loc);
         }
 #pragma omp critical
@@ -1322,7 +1322,7 @@ BOOST_AUTO_TEST_CASE(check_Fl)
                                                 //try 
                                                 //{
                                                 interp_loc = NLG->make_Theta_interp(l, l, q,\
-                                                        Pk_i, Tb_i, q_i, zmax, zmin, delta_z, true); 
+                                                        Pk_i, Tb_i, q_i, zmax, zmin, delta_z, true, 100, 1000, 100); 
                                                 //}
                                                 //catch(alglib::ap_error e)
                                                 //{
