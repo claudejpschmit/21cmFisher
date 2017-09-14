@@ -272,7 +272,8 @@ mat FisherInterface::compute_Cl(int l, int Pk_index, int Tb_index, int q_index, 
     if (noise) {
         for (unsigned int i = 0; i < range.size(); ++i) {
             double x1 = range[i];
-            Cl(i,i) += analysis->Cl_noise(l,x1,x1);  
+            bool beam = false;
+            Cl(i,i) += analysis->Cl_noise(l,x1,x1, beam);  
         }
     }
     if (foreground) {
