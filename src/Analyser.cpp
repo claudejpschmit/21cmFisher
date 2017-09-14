@@ -3,8 +3,10 @@
 #include "interpolation.h"
 #include "Log.hpp"
 #include <map>
+#include <boost/multiprecision/cpp_dec_float.hpp>
 
 using namespace alglib;
+using boost::multiprecision::cpp_dec_float_50;
 
 Analyser::Analyser(IniReaderAnalysis* parser)
 {
@@ -260,6 +262,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
             log<LOG_ERROR>("           The inverse Fisher matrix found is:");
             cout << RESULT.matrix << endl;
         }
+
         RESULT.matrix_indecies = indecies;
     }
     else if (parser->giveAnalysisMode() == bispectrum)
@@ -518,6 +521,9 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
             log<LOG_ERROR>("           The inverse Fisher matrix found is:");
             cout << RESULT.matrix << endl;
         }
+        cout << "inverse Fisher: " << endl;
+        cout << RESULT.matrix << endl;
+
         RESULT.matrix_indecies = indecies;
     }
     else
@@ -1022,6 +1028,7 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
 
     sig_xy = finv.matrix(index1, index2);
     sig_yy = finv.matrix(index2, index2);
+    
     show_marginal = true;
     for (int i = 0; i < params_done.size(); i++)
     {
@@ -1045,6 +1052,20 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
             pow(sig_xy,2));
     ellipse.b2 = (sig_xx + sig_yy)/2.0 - sqrt(pow(sig_xx - sig_yy,2)/4.0 +\
             pow(sig_xy,2));
+    if (ellipse.b2 == 0){
+        cout << "Recomputing b2 with arbitrary precision." << endl;
+        // Using arbitrary precision arithmetic
+        cpp_dec_float_50 sig_xx50, sig_yy50, sig_xy50;
+
+        sig_xx50 = finv.matrix(index1, index1);
+        sig_xy50 = finv.matrix(index1, index2);
+        sig_yy50 = finv.matrix(index2, index2);
+
+        cpp_dec_float_50 b2 = (sig_xx50 + sig_yy50)/2.0 - sqrt(pow(sig_xx50 - sig_yy50,2)/4.0 +\
+            pow(sig_xy50,2));
+        ellipse.b2 = static_cast<double>(b2);
+
+    }
     //theta is in radiants
     ellipse.theta = 0.5 * atan(2.0 * sig_xy/(sig_xx - sig_yy));
     stringstream runinfo_name;
@@ -1076,7 +1097,13 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
             ellipse.b2 = buff;
         }
     }
+    if (ellipse.a2 <= 0 || ellipse.b2 <= 0){
+        cout << param1 << " " << param2 << endl; 
+        cout << ellipse.a2 << " " << ellipse.b2 << endl;
+        cout << sig_xx << " " << sig_yy << " " << sig_xy << endl;
+        cout << (sig_xx + sig_yy)/2.0 -  sqrt(pow(sig_xx - sig_yy,2)/4.0 +  pow(sig_xy,2)) << endl;
 
+    }
     return ellipse;
 }
 
@@ -1114,8 +1141,10 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv)
         ellipse_file << error_ellipses[i].cy << endl;
         ellipse_file << error_ellipses[i].sigma_x << endl;
         ellipse_file << error_ellipses[i].sigma_y << endl;
-        if (error_ellipses[i].a2 <= 0 || error_ellipses[i].b2 <= 0)
+        if (error_ellipses[i].a2 <= 0 || error_ellipses[i].b2 <= 0){
+            cout << i << " " << error_ellipses[i].a2 << " " << error_ellipses[i].b2 << endl;
             ERROR = true;
+        }
     }
     if (!ERROR)
     {
