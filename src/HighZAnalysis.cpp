@@ -68,7 +68,7 @@ double HighZAnalysis::Cl(int l, double nu1, double nu2,\
     return 2.0/(model->pi) * dTb1 * dTb2 * BIAS_squared * integral;
 }
 
-double HighZAnalysis::Cl_noise(int l, double nu1, double nu2)
+double HighZAnalysis::Cl_noise(int l, double nu1, double nu2, bool beam_incl)
 {
     //TODO: write this function
     return 0;   

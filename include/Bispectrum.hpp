@@ -54,13 +54,17 @@ class Bispectrum {
          */
         double calc_angular_B_noInterp(int l1, int l2, int l3, int m1, int m2, int m3, double z);
 
+        double calc_angular_B_limber(int l1, int l2, int l3, int m1, int m2, int m3,
+                double nu_centre, double nu_width, int Pk_index, int Tb_index, int q_index);
+
         /**
          * This function determines on the basis of the l values whether multiple or a
          * single call of B_ll(...) are necessary to compute the bispectrum amplitude.
          * 
          * Use this when thetas have been interpolated.
          */
-        double calc_Blll(int l1, int l2, int l3, double z, int Pk_index, int Tb_index, int q_index);
+        double calc_Blll(int l1, int l2, int l3, double z,\
+                int Pk_index, int Tb_index, int q_index);
 
         /**
          * Same as above.
@@ -69,7 +73,9 @@ class Bispectrum {
          */
         double calc_Blll_noInterp(int l1, int l2, int l3, double z);
 
-        
+        double calc_Blll_limber(int l1, int l2, int l3, double nu_centre, double nu_width,\
+                int Pk_index, int Tb_index, int q_index);
+
         void build_signal_triangles(int lmin, int lmax, int delta_l, double z);
         vector<vector<double>> build_triangle(int lmax, string filename);
 
@@ -79,6 +85,9 @@ class Bispectrum {
                 double zc_max, double zc_min, double delta_zc, bool read_from_file, int l_div,\
                 int integrationStepsLow, int integrationStepsHigh);
         
+        Theta_1D make_Theta_interp_2(int li, int lj, int q, int Pk_i, int Tb_i, int q_i,\
+        double nu_min, double nu_max, double nu_bin_width, int z_steps, bool read_from_file);
+
        
         double D_Growth_interp(double z);
         double D_Growth_interp(double z, int q_index);
@@ -97,6 +106,9 @@ class Bispectrum {
         double B0ll(int l);
         double Blll_equilateral(int l);
         double k_integrand2(int l, double z, double k);
+
+        double theta_approx(int l, double z, double nu_centre, double nu_width,\
+                int Pk_index, int Tb_index, int q_index);
 
         //PNG functions
         double Blll_PNG(int la, int lb, int lc, double fNL);
@@ -117,9 +129,10 @@ class Bispectrum {
         
         void update_D_Growth(int q_index); 
         void plot_theta_integrand(int li, double z, string filename);
+        double Wnu_z(double z, double nu_centre, double nu_width);
 
 
-    private:
+    protected:
         /**
          * Main work function to compute the NLG bispectrum contribution.
          *
@@ -135,7 +148,9 @@ class Bispectrum {
          */
         dcomp B_ll_direct(int la, int lb, int lc, double z);
         
-        
+        dcomp B_ll_limber(int la, int lb, int lc, double nu_centre, double nu_width,\
+                int Pk_index, int Tb_index, int q_index);
+
         double x_bar(double z);
         double z_centre_CLASS;
         double delta_z_CLASS;
@@ -182,3 +197,58 @@ class Bispectrum {
         
         vector<vector<double>> thetas;
 };
+
+
+
+
+/** 
+ * Testing class
+ * This is essentially the same as the class above, but it allows public access to all methods. 
+ * Useful for the test-suite
+ */
+
+class TEST_Bispectrum : public Bispectrum{
+    public:
+        /**
+         * The class constructor uses a pointer to an AnalysisInterface that 
+         * computes the power spectra for it.
+         *
+         * The constructor precomputes values for the growth function D(z) for 
+         * redshifts up to z = 100, and stores them into growth_function_interpolator.
+         *
+         * This also precomputes the g1 function, though I think that is not being used atm.
+         * 
+         * The constructor sets the D_growth function interpolator to the fiducial model. 
+         *
+         */
+        TEST_Bispectrum(AnalysisInterface *analysis);
+
+        /**
+         * Standard class destructor
+         */
+        ~TEST_Bispectrum();
+        double test_alpha(int l, double k, double z_centre, double delta_z,\
+                int Pk_index, int Tb_index, int q_index);
+        double custom_alpha(int l, double k, double z_centre, double delta_z,\
+                int Pk_index, int Tb_index, int q_index, int n_steps);
+        double test(double x, void* v);
+        double give_r(double z);
+        double custom_alpha2(int l, double k, double a, double b, int Pk_index, int Tb_index, int q_index, int n_steps);
+        double custom_alpha3(int l, double k, double a, double b, int Pk_index, int Tb_index, int q_index, bool verbose);
+        double theta_calc_1(int li, int lj, double z, int q, double z_centre, double delta_z, bool verbose = true);
+        double theta_calc_2(int li, int lj, double z, int q, double z_centre, double delta_z);
+        double theta_calc_3(int li, int lj, double z, int q, double z_centre, double delta_z, int nsteps);
+        double theta_calc_4(int li, int lj, double z, int q, double z_centre, double delta_z, int nsteps);
+        double theta_calc_5(int li, int lj, double z, int q, double nu_centre, double nu_width, int nsteps, int Pk_index, int Tb_index, int q_index);
+        double theta_calc_6(int li, int lj, double z, int q, double nu_centre, double nu_width, int nsteps, int Pk_index, int Tb_index, int q_index);
+
+        double beta(int l, double z, double zp);
+        
+        void build_z_of_r();
+        double z_of_r(double r);
+        spline1dinterpolant zor_interpolator;
+        double alpha_approx(int l, double k, double zc, double deltaz);
+
+};
+
+

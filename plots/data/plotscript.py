@@ -78,14 +78,14 @@ plt.title(r'Angular power spectra between $z = 0.8$ and $z = 2.5$.')
 
 ax = plt.subplot(222)
 filename1 = "test_LISW_bispectrum.dat"#"Cl_FG_gal_ff.dat"
-filename2 = "test_NLG_bispectrum.dat"#"Cl_FG_gal_synch.dat"
+#filename2 = "test_NLG_bispectrum.dat"#"Cl_FG_gal_synch.dat"
 filename3 = "test_Bispectrum_noise.dat"#"Cl_FG_gal_synch.dat"
 
 f1 = file(filename1)
-f2 = file(filename2)
+#f2 = file(filename2)
 f3 = file(filename3)
 data1 = np.loadtxt(f1)
-data2 = np.loadtxt(f2)
+#data2 = np.loadtxt(f2)
 data3 = np.loadtxt(f3)
 
 ax.set_xscale('log')
@@ -104,10 +104,10 @@ for i in range(0, len(data1)):
     if data1[i][0] != data1[i-1][0]:
         xs1.append(data1[i][0])
         ys1.append(data1[i][1])
-for i in range(0, len(data2)):
-    if data2[i][0] != data2[i-1][0]:
-        xs2.append(data2[i][0])
-        ys2.append(data2[i][1])
+#for i in range(0, len(data2)):
+#    if data2[i][0] != data2[i-1][0]:
+#        xs2.append(data2[i][0])
+#        ys2.append(data2[i][1])
 for i in range(0, len(data3)):
     if data3[i][0] != data3[i-1][0]:
         xs3.append(data3[i][0])
@@ -115,7 +115,7 @@ for i in range(0, len(data3)):
 
 
 plt.plot(xs1,ys1, label = r'LISW', linewidth = 2)
-plt.plot(xs2,ys2, label = r'NLG', linewidth = 2)
+#plt.plot(xs2,ys2, label = r'NLG', linewidth = 2)
 plt.plot(xs3,ys3, label = r'Noise', linewidth = 2)
 
 plt.legend(loc = 3)
@@ -123,7 +123,7 @@ plt.xlabel(r'$l$', fontsize=18)
 plt.ylabel(r'$|B_{lll}|$ (mK$^3$)', fontsize=18)
 plt.title(r'Bispectum contributions for equilateral triangles at $z=1$.')
 
-
+"""
 ax = plt.subplot(223)
 filename1 = "SN_2_1000_delta1.dat"#"Cl_FG_gal_ff.dat"
 f1 = file(filename1)
@@ -170,5 +170,5 @@ plt.legend(loc = 4)
 plt.xlabel(r'$l$', fontsize=18)
 plt.ylabel(r'$l (l+1) Q_l / (2\pi)$ (mK)', fontsize=18)
 plt.title(r'$Q_l$ at $z = 1$.')
-
+"""
 plt.show()

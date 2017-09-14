@@ -115,6 +115,15 @@ struct Ellipse {
 /**
  *
  */
+struct Theta_1D {
+    int li, lj, q, Pk_index, Tb_index, q_index;
+    spline1dinterpolant interpolator;
+};
+
+
+/**
+ *
+ */
 struct Theta {
     int li, lj, q, Pk_index, Tb_index, q_index;
     spline2dinterpolant interpolator;
@@ -133,6 +142,18 @@ struct CL_INTERP {
  */
 struct D_INTERP {
     int q_index;
+    spline1dinterpolant interpolator;
+};
+
+/**
+ *
+ */
+struct FL_INTERP {
+    // identifies the nu-bin, ie between 0 and #bins.
+    int nu_bin;
+    // identifies the parameter combination.
+    string param_key1, param_key2;
+    // interpolator for lmax between 0 and 1500 or so
     spline1dinterpolant interpolator;
 };
 
@@ -169,5 +190,8 @@ static bool Compare_qi(const Theta& l, const Theta& r)
 {
     return l.q_index < r.q_index;
 }
-
+static bool compare(int i, int j)
+{
+    return (i<j);
+}
 

@@ -432,7 +432,7 @@ double IntensityMapping::I(int l, double k, double nu_0)
     return integral*(1.0/0.2);//*1420 don't know why this factor was here.
 }
 
-double IntensityMapping::Cl_noise(int l, double nu1, double nu2)
+double IntensityMapping::Cl_noise(int l, double nu1, double nu2, bool beam_incl)
 {
     // This is the thermal noise.
     if (nu1==nu2) {
@@ -444,8 +444,18 @@ double IntensityMapping::Cl_noise(int l, double nu1, double nu2)
         double t0 = model->give_fiducial_params("tau_noise");
         double res = pow(2.0*model->pi,3) * Tsys*Tsys/(fcover*fcover *\
                 model->give_fiducial_params("df") * lmax * lmax * t0);
+
+        // now the beam
+        double beam = 1.;
+        if (beam_incl)
+        {
+            double n = 8.0* log(2.0);
+            double sigma = PI/(1500.0*sqrt(n));
+            beam = exp(sigma*sigma*l*l);
+        }
+
         // the result is in (mK)^2
-        return res;
+        return beam*res;
     } else {
         return 0.0;
     }

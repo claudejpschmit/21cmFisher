@@ -52,7 +52,7 @@ double Cosmology3D::Cl(int l, double k1, double k2,\
     }
 }
 
-double Cosmology3D::Cl_noise(int l, double k1, double k2)
+double Cosmology3D::Cl_noise(int l, double k1, double k2, bool beam_incl)
 {
     //TODO: integrand needs to be corrected.
     auto integrand = [&](double z)
@@ -74,7 +74,16 @@ double Cosmology3D::Cl_noise(int l, double k1, double k2)
                 lmax * lmax * tau);
         double integral = integrate_simps(integrand, this->zmin_Ml, this->zmax_Ml,\
                 this->zsteps_Ml);
-        return prefactor * integral;
+        // now the beam
+        double beam = 1.;
+        if (beam_incl)
+        {
+            double n = 8.0* log(2.0);
+            double sigma = PI/(1500.0*sqrt(n));
+            beam = exp(sigma*sigma*l*l);
+        }
+
+        return beam * prefactor * integral;
     } else {
         return 0.0;
     }

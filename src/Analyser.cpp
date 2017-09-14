@@ -285,7 +285,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                                "_" + param_keys[i] + ".dat";
 
                 //First order file
-                
+                //cout << param_keys[i] << " " << param_keys[j] << endl; 
                 //Read in the data
                 ifstream file;
                 file.open(filename);
@@ -318,10 +318,24 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                     real_1d_array nus, fs;
                     nus.setlength(nu.size());
                     fs.setlength(F_nu.size());
+                    
+                    // order the data
+                    vector<int> nu_sorted = nu;
+                    sort(nu_sorted.begin(), nu_sorted.end(), compare);
+                    vector<int> indices;
+                    for (unsigned int n = 0; n < nu.size(); n++) 
+                        for (unsigned int m = 0; m < nu.size(); m++) 
+                            if (nu_sorted[n] == nu[m])
+                                indices.push_back(m);
+                    
+                    ////////////////////////
+                    // nus and fs are now ordered correctly.
                     for (unsigned int n = 0; n < nu.size(); n++) {
-                        nus[n] = nu[n];
-                        fs[n] = F_nu[n];
+                        nus[n] = nu[indices[n]];
+                        fs[n] = F_nu[indices[n]];
                     }
+
+
                     spline1dinterpolant Fl_interp;
                     try {
                         spline1dbuildcubic(nus,fs,Fl_interp);
@@ -330,13 +344,12 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                     {
                         printf("error msg: %s\n", e.msg.c_str());
                     }
-                    for (int k = nu[0]; k <= nu[nu.size()-1]; k++)
+                    for (int k = nu_sorted[0]; k <= nu_sorted[nu.size()-1]; k++)
                     {
                         double fk = spline1dcalc(Fl_interp, k);
                         v += fk; 
                     }
                 }
-
                 F_ab_value.value = v;
                 F_ab.push_back(F_ab_value);
             }
@@ -458,7 +471,8 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
         mat eigvec;
         eig_sym(eigval, eigvec, F_priors_included);
         cout << " Eigenvalues : ";
-        for (int i = 0; i < 4; i++)
+        
+        for (int i = 0; i < eigval.size(); i++)
             cout << eigval(i) << " ";
         cout << endl;
         if (parser->giveShowInverse())
@@ -797,10 +811,23 @@ Fisher_return_pair Analyser::build_Fisher()
                     real_1d_array nus, fs;
                     nus.setlength(nu.size());
                     fs.setlength(F_nu.size());
+                    
+                    // order the data
+                    vector<int> nu_sorted = nu;
+                    sort(nu_sorted.begin(), nu_sorted.end(), compare);
+                    vector<int> indices;
+                    for (unsigned int n = 0; n < nu.size(); n++) 
+                        for (unsigned int m = 0; m < nu.size(); m++) 
+                            if (nu_sorted[n] == nu[m])
+                                indices.push_back(m);
+                    
+                    ////////////////////////
+                    // nus and fs are now ordered correctly.
                     for (unsigned int n = 0; n < nu.size(); n++) {
-                        nus[n] = nu[n];
-                        fs[n] = F_nu[n];
+                        nus[n] = nu[indices[n]];
+                        fs[n] = F_nu[indices[n]];
                     }
+
                     spline1dinterpolant Fl_interp;
                     try {
                         spline1dbuildcubic(nus,fs,Fl_interp);
@@ -809,10 +836,10 @@ Fisher_return_pair Analyser::build_Fisher()
                     {
                         printf("error msg: %s\n", e.msg.c_str());
                     }
-                    for (int k = nu[0]; k <= nu[nu.size()-1]; k++)
+                    for (int k = nu_sorted[0]; k <= nu_sorted[nu.size()-1]; k++)
                     {
                         double fk = spline1dcalc(Fl_interp, k);
-                        v += fk; 
+                        v += fk;
                     }
                 }
 
@@ -1235,7 +1262,7 @@ void Analyser::getBias()
     {
         for (int j = 0; j < size-1; j++)
         {
-            FThTh(i,j) = fmat.matrix(i,j);        
+            FThTh(i,j) = fmat.matrix(i,j);
         }
     }
 
@@ -1274,4 +1301,3 @@ void Analyser::getBias()
     }
     cout << " ############## " << endl;
 }
-

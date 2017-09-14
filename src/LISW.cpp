@@ -85,6 +85,8 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
     }
     if (analysis->model->give_fiducial_params("interp_Cls") == 1)
     {
+        log<LOG_BASIC>("... -> Making Ql interps ...");
+
         numin_CLASS = analysis->model->give_fiducial_params("Bispectrum_numin");
         numax_CLASS = analysis->model->give_fiducial_params("Bispectrum_numax");
         make_Ql_interps(lmax_CLASS, numin_CLASS, numax_CLASS, 0,0,0);
@@ -109,10 +111,17 @@ Bispectrum_LISW::~Bispectrum_LISW()
 double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, double z1,\
         double z2, double z3, int Pk_index, int Tb_index, int q_index)
 {
+    //return 0;
     //At the same redshift
+    
     if (z1 == z2 and z1 == z3)
     {
         double term1, term2, term3, term4, term5, term6;
+        // Note that W3J with the ms has already been removed, this W3J is the one coming from the Gaunt integral
+        // and it should be there
+        //
+        // also note that this W3J can still be 0 even though the triangle condition is fulfilled
+        // (see checkboard structure!)
         double W3J = WignerSymbols::wigner3j(l1,l2,l3,0,0,0);
         if (W3J == 0)
         {
@@ -158,6 +167,7 @@ double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, dou
     }
     else 
     {    
+        cout << "not same redshift!" << endl;
         double min_z1z2, min_z1z3, min_z2z3;
         min_z1z2 = z1;
         min_z1z3 = z1;
@@ -212,6 +222,129 @@ double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, dou
             term4 = Cl(l1, nu1, nu3, Pk_index, Tb_index, q_index) * Q4; 
             term5 = Cl(l1, nu2, nu1, Pk_index, Tb_index, q_index) * Q5; 
             term6 = Cl(l2, nu3, nu2, Pk_index, Tb_index, q_index) * Q6; 
+
+            double result = pre * (L_lll(l1,l2,l3)*(term1+term2)+\
+                    L_lll(l2,l3,l1)*(term3+term4)+\
+                    L_lll(l3,l1,l2)*(term5+term6));
+
+            //cout << "B = " << result << ", l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << l3 << endl;
+            return result;
+        }
+    }
+    
+}
+
+double Bispectrum_LISW::calc_angular_Blll_all_config_new_parallelism(int l1, int l2, int l3, double z1,\
+        double z2, double z3, int Pk_index, int Tb_index, int q_index)
+{
+    //return 0;
+    //At the same redshift
+    
+    if (z1 == z2 and z1 == z3)
+    {
+        double term1, term2, term3, term4, term5, term6;
+        // This is the w3J introduced from the gaunt integral. 
+        // The W3J containing m's has already been dealt with.
+        double W3J = WignerSymbols::wigner3j(l1,l2,l3,0,0,0);
+        if (W3J == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            double pre = 0.5 * sqrt((2.0*l1+1.0)*(2.0*l2+1.0)*(2.0*l3+1.0)/(4.0*pi)) * W3J;
+            // careful with Cl's, here Santos is used so we need to change from redshift to 
+            // frequency.
+            double nu1 = 1420.0/(1.0+z1);
+
+            // TODO: Check the nu's and whether they are in the right position.
+            // This obviously doesn't matter if all z's are the same...
+            double Q1,Q2,Q3,Q4,Q5,Q6;
+            Q1 = Ql_new_parallelism(l3, z1, Pk_index, Tb_index, q_index);
+            Q4 = Q1;
+            Q2 = Ql_new_parallelism(l2, z1, Pk_index, Tb_index, q_index);
+            Q5 = Q2;
+            Q3 = Ql_new_parallelism(l1, z1, Pk_index, Tb_index, q_index);
+            Q6 = Q3;
+            double Cl1,Cl2,Cl3;
+            // DO NOT include the Noise here!
+            // this should be the pure signal bispectrum.
+            // The only place the Noise is included is the SNR calculation.
+            Cl1 = Cl_new_parallelism(l1, nu1, nu1, Pk_index, Tb_index, q_index);
+            Cl2 = Cl_new_parallelism(l2, nu1, nu1, Pk_index, Tb_index, q_index);
+            Cl3 = Cl_new_parallelism(l3, nu1, nu1, Pk_index, Tb_index, q_index);
+
+            term1 = Cl2 * Q1; 
+            term2 = Cl3 * Q2; 
+            term3 = Cl3 * Q3; 
+            term4 = Cl1 * Q4; 
+            term5 = Cl1 * Q5; 
+            term6 = Cl2 * Q6; 
+            double result = pre * (L_lll(l1,l2,l3)*(term1+term2)+\
+                    L_lll(l2,l3,l1)*(term3+term4)+\
+                    L_lll(l3,l1,l2)*(term5+term6));
+
+            //cout << "B = " << result << ", l1 = " << l1 << ", l2 = " << l2 << ", l3 = " << l3 << endl;
+            return result;
+        }
+    }
+    else 
+    {    
+        cout << "not same redshift!" << endl;
+        double min_z1z2, min_z1z3, min_z2z3;
+        min_z1z2 = z1;
+        min_z1z3 = z1;
+        min_z2z3 = z2;
+
+        if (z2 < z1)
+            min_z1z2 = z2;
+        if (z3 < z1)
+            min_z1z3 = z3;
+        if (z3 < z2)
+            min_z2z3 = z3;
+
+        double term1, term2, term3, term4, term5, term6;
+        double W3J = WignerSymbols::wigner3j(l1,l2,l3,0,0,0);
+
+        if (W3J == 0)
+            return 0;
+        else
+        {
+            double pre = 0.5 * sqrt((2.0*l1+1.0)*(2.0*l2+1.0)*(2.0*l3+1.0)/(4.0*pi)) * W3J;
+            // careful with Cl's, here Santos is used so we need to change from redshift to 
+            // frequency.
+            double nu1 = 1420.0/(1.0+z1);
+            double nu2 = 1420.0/(1.0+z2);
+            double nu3 = 1420.0/(1.0+z3);
+
+            // TODO: Check the nu's and whether they are in the right position.
+            // This obviously doesn't matter if all z's are the same...
+            double Q1,Q2,Q3,Q4,Q5,Q6;
+
+            Q1 = Ql_new_parallelism(l3, min_z1z3, Pk_index, Tb_index, q_index);
+            if (min_z1z3 == min_z1z2)
+                Q4 = Q1;
+            else
+                Q4 = Ql_new_parallelism(l3, min_z1z2, Pk_index, Tb_index, q_index);
+
+            Q2 = Ql_new_parallelism(l2, min_z1z2, Pk_index, Tb_index, q_index);
+            if (min_z1z2 == min_z2z3)
+                Q5 = Q2;
+            else
+                Q5 = Ql_new_parallelism(l2, min_z2z3, Pk_index, Tb_index, q_index);
+
+            Q3 = Ql_new_parallelism(l1, min_z2z3, Pk_index, Tb_index, q_index);
+            if (min_z2z3 == min_z1z3)
+                Q6 = Q3;
+            else
+                Q6 = Ql_new_parallelism(l1, min_z1z3, Pk_index, Tb_index, q_index); 
+
+            term1 = Cl_new_parallelism(l2, nu1, nu2, Pk_index, Tb_index, q_index) * Q1; 
+            term2 = Cl_new_parallelism(l3, nu2, nu3, Pk_index, Tb_index, q_index) * Q2; 
+            term3 = Cl_new_parallelism(l3, nu3, nu1, Pk_index, Tb_index, q_index) * Q3; 
+            term4 = Cl_new_parallelism(l1, nu1, nu3, Pk_index, Tb_index, q_index) * Q4; 
+            term5 = Cl_new_parallelism(l1, nu2, nu1, Pk_index, Tb_index, q_index) * Q5; 
+            term6 = Cl_new_parallelism(l2, nu3, nu2, Pk_index, Tb_index, q_index) * Q6; 
 
             double result = pre * (L_lll(l1,l2,l3)*(term1+term2)+\
                     L_lll(l2,l3,l1)*(term3+term4)+\
@@ -359,6 +492,29 @@ double Bispectrum_LISW::Ql(int l, double z, int Pk_index, int Tb_index, int q_in
     }
 }
 
+double Bispectrum_LISW::Ql_new_parallelism(int l, double z, int Pk_index, int Tb_index, int q_index)
+{
+    if (ql_interpolated && interpolate_large)
+    { 
+        if (Qls_interpolators_large[l][Pk_index][Tb_index][q_index].computed == false)
+        {
+            //check how this works with new parallelism
+            cout << "a " << l << " " << Pk_index << " " << Tb_index << " " << q_index << endl;
+            make_Ql_interps(lmax_CLASS,numin_CLASS,numax_CLASS,Pk_index,Tb_index,q_index);
+        }
+        return interp_Ql(l, z, Pk_index, Tb_index, q_index); 
+    }
+    else if (ql_interpolated && Pk_index == 0 && Tb_index == 0 && q_index == 0)
+    {
+        return interp_Ql(l,z);
+    }
+    else
+    {
+        log<LOG_DEBUG>("No interpolation possible, Ql is computed from scratch.");
+        return Ql_calc(l,z,Pk_index,Tb_index,q_index);
+    }
+}
+
 /* TODO: I belive this function is pretty useless. */
 double Bispectrum_LISW::Ql(int l, double z)
 {
@@ -409,14 +565,20 @@ double Bispectrum_LISW::Cl(int l, double nu1, double nu2, int Pk_index, int Tb_i
     return res;
 }
 
-double Bispectrum_LISW::Cl_noise(int l, double nu1, double nu2)
+double Bispectrum_LISW::Cl_new_parallelism(int l, double nu1, double nu2, int Pk_index, int Tb_index, int q_index)
+{
+    double res = analysis->Cl(l,nu1,nu2,Pk_index,Tb_index,q_index);
+    return res;
+}
+
+double Bispectrum_LISW::Cl_noise(int l, double nu1, double nu2, bool beam_incl)
 {
     // We'll only compute each one of these once and then store them
     if (SN_calculation)
     {
         if (Cls_noise[l] == -1)
         {
-            Cls_noise[l] = analysis->Cl_noise(l, nu1, nu2);
+            Cls_noise[l] = analysis->Cl_noise(l, nu1, nu2, beam_incl);
             return Cls_noise[l];
         }
         else
@@ -426,7 +588,7 @@ double Bispectrum_LISW::Cl_noise(int l, double nu1, double nu2)
     }
     else
     {
-        return analysis->Cl_noise(l,nu1,nu2);
+        return analysis->Cl_noise(l,nu1,nu2,beam_incl);
     }
 }
 
@@ -652,6 +814,10 @@ void LISW_SN::detection_SN_new(int lmin, int lmax, int delta_l, double z, string
         {
             stringstream name;
             name << name_base << l << ".dat";
+            
+            // These triangles already account all the modes in the right way.
+            // this means that data in SN_NEW folder should not be used to plot
+            // individual triangles, as they include information about other orderings as well.
             vector<vector<double>> triangle = build_triangle_new(l, z, name.str(),true);
             for (unsigned int i = 0; i < triangle.size(); i++)
             {
@@ -748,9 +914,10 @@ double LISW_SN::sigma_squared_a(int l1, int l2, int l3, double z1, double z2, do
         Cl2 = Cl(l2,nu2,nu2,0,0,0);
         Cl3 = Cl(l3,nu3,nu3,0,0,0);
     }
-    Cl1 += Cl_noise(l1,nu1,nu1);
-    Cl2 += Cl_noise(l2,nu2,nu2);
-    Cl3 += Cl_noise(l3,nu3,nu3);
+    bool beam_incl = true;
+    Cl1 += Cl_noise(l1,nu1,nu1,beam_incl);
+    Cl2 += Cl_noise(l2,nu2,nu2,beam_incl);
+    Cl3 += Cl_noise(l3,nu3,nu3,beam_incl);
 
     return Cl1 * Cl2 * Cl3 * DELTA;
 }
@@ -790,7 +957,7 @@ vector<vector<double>> LISW_SN::build_triangle_new(int lmax, double z,\
             }
         }
         else 
-        {    
+        {  
             infile.close();
             ofstream file_bispectrum(name.str());
             for (l2 = lmin; l2 <= l1; l2++)
@@ -817,8 +984,25 @@ vector<vector<double>> LISW_SN::build_triangle_new(int lmax, double z,\
                         B = 0;
                         sigma = 1.0;
                     }
-                    file_bispectrum << B/sigma << " ";
-                    row.push_back(B/sigma);
+
+                    double res = B*B/sigma;
+                    if (B*B/sigma > 1)
+                        cout << l1 << " " << l2 << " " << l3 << " " << B*B/sigma<< endl;
+                    if (l1 == l2 and l1 == l3)
+                    {
+                        res = res;
+                    }
+                    else if (l1 == l2 or l1 == l3 or l2 == l3)
+                    {
+                        res = 3.0*res;
+                    }
+                    else
+                    {
+                        res = 6.0*res;
+                    }
+
+                    file_bispectrum << res << " ";
+                    row.push_back(res);
                 }
                 file_bispectrum << endl;
                 result.push_back(row);
@@ -890,8 +1074,25 @@ vector<vector<double>> LISW_SN::build_triangle(int lmax, double z,\
                         B = 0;
                         sigma = 1.0;
                     }
-                    file_bispectrum << B/sigma << " ";
-                    row.push_back(B/sigma);
+                   
+                    double res = B*B/sigma;
+                    if (B*B/sigma > 1)
+                        cout << l1 << " " << l2 << " " << l3 << " " << B*B/sigma<< endl;
+                    if (l1 == l2 and l1 == l3)
+                    {
+                        res = res;
+                    }
+                    else if (l1 == l2 or l1 == l3 or l2 == l3)
+                    {
+                        res = 3.0*res;
+                    }
+                    else
+                    {
+                        res = 6.0*res;
+                    }
+                    
+                    file_bispectrum << res << " ";
+                    row.push_back(res);
                 }
                 file_bispectrum << endl;
                 result.push_back(row);

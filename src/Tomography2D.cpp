@@ -99,7 +99,7 @@ double Tomography2D::Cl(int l, double nu1, double nu2,\
     return 2/model->pi * dTb1 *dTb2 * integral;
 }
 
-double Tomography2D::Cl_noise(int l, double nu1, double nu2)
+double Tomography2D::Cl_noise(int l, double nu1, double nu2, bool beam_incl)
 {
     if (nu1==nu2) {
         // in mK
@@ -110,7 +110,17 @@ double Tomography2D::Cl_noise(int l, double nu1, double nu2)
         double t0 = model->give_fiducial_params("tau_noise");
         double res = pow(2.0*model->pi,3) * Tsys*Tsys/(fcover*fcover *\
                 model->give_fiducial_params("df") * lmax * lmax * t0);
-        return res;
+
+        // now the beam
+        double beam = 1.;
+        if (beam_incl)
+        {
+            double n = 8.0* log(2.0);
+            double sigma = PI/(1500.0*sqrt(n));
+            beam = exp(sigma*sigma*l*l);
+        }
+
+        return beam*res;
     } else {
         return 0.0;
     }

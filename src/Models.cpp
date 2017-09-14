@@ -2352,7 +2352,7 @@ double Model_Intensity_Mapping::Omega_HI(double z)
     // the code below uses hmf, but that is dependent on which fitting
     // model the code hmf_for_LISW.py uses. 
     //
-    // This function reproduces figure 20 from bull et al exactly
+    // This function reproduces figure 20 from bull et al 2015 exactly
     return (-0.000062667) * (z-3) * (z-3) + 0.00105;
 
     //TODO: need to make Omega_Hi dependent on the cosmo_params. Currently it is not

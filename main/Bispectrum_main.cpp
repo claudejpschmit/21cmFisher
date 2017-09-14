@@ -121,14 +121,18 @@ int main(int argc, char* argv[])
         // the minimum and maximum of the frequency regime also affect the theta interpolation
         // to be safe leave min = 400 & max = 800
         double nu_min = 400;
-        //nu_max = 790, so between z = 0.8 and z = 1.2
+        //nu_max = 790, so between z = 0.8 and z = 2.55
         double nu_stepsize = 10;
-        int n_points_per_thread = 40;
-        int n_threads = 1;
-        
+        int n_points_per_thread = 1;
+        int n_threads = 40;
+        bool limber = true;
         Bispectrum_Effects effects = parser.giveBispectrumEffects();
         t1 = steady_clock::now();
-        fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects);
+        // For this, you want n_points_per_thread = 1 and n_threads = 1.
+        //fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects, limber);
+        // For this, you want n_points_per_thread = 1 or 2, and n_threads = 20.
+        fish.compute_F_matrix_parallel_nu(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects, limber);
+
         t2 = steady_clock::now();
         dt = duration_cast<duration<double>>(t2-t1);
 

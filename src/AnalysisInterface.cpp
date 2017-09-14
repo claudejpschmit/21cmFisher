@@ -10,7 +10,7 @@ double AnalysisInterface::Cl(int l, double x1, double x2,\
 {
     return 0;
 }
-double AnalysisInterface::Cl_noise(int l, double x1, double x2)
+double AnalysisInterface::Cl_noise(int l, double x1, double x2, bool beam_incl)
 {
     return 0;
 }

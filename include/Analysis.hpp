@@ -10,7 +10,7 @@ class AnalysisInterface {
         //  The Fisher Method will worry about how to use that.
         virtual double Cl(int l, double x1, double x2,\
                 int Pk_index, int Tb_index, int q_index);
-        virtual double Cl_noise(int l, double x1, double x2);
+        virtual double Cl_noise(int l, double x1, double x2, bool beam_incl);
         virtual double Cl_foreground(int l, double x1, double x2, map<string,double> FG_param_values);
         virtual double Cl_FG_deriv_analytic(int l, double x1, double x2, string param_key);
         map<string,double> get_base_FG_params();
@@ -34,7 +34,7 @@ class Cosmology3D : public AnalysisInterface {
       
         double Cl(int l, double k1, double k2,\
                 int Pk_index, int Tb_index, int q_index);
-        double Cl_noise(int l, double k1, double k2);
+        double Cl_noise(int l, double k1, double k2, bool beam_incl);
         double Cl_foreground(int l, double k1, double k2, map<string,double> FG_param_values);
         double Cl_FG_deriv_analytic(int l, double k1, double k2, string param_key);
         void writeT21(string name);
@@ -68,7 +68,7 @@ class Tomography2D : public AnalysisInterface {
 
         double Cl(int l, double nu1, double nu2,\
                 int Pk_index, int Tb_index, int q_index);
-        double Cl_noise(int l, double nu1, double nu2);
+        double Cl_noise(int l, double nu1, double nu2, bool beam_incl);
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
         double Cl_foreground_individual(int l, double nu1, double nu2, string FG_source_prefix);
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
@@ -112,7 +112,7 @@ class IntensityMapping : public AnalysisInterface {
         
         double Cl(int l, double nu1, double nu2,\
                 int Pk_index, int Tb_index, int q_index);
-        double Cl_noise(int l, double nu1, double nu2);
+        double Cl_noise(int l, double nu1, double nu2, bool beam_incl);
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
     protected:
@@ -154,7 +154,7 @@ class HighZAnalysis : public AnalysisInterface {
         
         double Cl(int l, double nu1, double nu2,\
                 int Pk_index, int Tb_index, int q_index);
-        double Cl_noise(int l, double nu1, double nu2);
+        double Cl_noise(int l, double nu1, double nu2, bool beam_incl);
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
     private:

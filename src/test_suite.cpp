@@ -22,6 +22,10 @@
 #include "Bispectrum_Fisher.hpp"
 #include "Integrator.hpp"
 #include "interpolation.h"
+#include "levinBase.h"
+#include "levinIteration.h"
+#include "levinFunctions.h"
+
 #include <omp.h>
 using namespace std;
 
@@ -39,6 +43,16 @@ log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
  * is used here, the parameter values are just set equal
  * to the position they are within the file for simplicity.
  */
+
+struct integral_params{
+    int a = 1;
+};
+
+double F(double chi0, void* pp)
+{
+    return chi0;
+}
+
 BOOST_AUTO_TEST_CASE(check_parser)
 {
     /**     SETUP   **/
@@ -216,6 +230,558 @@ BOOST_AUTO_TEST_CASE(check_integrator)
     BOOST_CHECK(I7 > ans2 - 0.0001 && I7 < ans2 + 0.0001);
     //BOOST_CHECK(I8 > ans2 - 0.001 && I8 < ans2 + 0.001);
 }
+
+
+/** In this test a couple of things related to the integration of Bessel
+ *  functions are tested. The main aim is to show the performance of Levin
+ *  integration, as performed by Alessio's code, compared to the simpson 
+ *  method I have been using. So, first we test the use of our spherical
+ *  bessel implementation over that of their hyperspherical implementation.
+ *  Goal here is to use ours as theirs is using interpolation which we don't want.
+ *  The reason being that it seems to use a lot of memory for large l ranges.
+ *  Then, we want to compare some simple examples of integration, with very 
+ *  simple kernals. If this succeeds I want to test whether using the power spectrum
+ *  as kernel function still works fine, and if so, compute alpha and theta.
+ */
+BOOST_AUTO_TEST_CASE(check_bessel_integration)
+{
+    /**     Setup   **/
+
+    // Parameters for Alessio's bessel implementation
+    int K=0; // sets curvature for Hyperspherical bessel implementation
+    double beta=1.;
+    double min = 0.01;
+    double max = 1.e5;
+    double sampling = 80;
+    double phi_min_abs = 1.e-10;
+    ErrorMsg error_message;
+
+
+    int nk = 20;
+    double kmin = 5.e-3;
+    double kmax = 1.0;
+
+    // Let's make a list of 500 l modes spherical bessel functions.
+    int nl = 1500;
+    int* l;
+    l = new int[nl];
+    for (int i = 0; i < nl; ++i)
+    {   
+        l[i] = i;
+    }
+
+    // Structure which stores interpolated spherical bessel functions 
+    HyperInterpStruct HIS;
+    hyperspherical_HIS_create(K,beta,nl,l, min, max, sampling,\
+            l[nl-1]+1, phi_min_abs, &HIS, error_message);
+
+
+    // Let's make a list of l_modes that will be used during the testing.
+    vector<int> l_list = {1,4,46,322,450,600, 800, 1000, 1328};
+    cout << "Testing the value of the bessel function as a function of l." << endl;
+    cout << "Checking l = 1 to l = 498, for k = 2 and x = 1 to x = 20001 in steps of 0.2" << endl;
+    cout << "We compare the value between the CLASS hyperspherical implementation and the CAMB implementation." << endl;
+    for (int i = 1; i < 499; i++)
+    {
+        // Here I check whether I get the same numerical result using both
+        // ways of computing the bessel function.
+        int l_index = i;
+        // Setting some constants for the bessel functions and integration
+        double k = 2;
+
+        // Instantiation of all the necessary classes.
+        BesselSingleCamb bess2(k, l_index);
+        BesselSingle bessel(k, &HIS, l_index);
+
+        // Looping over some x values
+        for (int j = 0; j < 100; j++)
+        {
+            double x = 1 + j * 0.6;
+            double res1 = bessel.w(1,x);
+            double res2 = bess2.w(1,x);
+            if (res1 != 0){
+                bool t1 = abs(res1) < abs(res2)+10*abs(res2/100.0);
+                bool t2 = abs(res1) > abs(res2)-10*abs(res2/100.0);
+                /*if (not t1 or not t2) {
+                  cout << l_index << " " << x << endl;
+                  cout << res1 << " =? " << res2 << endl;
+                  }*/
+            } 
+            //double res3 = bessel.w(2,x);
+            //double res4 = bess2.w(2,x);
+            //BOOST_CHECK(res3 == res4);
+
+
+        }
+    }
+    cout << "Tests done" << endl;
+    // Setting some constants for the bessel functions and integration
+    double k = 2;
+    double epsilon = 1.e-12;
+    double tol = 1.e-6;
+    int l_index = 58;
+
+
+
+    // I stole most of this code from covariance.cpp
+    // Instantiation of all the necessary classes.
+    BesselSingleCamb bess2(k, l_index);
+    BesselSingle bessel(k, &HIS, l_index);
+    LevinBase LB(2,&bessel);
+    LevinBase LB2(2, &bess2);
+    // Alessio's code
+    LevinIteration iterate(&LB,tol,epsilon);
+    // Using the hacked version that uses the more straight forward
+    // CAMB implementation of the Bessel function.
+    LevinIteration iterate2(&LB2,tol,epsilon);
+
+    cout << bessel.w(2,2345)<< " =? " << bess2.w(2,2345) << endl;
+    //cout << HIS.l[0]<< endl;
+    int n_col = 8;
+    int n_sub = 16;
+    double A = 100;
+    double B = 2000.0;
+    integral_params ip;
+
+    vector<double> dummy;
+    double result, result2;
+
+    // I would like to simply integrate two bessel functions with a simple kernel of say F = x.
+    // This computes: integrate( x j_58(k*x) , x, 100, 200) for k = 2
+    iterate(&F, &ip, A, B, n_col, result, dummy, n_sub);
+    iterate2(&F, &ip, A, B, n_col, result2, dummy, n_sub);
+    cout << result << " =? " << result2 << endl;
+
+    // Now I want to compare that to the brute force method I've been using.
+
+    string iniFilename = "UnitTestData/test_params_check_cosmobasis.ini";
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    CosmoBasis Basis(params);
+
+    auto test_f2 = [&](double x){
+        double j = Basis.sph_bessel_camb(l_index, k* x);
+        return j * x;
+    };
+    double I = integrate(test_f2, A, B, 1000, simpson());
+    double I2 = integrate(test_f2, A, B, 10000, simpson());
+    double I3 = integrate(test_f2, A, B, 100000, simpson());
+
+    cout << I << " " << I2 << " " << I3 << endl; 
+
+    cout << "We produce the relative error for all integrals of x j_l(2x) varying l from 1 to 1500." << endl;
+    cout << "We also vary the number of collocation points used for all l values." << endl; 
+    vector<vector<double>> output;
+    for (int l = 1; l < 100; l++)
+    {
+        vector<double> row;
+        // Here I check whether I get the same numerical result using both
+        // ways of computing the bessel function.
+        int l_index = l;
+        //cout << "l = " << l_index << endl;
+        // Setting some constants for the bessel functions and integration
+        double k = 2;
+
+        // Instantiation of all the necessary classes.
+        //BesselSingleCamb bess2(k, l_index);
+        //BesselSingle bessel(k, &HIS, l_index);
+        BesselProduct bessel(2.0, 2.3, &HIS, l_index);
+        LevinBase LB(2,&bessel);
+        //LevinBase LB2(2, &bess2);
+        // Alessio's code
+        LevinIteration iterate(&LB,tol,epsilon);
+        // Using the hacked version that uses the more straight forward
+        // CAMB implementation of the Bessel function.
+        //LevinIteration iterate2(&LB2,tol,epsilon);
+
+
+        for (int n = 2; n < 33; n++)
+        {
+            int n_col = n;
+            int n_sub = 2*n;
+            double A = 10;
+            double B = 2000.0;
+            integral_params ip;
+
+            vector<double> dummy;
+            double res1, res2;
+
+            // I would like to simply integrate two bessel functions with a simple kernel of say F = x.
+            // This computes: integrate( x j_l(k*x) , x, 10, 2000) for k = 2
+            iterate(&F, &ip, A, B, n_col, res1, dummy, n_sub);
+            //iterate2(&F, &ip, A, B, n_col, res2, dummy, n_sub);
+
+            //BOOST_CHECK(abs(res1) <= abs(res2 + 0.1 * res2));
+            //BOOST_CHECK(abs(res1) >= abs(res2 - 0.1 * res2));
+            //cout << "using HIS =? using camb jl, both with levin" << endl;
+            //cout << res1 << " =? " << res2 << endl;
+            auto test_f2 = [&](double x){
+                double j1 = Basis.sph_bessel_camb(l_index, 2.0* x);
+                double j2 = Basis.sph_bessel_camb(l_index, 2.3*x);
+                return j1 * j2 * x;
+            };
+
+            auto test_f3 = [&](double x){
+                double j = bessel.w(1, x);
+                return j * x;
+            };
+
+            //double I = integrate(test_f2, A, B, 1000, simpson());
+            //double I2 = integrate(test_f2, A, B, 10000, simpson());
+            //double I3 = integrate(test_f2, A, B, 100000, simpson());
+            //double I4 = integrate(test_f2, A, B, 100000, simpson());
+            //double I5 = integrate(test_f2, A, B, 100000, simpson());
+
+            //cout << I << " " << I2 << " " << I3 <<" " << I4 << " " << I5<< endl; 
+
+            double I = integrate(test_f2, A, B, 10000, simpson());
+            //double aI2 = integrate(test_f3, A, B, 10000, simpson());
+            //double aI3 = integrate(test_f3, A, B, 100000, simpson());
+            //double aI4 = integrate(test_f3, A, B, 100000, simpson());
+            //double aI5 = integrate(test_f3, A, B, 100000, simpson());
+
+            double r = (res1 - I) / I;
+            row.push_back(r);
+            //cout << aI << " " << aI2 << " " << aI3 <<" " << aI4 << " " << aI5 << endl; 
+        }
+        output.push_back(row);
+    }
+
+    ofstream outfile("integration_comp_p.dat");
+    for (int i = 0; i < output.size(); i++)
+    {
+        for (int j = 0; j < output[0].size(); j++)
+        {
+            outfile << output[i][j] << " ";        
+        }
+        outfile << endl;
+    }
+
+    int lind = 39;
+    cout << "Now Checking l = " << lind << " which has some problems" << endl;
+
+    BesselSingle bessel22(k, &HIS, lind);
+    auto test_f3 = [&](double x){
+        double j = bessel22.w(1, x);
+        return j * x;
+    };
+    double t1 = clock();
+    I = integrate(test_f3, 12.0, 2000.0, 10000, simpson());
+    double t2 = clock();
+    double t = (t2-t1)/double(CLOCKS_PER_SEC)*1000;
+    LevinBase LB22(2,&bessel22);
+    // Alessio's code
+    LevinIteration iterate22(&LB22,tol,epsilon);
+
+    for (int i = 2; i < 65; i++)
+    {
+        integral_params ip;
+        double res;
+        double start = clock();
+        iterate22(&F, &ip, 12, 2000, i, res, dummy, 2*i);
+        double end = clock();
+        double time = (end - start)/double(CLOCKS_PER_SEC)*1000;
+        cout << i << " " << res << " " << I << " " << time << " " << t << endl;
+    }
+
+    /**     SETUP       **/
+
+    /**     CHECKS   **/
+}
+
+/**
+ * This test is supposed to test the behaviour and speed of the integrals and 
+ * sub integrals used in the computation of the non-linear Bispectrum
+ */
+BOOST_AUTO_TEST_CASE(check_bispectrum_integrals)
+{
+    /**     SETUP       **/
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_bispectrum_integrals.ini";
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+    CosmoBasis Basis(params);
+    Model_Intensity_Mapping* model = NULL;
+    model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = NULL;
+    analysis = new IntensityMapping(model, keys.size());
+
+    TEST_Bispectrum* NLG = NULL;
+    NLG = new TEST_Bispectrum(analysis);
+
+    /*
+       Bispectrum_LISW* LISW = NULL;
+       LISW = new Bispectrum_LISW(analysis, keys.size());
+
+       Bispectrum_Effects effects = ALL_eff;
+       TEST_Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
+       */
+    /**     CHECKS      **/
+    /*
+       double nu_min = 650;
+
+    //nu_max = 790, so between z = 0.8 and z = 1.2
+    double nu_stepsize = 10;
+    int n_points_per_thread = 2;
+    int n_threads = 1;
+    double k = 0.2;
+    double delta_z = 0.1;
+    double z_centre = 1.0;
+
+    // Let's compute alpha in 3 different ways, 
+    // once using my framework,
+    // once using the same code as in the framework but with a huge number of points 
+    // and once using Alessio's integrator.
+
+    // case 1:
+
+    double start = clock();
+    double alpha_res1 = NLG->test_alpha(100, k,  z_centre, delta_z, Pk_index, Tb_index, q_index);
+    double end = clock();
+    double time = (end - start)/double(CLOCKS_PER_SEC);
+    cout << "Case 1: conventional alpha computation, using 100 integration steps." << endl;
+    cout << "case 1: alpha = " << alpha_res1 << ", time = " << time << endl;
+    // case 2:
+
+    start = clock();
+    double alpha_res2 = NLG->custom_alpha2(100, k, z_centre, delta_z, Pk_index, Tb_index, q_index, 10000);
+    end = clock();
+    time = (end - start)/double(CLOCKS_PER_SEC);
+    cout << "Case 2: Alpha computation, using 10000 integration steps." << endl;
+    cout << "case 2: alpha = " << alpha_res2  << ", time = " << time << endl;
+    // case 3:
+
+    // Parameters for Alessio's bessel implementation
+    int K=0; // sets curvature for Hyperspherical bessel implementation
+    double beta=1.;
+    double min = 0.01;
+    double max = 1.e5;
+    double sampling = 80;
+    double phi_min_abs = 1.e-10;
+    ErrorMsg error_message;
+    double epsilon = 1.e-12;
+    double tol = 1.e-15;
+    int l_index = 58;
+
+
+    int nk = 20;
+    double kmin = 5.e-3;
+    double kmax = 1.0;
+
+    // Let's make a list of 150 l modes spherical bessel functions.
+    int nl = 150;
+    int* l;
+    l = new int[nl];
+    for (int i = 0; i < nl; ++i)
+    {   
+        l[i] = i;
+    }
+
+    // Structure which stores interpolated spherical bessel functions 
+    HyperInterpStruct HIS;
+    hyperspherical_HIS_create(K,beta,nl,l, min, max, sampling,\
+    l[nl-1]+1, phi_min_abs, &HIS, error_message);
+    BesselSingle bessel(k, &HIS, l_index);
+    LevinBase LB(2,&bessel);
+    // Alessio's code
+    LevinIteration iterate(&LB,tol,epsilon);
+    //cout << HIS.l[0]<< endl;
+    int n_col = 12;
+    int n_sub = 24;
+    double A = NLG->analysis->model->r_interp(z_centre - delta_z);
+    double B = NLG->analysis->model->r_interp(z_centre + delta_z);
+    //cout << "A = " << A << " B = " << B << endl;
+    //A = 4000;
+    //B = 5000;
+    integral_params ip;
+
+    vector<double> dummy;
+    double result;
+
+
+    // I would like to simply integrate two bessel functions with a simple kernel of say F = x.
+    //the integration bounds should be between r(A) and r(B)
+    start = clock();
+    iterate(NLG, &ip, A, B, n_col, result, dummy, n_sub);
+    end = clock();
+    time = (end - start)/double(CLOCKS_PER_SEC);
+    cout << "Case 3: Alpha computation, using Levin integration. Most likely bad, so ignore." << endl;
+    cout << "case 3: alpha = "<<result  << ", time = " << time << endl; 
+
+    //iterate(&F, &ip, A, B, n_col, result, dummy, n_sub);
+    //cout << result << endl; 
+    //result = NLG->custom_alpha2(100, k, z_centre, delta_z, Pk_index, Tb_index, q_index, 10000);
+    //cout << result << endl;
+    start = clock();
+    result = NLG->custom_alpha3(100, k, z_centre, delta_z, Pk_index, Tb_index, q_index, true);
+    end = clock();
+    time = (end - start)/double(CLOCKS_PER_SEC);
+    cout << "Case 4: Alpha computation, using n_steps determined automatically." << endl;
+    cout << "case 4: alpha = "<< result  << ", time = " << time << endl; 
+
+
+    cout << "Now writing x*j_100(0.2 * x) to file alpha.dat" << endl;
+    ofstream file("alpha.dat");
+    int nmax = 10000;
+    A = 0.0001;
+    B = 1.2;
+    double delta_x = (B-A)/(double)nmax;
+
+    for (int i = 0; i < nmax; i++)
+    {
+        double x = A + i * delta_x;
+        double res = NLG->custom_alpha3(100, x, 1.4, 0.1, Pk_index, Tb_index, q_index, false);
+        double appro = NLG->alpha_approx(100, x, 1.4, 0.1);
+        //double res = x * Basis.sph_bessel_camb(100, k* x);
+        file << x << " " <<res << " " << appro <<  endl;
+    }
+    file.close();
+    cout << "-----------------------------------" << endl;
+    int ll = 300;
+    cout << "Now computing Thetas for l = " << ll << endl;
+    result = NLG->theta_calc_1(ll, ll, 1.0, 0, z_centre, delta_z);
+    cout << "Theta using automatic number of steps = " << result << endl; 
+    result = NLG->theta_calc_2(ll, ll, 1.0, 0, z_centre, delta_z);
+    cout << "Theta using 1000 (l < 200) or 100 (l > 200) integration steps = " <<result << endl; 
+    result = NLG->theta_calc_3(ll, ll, 1.0, 0, z_centre, delta_z, 5000);
+    cout << "Theta using 5000 integration steps = " << result << endl; 
+
+
+    //NLG->build_z_of_r();
+    cout << "testing z_of_r. Result should be 8213:" << endl;
+    //cout << NLG->z_of_r(8123) << endl;
+    cout << "Result = " << NLG->analysis->model->r_interp(NLG->z_of_r(8123))<< endl;
+    cout << "-----------------------------------" << endl;
+    /*
+    cout << " Now checking how quickly theta varies as a function of z" << endl;
+    double z = 0.8;
+    double sum = 0;
+
+    start = clock();
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    end = clock();
+    time = (end - start)/double(CLOCKS_PER_SEC);
+
+    cout << " At z = " << z << ", theta = " << result <<  ", time = " << time << endl;
+    z = 0.85;
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    cout << " At z = " << z << ", theta = " << result << endl;
+    z = 0.9;
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    cout << " At z = " << z << ", theta = " << result << endl;
+    z = 0.95;
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    cout << " At z = " << z << ", theta = " << result << endl;
+    z = 1.0;
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    cout << " At z = " << z << ", theta = " << result << endl;
+    z = 1.05;
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    cout << " At z = " << z << ", theta = " << result << endl;
+    z = 1.1;
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    cout << " At z = " << z << ", theta = " << result << endl;
+    z = 1.15;
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    cout << " At z = " << z << ", theta = " << result << endl;
+    z = 1.2;
+    result = NLG->theta_calc_1(ll, ll, z, 0, z, delta_z);
+    sum += result;
+    cout << " At z = " << z << ", theta = " << result << endl;
+    cout << "Average result = " << sum / 9.0 << endl; 
+    cout << " Now writing theta(z) at l = " << ll << " to file theta_l.dat." << endl;
+    cout << " The 3rd column applies the limber approximation and just shows how bad that is. " << endl;
+    stringstream name;
+    name << "theta_" << ll << "_4.dat";
+     ofstream ff(name.str());
+    // determine freq boxes
+    vector<double> freq_bins;
+    for (int i = 0; i < 18; i++)
+    {
+        freq_bins.push_back(0.8 + i * 0.1);
+    }
+    start = clock();
+    for (int i = 0; i < 160; i++)
+    {
+        z = 0.8 + i * 0.01;
+        double zc = 0;
+        for (int j = 0; j < 17; j++)
+        {
+            if ((z >= freq_bins[j]) and (z < freq_bins[j+1]))
+                zc = freq_bins[j];    
+        }
+        //cout << i << endl;
+        result = NLG->theta_calc_1(ll, ll, z, 0, z, 0.1, false);
+        double r = NLG->theta_calc_4(ll, ll, z, 0, z, 0.1, 1000);
+
+        ff << z << " " << result << " " << r << endl;
+    }
+
+    ff.close();
+    end = clock();
+    time = (end - start)/double(CLOCKS_PER_SEC);
+    cout << "Doing 160 evaluations took " << time << " seconds, ie " << time/160.0 << "s per eval" << endl;
+    cout << "-----------------------------------" << endl;
+    */
+    int ll = 100;
+    double nu_centre = 800;
+    double nu_width = 10;
+    int nsteps = 200;
+    ofstream ff("theta_100_new_V1.dat");
+    double z_centre = 1420.4/nu_centre - 1;
+    double delta_z = z_centre - (1420.4/(nu_centre+nu_width) - 1);
+    double stepsize = 8 * delta_z / 80.0;
+    double t = NLG->theta_calc_5(ll, ll, z_centre, 0, nu_centre, nu_width, nsteps, 0, 0, 0);
+    double sigma = nu_width / 2.0;
+    double start = clock();
+    for (int i = 0; i < 80; i++)
+    {
+        double z = z_centre - 4*delta_z + i * stepsize;
+        double res = 1;//NLG->theta_calc_5(ll, ll, z, 0, nu_centre, nu_width, nsteps, 0, 0, 0);
+        double res2 = NLG->theta_calc_6(ll, ll, z, 0, nu_centre, nu_width, nsteps, 0, 0, 0);
+        double nu = 1420.4/(1.0+z);
+        double w = 1;//t * exp(-0.5*pow((nu - nu_centre)/sigma,2));//NLG->theta_calc_5 NLG->Wnu_z(z, nu_centre, nu_width);
+        ff << z << " " << res << " " << res2 << endl;
+    }
+    double end = clock();
+    double time = (end - start)/double(CLOCKS_PER_SEC);
+    cout << time << endl;
+    /*auto integrand = [&](double zp)
+    {
+        double r = analysis->model->q_interp(zp,q_index);
+        double jl = analysis->model->sph_bessel_camb(l,k*r);
+        // 1000 factor is necessary to convert km into m.
+        double hub = analysis->model->H_interp(zp,q_index)*1000.0;
+        double D = D_Growth_interp(zp, q_index);
+        return (analysis->model->c / hub) * jl * D * f1(zp,Tb_index) * Wnu(r, z_centre, delta_z);
+    };
+    double zmin = z_centre - delta_z;
+    double zmax = z_centre + delta_z;
+    double I = integrate(integrand, zmin, zmax, 100, simpson());
+    */
+}
+
 
 /**
  * This test case checks whether the basic cosmology functions
@@ -395,8 +961,8 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     double nu_stepsize = 10;
     int n_points_per_thread = 2;
     int n_threads = 1;
-
-    fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects);
+    bool limber = true;
+    fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects, limber);
 
     stringstream filename1, filename2, filename3;
     filename1 << fisherPath << "/Fl_ombh2_ombh2.dat";
@@ -558,7 +1124,13 @@ BOOST_AUTO_TEST_CASE(check_LISW)
     double b8 = LISW->calc_angular_Blll_all_config(l4,l4,l4,z,z,z,0,0,0);
     double b9 = LISW_small->calc_Blll(l5,l5,l5,z,z,z);
     double b10 = LISW->calc_angular_Blll_all_config(l5,l5,l5,z,z,z,0,0,0);
-
+    
+    double b11 = LISW->calc_angular_Blll_all_config_new_parallelism(l1,l1,l1,z,z,z,0,0,0);
+    double b12 = LISW->calc_angular_Blll_all_config_new_parallelism(l2,l2,l2,z,z,z,0,0,0);
+    double b13 = LISW->calc_angular_Blll_all_config_new_parallelism(l3,l3,l3,z,z,z,0,0,0);
+    double b14 = LISW->calc_angular_Blll_all_config_new_parallelism(l4,l4,l4,z,z,z,0,0,0);
+    double b15 = LISW->calc_angular_Blll_all_config_new_parallelism(l5,l5,l5,z,z,z,0,0,0);
+    
     BOOST_CHECK(abs(b1) <= abs(b2 + b2*0.01));
     BOOST_CHECK(abs(b1) >= abs(b2 - b2*0.01));
     BOOST_CHECK(abs(b3) <= abs(b4 + b4*0.01));
@@ -569,6 +1141,17 @@ BOOST_AUTO_TEST_CASE(check_LISW)
     BOOST_CHECK(abs(b7) >= abs(b8 - b8*0.01));
     BOOST_CHECK(abs(b9) <= abs(b10 + b10*0.01));
     BOOST_CHECK(abs(b9) >= abs(b10 - b10*0.01));
+    
+    BOOST_CHECK(abs(b1) <= abs(b11 + b11*0.01));
+    BOOST_CHECK(abs(b1) >= abs(b11 - b11*0.01));
+    BOOST_CHECK(abs(b3) <= abs(b12 + b12*0.01));
+    BOOST_CHECK(abs(b3) >= abs(b12 - b12*0.01));
+    BOOST_CHECK(abs(b5) <= abs(b13 + b13*0.01));
+    BOOST_CHECK(abs(b5) >= abs(b13 - b13*0.01));
+    BOOST_CHECK(abs(b7) <= abs(b14 + b14*0.01));
+    BOOST_CHECK(abs(b7) >= abs(b14 - b14*0.01));
+    BOOST_CHECK(abs(b9) <= abs(b15 + b15*0.01));
+    BOOST_CHECK(abs(b9) >= abs(b15 - b15*0.01));
 
     ofstream file1("plots/data/test_lensing_kernel_z1.dat");
     ofstream file2("plots/data/test_grav_potential_deriv_z1_l100.dat");
@@ -834,6 +1417,19 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
 {
     /**     SETUP       **/
 
+    // this switch determines which plots are done
+    // 0: all
+    // 1: LISW Bispectrum only
+    // 2: Bispectrum Noise
+    // 3: NLG Bispectrum
+    // 4: Cls
+    // 5: Qls
+    // 6: Cl Noise
+    // 7: NLG Bispectrum triangle
+    // 8: LISW Bispectrum triangle
+    // 9: Full Bispectrum triangle
+    // 10: Signal to Noise calculation
+    int switch1 =  3;
     /**
      * Simple non-computational intensive plots should be implemented here.
      */
@@ -866,221 +1462,365 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
 
     Bispectrum* NLG = new Bispectrum(analysis);
+    double z = 1.0;
 
     /** plotting LISW Bispectrum **/
-    name = "LISW_bispectrum";
-    outfilename << base << name << suffix;
-    ofstream file1(outfilename.str());
-    outfilename.str("");
-
-    double z = 1.0;
-    for (int i = 1; i < 100; i++)
+    /** Squeezed triangle configuration **/
+    if (switch1 == 0 or switch1 == 1)
     {
-        int l = exp(i*0.1);
-        if (l < 10000)
-        {
+        cout << " == Plotting LISW Bispectrum == " << endl;
+        name = "LISW_bispectrum";
+        outfilename << base << name << suffix;
+        ofstream file1(outfilename.str());
+        outfilename.str("");
 
-            // All odd modes are 0.
-            if (l % 2 == 1)
-                l++;
-            double b_lisw = LISW->calc_angular_Blll_all_config(l,l,l, z, z, z, 0, 0, 0);
-            file1 << l << " " << abs(b_lisw) << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+
+                // All odd modes are 0.
+                if (l % 2 == 1)
+                    l++;
+                double b_lisw = LISW->calc_angular_Blll_all_config(l,l,2, z, z, z, 0, 0, 0);
+                file1 << l << " " << b_lisw*b_lisw << endl;
+            }
         }
     }
-
     /** plotting Bispectrum Noise **/
-    name = "Bispectrum_noise";
-    outfilename << base << name << suffix;
-    ofstream file6(outfilename.str());
-    outfilename.str("");
-
-    z = 1.0;
-    double nu1 = 1420.0/(1.0+z);
-    // DELTA = 6 for l1 = l2 = l3, if ls are the same, then Delta = 3, 1 otherwise.
-    double DELTA = 6.0;
-
-    for (int i = 1; i < 100; i++)
+    if (switch1 == 0 or switch1 == 2)
     {
-        int l = exp(i*0.1);
-        if (l < 1000)
-        {
+        cout << " == Plotting Bispectrum Noise == " << endl;
+        name = "Bispectrum_noise";
+        outfilename << base << name << suffix;
+        ofstream file6(outfilename.str());
+        outfilename.str("");
 
-            // All odd modes are 0.
+        z = 1.0;
+        double nu1 = 1420.0/(1.0+z);
+        // DELTA = 6 for l1 = l2 = l3, if ls are the same, then Delta = 3, 1 otherwise.
+        double DELTA = 6.0;
+        bool beam_incl = true;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 2000)
+            {
+
+                // All odd modes are 0.
+                //if (l % 2 == 1)
+                //    l++;
+                double Cl = analysis->Cl(l,nu1,nu1,0,0,0);
+                Cl += LISW->Cl_noise(l,nu1,nu1,beam_incl);
+        
+                double res = Cl * Cl * Cl * DELTA;
+                file6 << l << " " << res << endl;
+            }
+        }
+    }
+    /** plotting NLG Bispectrum **/
+    if (switch1 == 0 or switch1 == 3)
+    {
+        // Uncomment this section if the NLG bispectrum should be computed too.
+        // Careful, this takes quite long.
+        name = "NLG_bispectrum";
+        outfilename << base << name << suffix;
+        ofstream file2(outfilename.str());
+        outfilename.str("");
+        cout << "Careful: NLG may take a while as we take a high k\
+           resolution to get a good measure of theta." << endl; 
+        vector<int> ls;
+        z = 1.0;
+        double nu_centre = 1420.4/(1.0+z);
+        double nu_width = 10.0;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
             if (l % 2 == 1)
                 l++;
-            double Cl = analysis->Cl(l,nu1,nu1,0,0,0);
-            Cl += LISW->Cl_noise(l,nu1,nu1);
 
-            double res = Cl * Cl * Cl * DELTA;
-            file6 << l << " " << abs(res) << endl;
+            bool calc = true;
+            for (int j = 0; j < ls.size(); j++)
+            {
+                if (ls[j] == l)
+                calc = false;
+            }
+            if (calc)
+                ls.push_back(l);
+            if (l < 10000 && calc)
+            {
+                double nlg = NLG->calc_Blll_limber(l, l, l, nu_centre, nu_width, 0, 0, 0);
+                //double nlg = NLG->calc_angular_B_noInterp(l,l,l,0,0,0,z);
+                cout << l << " " << nlg << endl;
+                file2 << l << " " << abs(nlg) << endl;
+            }
         }
     }
-
-
-    /** plotting NLG Bispectrum **/
-    // Uncomment this section if the NLG bispectrum should be computed too.
-    // Careful, this takes quite long.
-    /*
-       name = "NLG_bispectrum";
-       outfilename << base << name << suffix;
-       ofstream file2(outfilename.str());
-       outfilename.str("");
-       cout << "Careful: NLG may take a while as we take a high k\
-       resolution to get a good measure of theta." << endl; 
-       vector<int> ls;
-       z = 1.0;
-       for (int i = 1; i < 100; i++)
-       {
-       int l = exp(i*0.1);
-       if (l % 2 == 1)
-       l++;
-
-       bool calc = true;
-       for (int j = 0; j < ls.size(); j++)
-       {
-       if (ls[j] == l)
-       calc = false;
-       }
-       if (calc)
-       ls.push_back(l);
-       if (l < 10000 && calc)
-       {
-       double nlg = NLG->calc_angular_B_noInterp(l,l,l,0,0,0,z);
-       cout << l << " " << nlg << endl;
-       file2 << l << " " << abs(nlg) << endl;
-       }
-       }
-       */
     /** plotting Cls **/
-    name = "Cls_z08";
-    outfilename << base << name << suffix;
-    ofstream file3_1(outfilename.str());
-    outfilename.str("");
-    name = "Cls_z1";
-    outfilename << base << name << suffix;
-    ofstream file3_2(outfilename.str());
-    outfilename.str("");
-    name = "Cls_z15";
-    outfilename << base << name << suffix;
-    ofstream file3_3(outfilename.str());
-    outfilename.str("");
-    name = "Cls_z2";
-    outfilename << base << name << suffix;
-    ofstream file3_4(outfilename.str());
-    outfilename.str("");
-    name = "Cls_z25";
-    outfilename << base << name << suffix;
-    ofstream file3_5(outfilename.str());
-    outfilename.str("");
-
-    z = 0.8;
-    double nu = 1420.0/(1.0+z);
-    cout << "Cls for nu = " << nu << " computed" << endl;
-    for (int i = 1; i < 100; i++)
+    if (switch1 == 0 or switch1 == 4)
     {
-        int l = exp(i*0.1);
-        if (l < 10000)
+        name = "Cls_z08";
+        outfilename << base << name << suffix;
+        ofstream file3_1(outfilename.str());
+        outfilename.str("");
+        name = "Cls_z1";
+        outfilename << base << name << suffix;
+        ofstream file3_2(outfilename.str());
+        outfilename.str("");
+        name = "Cls_z15";
+        outfilename << base << name << suffix;
+        ofstream file3_3(outfilename.str());
+        outfilename.str("");
+        name = "Cls_z2";
+        outfilename << base << name << suffix;
+        ofstream file3_4(outfilename.str());
+        outfilename.str("");
+        name = "Cls_z25";
+        outfilename << base << name << suffix;
+        ofstream file3_5(outfilename.str());
+        outfilename.str("");
+
+        z = 0.8;
+        double nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
         {
-            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
-            double res = l*(l+1)*cl/(2.0*M_PI);
-            file3_1 << l << " " << res << endl;
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_1 << l << " " << res << endl;
+            }
+        }
+
+        z = 1.0;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_2 << l << " " << res << endl;
+            }
+        }
+
+        z = 1.5;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_3 << l << " " << res << endl;
+            }
+        }
+
+        z = 2.0;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_4 << l << " " << res << endl;
+            }
+        }
+
+        z = 2.5;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_5 << l << " " << res << endl;
+            }
         }
     }
-
-    z = 1.0;
-    nu = 1420.0/(1.0+z);
-    cout << "Cls for nu = " << nu << " computed" << endl;
-    for (int i = 1; i < 100; i++)
-    {
-        int l = exp(i*0.1);
-        if (l < 10000)
-        {
-            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
-            double res = l*(l+1)*cl/(2.0*M_PI);
-            file3_2 << l << " " << res << endl;
-        }
-    }
-
-    z = 1.5;
-    nu = 1420.0/(1.0+z);
-    cout << "Cls for nu = " << nu << " computed" << endl;
-    for (int i = 1; i < 100; i++)
-    {
-        int l = exp(i*0.1);
-        if (l < 10000)
-        {
-            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
-            double res = l*(l+1)*cl/(2.0*M_PI);
-            file3_3 << l << " " << res << endl;
-        }
-    }
-
-    z = 2.0;
-    nu = 1420.0/(1.0+z);
-    cout << "Cls for nu = " << nu << " computed" << endl;
-    for (int i = 1; i < 100; i++)
-    {
-        int l = exp(i*0.1);
-        if (l < 10000)
-        {
-            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
-            double res = l*(l+1)*cl/(2.0*M_PI);
-            file3_4 << l << " " << res << endl;
-        }
-    }
-
-    z = 2.5;
-    nu = 1420.0/(1.0+z);
-    cout << "Cls for nu = " << nu << " computed" << endl;
-    for (int i = 1; i < 100; i++)
-    {
-        int l = exp(i*0.1);
-        if (l < 10000)
-        {
-            double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
-            double res = l*(l+1)*cl/(2.0*M_PI);
-            file3_5 << l << " " << res << endl;
-        }
-    }
-
-
-
     /** plotting Qls **/
-    name = "Qls";
-    outfilename << base << name << suffix;
-    ofstream file4(outfilename.str());
-    outfilename.str("");
-
-    z = 1.0;
-
-    for (int i = 1; i < 100; i++)
+    if (switch1 == 0 or switch1 == 5)
     {
-        int l = exp(i*0.1);
-        if (l < 10000)
+        name = "Qls";
+        outfilename << base << name << suffix;
+        ofstream file4(outfilename.str());
+        outfilename.str("");
+
+        z = 1.0;
+
+        for (int i = 1; i < 100; i++)
         {
-            double ql = LISW->Ql(l, z, 0, 0, 0); 
-            file4 << l << " " << l*(l+1)*ql/(2.0*M_PI) << endl;
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double ql = LISW->Ql(l, z, 0, 0, 0); 
+                file4 << l << " " << l*(l+1)*ql/(2.0*M_PI) << endl;
+            }
         }
     }
-
     /** plotting Cl_Noise **/
-    name = "Cl_Noise";
-    outfilename << base << name << suffix;
-    ofstream file5(outfilename.str());
-    outfilename.str("");
-
-    z = 1;
-    nu = 1420.0/(1.0+z);
-    cout << "Cls noise for nu = " << nu << " computed" << endl;
-    for (int i = 1; i < 100; i++)
+    if (switch1 == 0 or switch1 == 6)
     {
-        int l = exp(i*0.1);
-        if (l < 10000)
+        cout << " == Plotting Cl_Noise == " << endl;
+        name = "Cl_Noise";
+        outfilename << base << name << suffix;
+        ofstream file5(outfilename.str());
+        outfilename.str("");
+
+        z = 1;
+        double nu = 1420.0/(1.0+z);
+        bool beam_incl = true;
+        cout << "Cls noise for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
         {
-            double cl = analysis->Cl_noise(l, nu, nu);
-            double res = l*(l+1)*cl/(2.0*M_PI);
-            file5 << l << " " << res << endl;
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl = analysis->Cl_noise(l, nu, nu, beam_incl);
+                double res = cl;
+                file5 << l << " " << res << endl;
+            }
         }
+    }
+    /** triangular plots for NLG Bispectrum **/
+    if (switch1 == 0 or switch1 == 7)
+    {
+        name = "NLG_triangle_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int lmax = 1200;
+        int l1 = lmax;
+        int lmin1 = l1/2;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (int l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {   
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+                    else
+                    {   
+                        B = NLG->calc_angular_B_limber(l1, l2, l3, 0, 0, 0, nu_centre, nu_width, 0, 0, 0);
+                    }
+                }
+                else
+                {
+                    B = 0;
+                }
+                file << B << " ";
+            }
+            file << endl;
+        }
+        file.close();
+    }
+    /** triangular plots for LISW Bispectrum **/
+    if (switch1 == 0 or switch1 == 8)
+    {
+        name = "LISW_triangle_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int lmax = 1200;
+        int l1 = lmax;
+        int lmin1 = l1/2;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (int l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {   
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+                    else
+                    {   
+                        B = LISW->calc_angular_Blll_all_config_new_parallelism(l1,l2,l3,z,z,z,0,0,0);   
+                    }
+                }
+                else
+                {
+                    B = 0;
+                }
+                file << B << " ";
+            }
+            file << endl;
+        }
+        file.close();
+    }
+    /** triangular plots for Full Bispectrum **/
+    if (switch1 == 0 or switch1 == 9)
+    {
+        name = "Bispectrum_full_triangle_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int lmax = 1200;
+        int l1 = lmax;
+        int lmin1 = l1/2;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (int l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {   
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+                    else
+                    {   
+                        B = LISW->calc_angular_Blll_all_config_new_parallelism(l1, l2, l3, z, z, z, 0, 0, 0);  
+                        B += NLG->calc_angular_B_limber(l1, l2, l3, 0, 0, 0, nu_centre, nu_width, 0, 0, 0);
+                    }
+                }
+                else
+                {
+                    B = 0;
+                }
+                file << B << " ";
+            }
+            file << endl;
+        }
+        file.close();
+    }
+    /** Signal to Noise calculation **/
+    if (switch1 == 0 or switch1 == 10)
+    {
+        LISW_SN* SN = new LISW_SN(analysis, keys.size());
+        SN->detection_SN_new(2, 10000, 100, 1, "SN_min-2_max-10000_delta-100_z-1.dat");
     }
 }
 
@@ -1112,7 +1852,7 @@ BOOST_AUTO_TEST_CASE(check_Fl)
     int Pk_index = 0;
     int Tb_index = 0;
     int q_index = 0; 
-
+    bool limber = true;
     Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
 
     IntensityMapping* analysis = new IntensityMapping(model, keys.size());
@@ -1128,8 +1868,9 @@ BOOST_AUTO_TEST_CASE(check_Fl)
     int n_threads = 1;
     double nu_stepsize = 10;
     double nu_min = 400;
+
     /************************************************************/
-    
+
     fish->nu_steps_CLASS = nu_steps;
     fish->nu_min_CLASS = nu_min;
     fish->nu_stepsize_CLASS = nu_stepsize;
@@ -1291,11 +2032,11 @@ BOOST_AUTO_TEST_CASE(check_Fl)
                         int imax_interp = ceil((double)lmodes_interp/(double)n_threads) * n_threads;
                         int modmax_interp = imax_interp - 1;
 
-                        #pragma omp parallel num_threads(n_threads)
+#pragma omp parallel num_threads(n_threads)
                         {
                             vector<Theta> local_vec;
                             bool calc = false;
-                            #pragma omp for 
+#pragma omp for 
                             for (int i = 0; i < imax_interp; i++)
                             {
                                 int l = (n_threads*i) % (modmax_interp);
@@ -1333,14 +2074,14 @@ BOOST_AUTO_TEST_CASE(check_Fl)
                                             }
                                         }
                                     }
-                                    #pragma omp critical
+#pragma omp critical
                                     {
                                         log<LOG_BASIC>(" -> Thetas for li = lj = %1% are being interpolated. thread = %2%.")%\
                                             l % omp_get_thread_num();
                                     }
                                 }
                             }
-                            #pragma omp critical
+#pragma omp critical
                             {
                                 if (calc)
                                     global_vec.push_back(local_vec);
@@ -1383,7 +2124,7 @@ BOOST_AUTO_TEST_CASE(check_Fl)
                             else
                             {  
                                 F = fish->Fisher_element(2,l2,l3,nu,param_key1,param_key2,\
-                                        &Pk_index2, &Tb_index2, &q_index2, effects);
+                                        &Pk_index2, &Tb_index2, &q_index2, effects, limber);
                             }
                         }
                         else
@@ -1395,8 +2136,8 @@ BOOST_AUTO_TEST_CASE(check_Fl)
                     }
                 }
                 log<LOG_VERBOSE>("Entering Parallel regime");
-                
-                #pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
+
+#pragma omp parallel num_threads(n_threads) private(Pk_index2, Tb_index2, q_index2) 
                 {
                     int npoint = 0;
                     // ! Imporant: each private variable needs to be initialized within the OMP block!!!
@@ -1405,7 +2146,7 @@ BOOST_AUTO_TEST_CASE(check_Fl)
                     q_index2 = 0;
                     //cout << "modmax = " << modmax << endl;
                     //cout << modmax << endl;
-                    #pragma omp for reduction (+:sum)
+#pragma omp for reduction (+:sum)
                     for (int i = 1; i <= imax; i++)
                     {
                         npoint++;
@@ -1445,7 +2186,7 @@ BOOST_AUTO_TEST_CASE(check_Fl)
                                         else
                                         {
                                             F = fish->Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
-                                                    &Pk_index2, &Tb_index2, &q_index2, effects);
+                                                    &Pk_index2, &Tb_index2, &q_index2, effects, limber);
                                             //cout << l1 << " " << l2 << " " << l3 << endl;
                                         }
                                     }
@@ -1465,7 +2206,7 @@ BOOST_AUTO_TEST_CASE(check_Fl)
                         {
                             sum+=0;
                         }
-                        #pragma omp critical 
+#pragma omp critical 
                         {
                             //log<LOG_BASIC>("Computation with lmax = %1% is done. Thread #%2% took T = %3%s.") %\
                             //    l1 % omp_get_thread_num();
@@ -1486,4 +2227,184 @@ BOOST_AUTO_TEST_CASE(check_Fl)
     }
 }
 
-// EOF
+BOOST_AUTO_TEST_CASE(check_Theta)
+{
+    // check whether calc_angular_B and calc_angular_B_nointerp give the same result. 
+
+    /**     SETUP       **/
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename;
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_NLG.ini";
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = NULL;
+    model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = NULL;
+    analysis = new IntensityMapping(model, keys.size());
+
+    Bispectrum* NLG = NULL;
+    NLG = new Bispectrum(analysis);
+
+    TEST_Bispectrum* NLG_test = NULL;
+    NLG_test = new TEST_Bispectrum(analysis);
+
+
+    double z = 1;
+    double nu_centre = 1420.4/(1.0 + z);
+    double nu_width = 10.0;
+    double delta_z = 0.5;    
+    name = "theta_limber";
+    outfilename << base << name << suffix;
+    ofstream file(outfilename.str());
+    outfilename.str("");
+    vector<int> ls;
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l % 2 == 1)
+            l++;
+        bool calc = true;
+        for (int j = 0; j < ls.size(); j++)
+        {
+            if (ls[j] == l)
+            calc = false;
+        }
+        if (calc)
+            ls.push_back(l);
+        if (l < 10000 && calc)
+        {
+            double th = NLG->theta_approx(l, z, nu_centre, nu_width, 0, 0, 0);
+            double th_2 = NLG_test->theta_calc_5(l, l, z, 0, nu_centre, nu_width, 100, 0,0,0);
+            //double th_3 = NLG_test->theta_calc_4(l, l, z, 0, 1, delta_z, 500);
+            double th_4 = NLG_test->theta_calc_2(l, l, z, 0, 1, delta_z);
+
+            //double nlg = NLG->calc_Blll_limber(l, l, l, nu_centre, nu_width, 0, 0, 0);
+            //double nlg = NLG->calc_angular_B_noInterp(l,l,l,0,0,0,z);
+            cout << l << " " << th << " " << th_2 << " " << th_4 << endl;
+            file << l << " " << th << " " << th_2 << " " << th_4 << endl;
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(check_mode_count)
+{
+    /* 
+    for (int i = 1; i<7; i++)
+    {
+        int lmax = i*10;
+        int l1 = lmax;
+        int lmin1 = l1/2;
+        long double count = 0;
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (int l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {   
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+                    else
+                    {   
+                        //count+=(2.*l1+1.) * (2.*l2+1.) * (2.*l3+1.);
+                        for (int m1 = -lmax; m1 <= lmax; m1++)
+                        {
+                            for (int m2 = -l2; m2 <= l2; m2++)
+                            {
+                                for (int m3 = -l3; m3 <= l3; m3++)
+                                {
+                                    double W = WignerSymbols::wigner3j(lmax,l2,l3,m1,m2,m3);
+                                    if (W != 0)
+                                    count++;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    B = 0;
+                }
+            }
+        }
+        cout << lmax << " " << count << endl;
+    }
+    */
+    cout << "#### Now the full thing ###" << endl; 
+    cout << "1: This way we go through all lmax^3 combinations and evaluate those that validate the triangular condition" << endl;
+    cout << "2: This way we order l1 >= l2 >= l3 and assume that the function we evaluate is symmetric in ls." << endl;
+    ofstream file("data2.dat");
+    long double total = 0;
+    for (int i = 1; i<50; i++)
+    {
+        int lmax = i*10;
+        long double count = 0;
+        for (int l1 = 0; l1 <= lmax; l1++)
+        {
+            for (int l2 = 0; l2 <= lmax; l2++)
+            {
+                for (int l3 = 0; l3 <= lmax; l3++)
+                {
+                    total++;
+                    int A = abs(l1-l2);
+                    int B = l1 + l2;
+                    if (l3 >= A and l3 <= B)
+                        count++;
+                }
+            }
+        }
+        cout << "1: " << lmax << " " << count << " " << total<< endl;
+        file << lmax << " " << count << endl;
+
+        //
+        count = 0;
+        total = 0;
+        double val = 0;
+        for (int l1 = 0; l1 <= lmax; l1++)
+        {
+            for (int l2 = l1/2; l2 <= l1; l2++)
+            {
+                for (int l3 = (l1-l2); l3 <= l2; l3++)
+                {
+                    total++;
+                    if (l1 == l2 and l1 == l3)
+                        count++;
+                    else if (l1 == l2 or l1 == l3 or l2 == l3)
+                    {
+                        int A = abs(l1-l2);
+                        int B = l1 + l2;
+                        count+=3;
+                    }
+                    else
+                    {
+                        int A = abs(l1-l2);
+                        int B = l1 + l2;
+                        count+=6;
+                    }
+                }
+            }
+        }
+        cout << "2: " << lmax << " " << count << " " << total << endl;
+    }
+}
+    // EOF

@@ -22,11 +22,26 @@ class Bispectrum_Fisher {
         ~Bispectrum_Fisher();
 
         double compute_F_matrix(double nu_min, double nu_stepsize,\
-                                int n_points_per_thread, int n_threads, Bispectrum_Effects effects);
+                                int n_points_per_thread, int n_threads, Bispectrum_Effects effects, bool limber);
+
+        /**
+         * This function computes the Fisher elements in all frequency bins for all parameter combinations
+         * using parallelization at the level of the frequency bin rather than the l modes. It is therefore 
+         * important to have the number of frequency bins in the analysis to be a multiple op the cores used
+         * for optimal usage. Basically, otherwise there will be idle cores waiting for longer computations 
+         * to finish.
+         */
+        double compute_F_matrix_parallel_nu(double nu_min, double nu_stepsize,\
+                                int n_points_per_thread, int n_threads, Bispectrum_Effects effects, bool limber);
+
         virtual double compute_Fnu(double nu, string param_key1, string param_key2,\
-                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects);
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
+
+        spline1dinterpolant compute_Fl_interpolator(double nu, string param_key1, string param_key2,\
+                            int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
+
         virtual double Fisher_element(int l1, int l2, int l3, double nu, string param_key1, string param_key2,\
-                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects);
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
         vector<double> set_range(int l, double xmin, double xmax);
         
         
@@ -36,7 +51,7 @@ class Bispectrum_Fisher {
         
     //protected:
         virtual double calc_mu(int l1, int l2, int l3, double nu, string param_key,\
-                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects);
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
         double Cl(int l, double nu);
         ofstream time_file;
 
@@ -59,11 +74,11 @@ class TEST_Bispectrum_Fisher : public Bispectrum_Fisher {
         ~TEST_Bispectrum_Fisher();
         
         double Fisher_element(int l1, int l2, int l3, double nu, string param_key1, string param_key2,\
-                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects) override;
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber) override;
         
         double calc_mu(int l1, int l2, int l3, double nu, string param_key,\
-                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects) override;
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber) override;
         double compute_Fnu(double nu, string param_key1, string param_key2,\
-                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects) override;
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber) override;
 };
 

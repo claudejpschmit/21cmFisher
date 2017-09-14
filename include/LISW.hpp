@@ -60,6 +60,9 @@ class Bispectrum_LISW {
         double calc_angular_Blll_all_config(int l1, int l2, int l3, double z1, double z2, double z3,\
                 int Pk_index, int Tb_index, int q_index);
         
+        double calc_angular_Blll_all_config_new_parallelism(int l1, int l2, int l3, double z1,\
+                double z2, double z3, int Pk_index, int Tb_index, int q_index);
+
         /**
          * function similar to the one above, but it uses Ql(l,z) and Cl(l,z), this is I think
          * faster for the SN calculation, it should provide the same answer as the above for 
@@ -75,6 +78,8 @@ class Bispectrum_LISW {
          */
         double Ql(int l, double z, int Pk_index, int Tb_index, int q_index);
         
+        double Ql_new_parallelism(int l, double z, int Pk_index, int Tb_index, int q_index);
+        
         /**
          * Uses Ql_calc to fill up Qls vector and returns the value.
          */
@@ -89,12 +94,13 @@ class Bispectrum_LISW {
          * Uses analysis to compute Cls.
          */
         double Cl(int l, double nu1, double nu2, int Pk_index, int Tb_index, int q_index);
+        double Cl_new_parallelism(int l, double nu1, double nu2, int Pk_index, int Tb_index, int q_index);
         
         /**
          * Function to determine the noise Cls. This just calls analysis->Cl_noise.
          * It also stores the values in the Cls_noise vector.
          */
-        double Cl_noise(int l, double nu1, double nu2);
+        double Cl_noise(int l, double nu1, double nu2, bool beam_incl);
 
         /**
          * Function to test the Ql calculation.
@@ -103,6 +109,14 @@ class Bispectrum_LISW {
          */
         double integrand_Ql(int l, double z, double z_fixed);        
        
+        
+        /**
+         * Function to fill Qls_interpolators_large for parameter settings 
+         * (Pk_index, Tb_index, q_index). If it has been done before, do nothing.
+         */
+        void make_Ql_interps(int lmax, double numin, double numax,\
+                int Pk_index, int Tb_index, int q_index);
+
     protected:
         /**
          * Function to fill the Qls_interpolators vector with interpolators for 
@@ -114,12 +128,6 @@ class Bispectrum_LISW {
          */
         double interp_Ql(int l, double z);
 
-        /**
-         * Function to fill Qls_interpolators_large for parameter settings 
-         * (Pk_index, Tb_index, q_index). If it has been done before, do nothing.
-         */
-        void make_Ql_interps(int lmax, double numin, double numax,\
-                int Pk_index, int Tb_index, int q_index);
         /**
          * Interpolate Qls_interpolators_large  at (l,z, Pk, Tb, q).
          */
