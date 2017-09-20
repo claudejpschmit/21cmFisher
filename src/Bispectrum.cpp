@@ -494,7 +494,8 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
             double r = analysis->model->q_interp(z,q_index);
             // 1000 factor is necessary to convert km into m.
             double hub = analysis->model->H_interp(z,q_index)*1000.0;
-            double Fz = (analysis->model->c/hub)*D*D*f1(z,q_index)*Wnu_z(z, nu_centre, nu_width);
+            //double Fz = (analysis->model->c/hub)*D*D*f1(z,q_index)*Wnu_z(z, nu_centre, nu_width);
+            double Fz = D*D*f1(z,q_index)*Wnu_z(z, nu_centre, nu_width);
             double THETA2 = 0;
             double THETA1 = 0; 
             THETA1 = theta_approx(la, z, nu_centre, nu_width, Pk_index, Tb_index, q_index);
@@ -2847,7 +2848,8 @@ double Bispectrum::theta_approx(int l, double z, double nu_centre, double nu_wid
     double r = analysis->model->r_interp(z);
     double D = D_Growth_interp(z, q_index);
     double hub = analysis->model->H_interp(z,q_index)*1000.0;
-    double F = (analysis->model->c / hub) * D * f1(z,Tb_index);
+    //double F = (analysis->model->c / hub) * D * f1(z,Tb_index);
+    double F = D * f1(z,Tb_index);
     double w = Wnu_z(z, nu_centre, nu_width);
     double k = (l+0.5)/r;
     double P = power(k);
@@ -2927,7 +2929,11 @@ double TEST_Bispectrum::custom_alpha2(int l, double k, double z_centre, double d
         double hub = analysis->model->H_interp(x,q_index)*1000.0;
         double D = D_Growth_interp(x, q_index);
         //double jl=analysis->model->sph_bessel_camb(l,k*x);
-        return (analysis->model->c / hub) * jl * D * f1(x,Tb_index) * Wnu(r, z_centre, delta_z);
+        double nu_centre = 1420.4/(1.0+z_centre);
+        double nu_width = 10.0;
+        double w = Wnu_z(x, nu_centre, nu_width);
+
+        return (analysis->model->c / hub) * jl * D * f1(x,Tb_index) * w;// Wnu(r, z_centre, delta_z);
     };
     double zmin = z_centre - delta_z;
     double zmax = z_centre + delta_z;

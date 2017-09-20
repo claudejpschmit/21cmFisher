@@ -116,7 +116,7 @@ class Bispectrum_LISW {
          */
         void make_Ql_interps(int lmax, double numin, double numax,\
                 int Pk_index, int Tb_index, int q_index);
-
+        double calc_P_phi(double k, double z, int Pk_index, int Tb_index, int q_index);
     protected:
         /**
          * Function to fill the Qls_interpolators vector with interpolators for 

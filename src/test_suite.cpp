@@ -1657,8 +1657,8 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
         name = "Qls";
         outfilename << base << name << suffix;
         ofstream file4(outfilename.str());
+        cout << outfilename.str() << endl;
         outfilename.str("");
-
         z = 1.0;
 
         for (int i = 1; i < 100; i++)
@@ -1668,6 +1668,7 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             {
                 double ql = LISW->Ql(l, z, 0, 0, 0); 
                 file4 << l << " " << l*(l+1)*ql/(2.0*M_PI) << endl;
+                cout  << l << " " << l*(l+1)*ql/(2.0*M_PI) << endl;
             }
         }
     }
@@ -2405,6 +2406,72 @@ BOOST_AUTO_TEST_CASE(check_mode_count)
             }
         }
         cout << "2: " << lmax << " " << count << " " << total << endl;
+    }
+}
+
+// Here we try and understand whether Ql is wrong
+BOOST_AUTO_TEST_CASE(check_Ql)
+{
+ 
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_make_paper_plots.ini";
+
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename;
+    name = "P_phi";
+    outfilename << base << name << suffix;
+    ofstream file(outfilename.str());
+    outfilename.str("");
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+    Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+    //Bispectrum* NLG = new Bispectrum(analysis);
+    double z = 1.0;
+    double k = 0.1;
+
+    double res = LISW->calc_P_phi(k,z,0,0,0);
+    cout << res << endl;
+    
+    auto integrand = [&](double k)
+    {
+        double res = LISW->calc_P_phi(k,z,0,0,0);
+        return res;
+    };
+    //double zmin = z_centre - delta_z;
+    //double zmax = z_centre + delta_z;
+    double kmin = 0.01;
+    double kmax = 10000.0;
+    double I = integrate(integrand, kmin, kmax, 1000000, simpson());
+    cout << I << endl;
+    
+
+    for (int i = 1; i < 100; i++)
+    {
+        double k = exp(i*0.1);
+
+        if (k < 100000)
+        {
+            double p = LISW->calc_P_phi(k,z,0,0,0);
+            //double nlg = NLG->calc_angular_B_noInterp(l,l,l,0,0,0,z);
+            cout << k << " " << p << endl;
+            file << k << " " << p << endl;
+        }
     }
 }
     // EOF
