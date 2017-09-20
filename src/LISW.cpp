@@ -744,7 +744,7 @@ double Bispectrum_LISW::Ql_calc(int l, double z, int Pk_index, int Tb_index, int
 
             /*double h = 0.01;
               double deriv = (P_phi(l/rzp,z + h) - P_phi(l/rzp, z))/h;
-              */
+            */
             double k = l/rzp;
             //TODO: need to use current params...
             double Omega_M = analysis->model->Omega_M(0);
@@ -765,6 +765,14 @@ double Bispectrum_LISW::Ql_calc(int l, double z, int Pk_index, int Tb_index, int
     }
 }
 
+double Bispectrum_LISW::calc_P_phi(double k, double z, int Pk_index, int Tb_index, int q_index)
+{
+    double P0 = analysis->model->Pkz_interp(k,z,Pk_index);
+    double Omega_M = analysis->model->Omega_M(0);
+    double H_0 = analysis->model->give_fiducial_params()["hubble"]*1000.0;    
+    double pre = pow(3.0 * Omega_M/2.0,2) * pow(H_0/(k* analysis->model->c),4);
+    return pre * P0 * (1.0 + z) * (1.0 + z);
+}
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////

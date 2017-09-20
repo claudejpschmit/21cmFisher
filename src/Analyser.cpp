@@ -1098,11 +1098,12 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
         }
     }
     if (ellipse.a2 <= 0 || ellipse.b2 <= 0){
-        cout << param1 << " " << param2 << endl; 
-        cout << ellipse.a2 << " " << ellipse.b2 << endl;
-        cout << sig_xx << " " << sig_yy << " " << sig_xy << endl;
+        cout << "ERROR -- Ellipse semi-major or minor axes came out negative." << endl;
+        cout << "parameter pair: " << param1 << " - " << param2 << endl; 
+        cout << "a^2 = " << ellipse.a2 << " and b^2 = " << ellipse.b2 << endl;
+        cout << "sig_xx = " << sig_xx << ", sig_yy = " << sig_yy << ", sig_xy = " << sig_xy << endl;
         cout << (sig_xx + sig_yy)/2.0 -  sqrt(pow(sig_xx - sig_yy,2)/4.0 +  pow(sig_xy,2)) << endl;
-
+        cout << " -------------------- " << endl;
     }
     return ellipse;
 }
@@ -1141,8 +1142,9 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv)
         ellipse_file << error_ellipses[i].cy << endl;
         ellipse_file << error_ellipses[i].sigma_x << endl;
         ellipse_file << error_ellipses[i].sigma_y << endl;
+
         if (error_ellipses[i].a2 <= 0 || error_ellipses[i].b2 <= 0){
-            cout << i << " " << error_ellipses[i].a2 << " " << error_ellipses[i].b2 << endl;
+            cout << i << "th error ellipse, a^2 = " << error_ellipses[i].a2 << ", b^2 = " << error_ellipses[i].b2 << endl;
             ERROR = true;
         }
     }
