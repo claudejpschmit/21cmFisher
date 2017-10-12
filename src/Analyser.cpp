@@ -345,6 +345,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                     }
                     catch(alglib::ap_error e)
                     {
+                        cout << param_keys[i] << " " << param_keys[j] << endl;
                         printf("error msg: %s\n", e.msg.c_str());
                     }
                     for (int k = nu_sorted[0]; k <= nu_sorted[nu.size()-1]; k++)
@@ -1006,7 +1007,10 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
         if ((index2 < 0) && (finv.matrix_indecies[0][i][1] == param2))  
             index2 = i;
     }
-
+    stringstream tmp;
+    tmp << parser->giveFisherPath() << "/PARAMS.INI.dat";
+    string runIniFile = tmp.str();
+    IniReader RunParser(runIniFile);
     log<LOG_DEBUG>("Getting correlation matrix for indecies: %1% %2%") % index1 % index2;
     double sig_xx, sig_xy, sig_yy;
     sig_xx = finv.matrix(index1, index1);
@@ -1020,9 +1024,15 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
         }
     }
     if (show_marginal) {
-        log<LOG_BASIC>("Marginalized error on %1% is %2%.") %\
+        // compute relative error. ie sigma/theta_fid
+        double err = sqrt(sig_xx);
+        double fiducial = RunParser.giveRunParams()[param1];
+        double rel_Err = err/fiducial;
+        cout << finv.matrix_indecies[index1][index1][0].c_str() <<\
+            " = " << fiducial << endl;
+        log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel Err = %3%") %\
             finv.matrix_indecies[index1][index1][0].c_str() %\
-            sqrt(sig_xx);
+            sqrt(sig_xx) % rel_Err;
         params_done.push_back(finv.matrix_indecies[index1][index1][0]);
     }
 
@@ -1039,9 +1049,16 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
         }
     }
     if (show_marginal) {
-        log<LOG_BASIC>("Marginalized error on %1% is %2%.") %\
+        double err = sqrt(sig_yy);
+        double fiducial = RunParser.giveRunParams()[param2];
+        double rel_Err = err/fiducial;
+
+        cout << finv.matrix_indecies[index2][index2][0].c_str() <<\
+            " = " << fiducial << endl;
+
+        log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel err = %3%") %\
             finv.matrix_indecies[index2][index2][0].c_str() %\
-            sqrt(sig_yy);
+            sqrt(sig_yy) % rel_Err;
         params_done.push_back(finv.matrix_indecies[index2][index2][0]);
     }
 
@@ -1072,10 +1089,10 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
 
     // Using the stored ini file to get basic parameter information.
     // This is necessary to get center points.
-    stringstream tmp;
-    tmp << parser->giveFisherPath() << "/PARAMS.INI.dat";
-    string runIniFile = tmp.str();
-    IniReader RunParser(runIniFile);
+    //stringstream tmp;
+    //tmp << parser->giveFisherPath() << "/PARAMS.INI.dat";
+    //string runIniFile = tmp.str();
+    //IniReader RunParser(runIniFile);
     ellipse.cx = RunParser.giveRunParams()[param1];
     ellipse.cy = RunParser.giveRunParams()[param2];
 

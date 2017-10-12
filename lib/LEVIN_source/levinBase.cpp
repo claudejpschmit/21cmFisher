@@ -241,6 +241,7 @@ double LevinBase::u_prime (int m, double x)
 //
 //
 //
+/*
 double LevinBase::integrate ( TEST_Bispectrum* NLG, void* pp, double A, double B, int col)
 {
   setNodes(A,B,col);
@@ -263,4 +264,4 @@ void LevinBase::solveLSE (TEST_Bispectrum* NLG, void* pp)
     gsl_vector_set(y,j-1,NLG->test(x_j[j-1],pp));
   solveLSE();
 }
-
+*/

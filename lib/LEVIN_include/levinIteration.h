@@ -51,7 +51,9 @@ public:
   int operator () (double (*f)(double, void*), void* pp, double A, double B, int col, double& result, std::vector<double>& intermediate, int smax, int nmax=0, bool verbose=false);
 
 // added by CLAUDE
+/*
   int operator () (TEST_Bispectrum* NLG, void* pp, double A, double B, int col, double& result, std::vector<double>& intermediate, int smax, int nmax=0, bool verbose=false);
+*/
 };
 
 

@@ -338,7 +338,7 @@ int LevinIteration::findMax (const std::vector<double> vec)
 
 // added by Claude 
 //
-
+/*
 int LevinIteration::operator () (TEST_Bispectrum* NLG, void* pp, double A, double B, int col, double& result, std::vector<double>& intermediate, int smax, int nmax, bool verbose)
 {
   if ( B-A<min_interval ) {
@@ -421,4 +421,4 @@ int LevinIteration::operator () (TEST_Bispectrum* NLG, void* pp, double A, doubl
   
   return 1;
 }
-
+*/

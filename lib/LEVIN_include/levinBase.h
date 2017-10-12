@@ -138,12 +138,13 @@ public:
 
 
     // ADDED BY CLAUDE
+    /*
   double integrate (TEST_Bispectrum* NLG, void* pp, double A, double B, int col);
 
   double integrate (TEST_Bispectrum* NLG, void* pp);	
 
   void solveLSE (TEST_Bispectrum* NLG, void* pp);
-
+*/
 };
 
 #endif
