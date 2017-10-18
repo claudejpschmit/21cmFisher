@@ -115,6 +115,9 @@ class IntensityMapping : public AnalysisInterface {
         double Cl_noise(int l, double nu1, double nu2, bool beam_incl);
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
+        double Cl_limber_Window(int l, double nu1, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index);
+        double Cl_Window(int l, double nu1, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index);
+        double Wnu_z(double z, double nu_centre, double nu_width);
     protected:
         void make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps);
         int make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\

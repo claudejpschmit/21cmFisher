@@ -1006,7 +1006,8 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
  * This check checks the Ql and Cl functions used in the LISW bispectrum calculation.
  * There are 2 different ways this class interpolates these functions, it is checked
  * that both give the same result.
- */
+ *
+  */
 BOOST_AUTO_TEST_CASE(check_LISW)
 {
     /**     SETUP       **/
@@ -1175,6 +1176,57 @@ BOOST_AUTO_TEST_CASE(check_LISW)
     delete analysis;
     delete LISW;
     delete LISW_small;
+}
+
+/*
+ * This check also checks how good the limber approximation is in the context of Cls 
+ * including the window function.
+ */
+BOOST_AUTO_TEST_CASE(check_Cl_limber)
+{
+    /**     SETUP       **/
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_LISW.ini";
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+    //Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+    
+    /**     CHECKS      **/
+    int l = 1200;
+    double z = 1;
+    double nu = 1420.4/(1+z);
+    double nu_width = 10;
+    double cl = analysis->Cl_limber_Window(l, nu, nu, nu_width, 0, 0, 0);
+    double cl2 = analysis->Cl(l, nu, nu,0,0,0);
+
+    cout << cl << " " << cl2 << endl;
+    cout << "Cls for nu = " << nu << " computed" << endl;
+    ofstream file("test_cl_limber.dat");
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l < 10000)
+        {
+            double cl1 = analysis->Cl(l, nu, nu, 0, 0, 0);
+            double cl2 = analysis->Cl_limber_Window(l, nu, nu, nu_width, 0, 0, 0);
+            file << l << " " << l*(l+1)*cl1/(2.0*M_PI)<< " " <<  l*(l+1)*cl2/(2.0*M_PI)<< endl;
+            cout << l << " " << l*(l+1)*cl1/(2.0*M_PI) << " " << l*(l+1)*cl2/(2.0*M_PI)<< endl;
+        }
+    }
 }
 
 /**
@@ -1429,7 +1481,10 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     // 8: LISW Bispectrum triangle
     // 9: Full Bispectrum triangle
     // 10: Signal to Noise calculation
-    int switch1 =  3;
+    // 11: LISW/NLG triangle
+    // 12: LISW/Delta Cl^3 triangle
+    // 13: NLG/Delta Cl^3 triangle
+    int switch1 =  7;
     /**
      * Simple non-computational intensive plots should be implemented here.
      */
@@ -1822,6 +1877,188 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     {
         LISW_SN* SN = new LISW_SN(analysis, keys.size());
         SN->detection_SN_new(2, 10000, 100, 1, "SN_min-2_max-10000_delta-100_z-1.dat");
+    }
+    /** triangular plots for LISW / NLG ratio **/
+    if (switch1 == 0 or switch1 == 11)
+    {
+        name = "LISW_NLG_ratio_triangle_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int lmax = 1200;
+        int l1 = lmax;
+        int lmin1 = l1/2;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (int l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {   
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+                    else
+                    {   
+                        double B1 = LISW->calc_angular_Blll_all_config_new_parallelism(l1,l2,l3,z,z,z,0,0,0); 
+                        double B2 = NLG->calc_angular_B_limber(l1, l2, l3, 0, 0, 0, nu_centre, nu_width, 0, 0, 0);
+                        if (B2 == 0)
+                            B = 0;
+                        else 
+                            B = B1/B2;
+                    }
+                }
+                else
+                {
+                    B = 0;
+                }
+                file << B << " ";
+            }
+            file << endl;
+        }
+        file.close();
+    }
+    /** triangular plots for LISW over Noise ratio **/
+    if (switch1 == 0 or switch1 == 12)
+    {
+        name = "LISW_Noise_ratio_triangle_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int lmax = 1200;
+        int l1 = lmax;
+        int lmin1 = l1/2;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        bool beam_incl = true;
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (int l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {   
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+                    else
+                    {   
+                        // Noise now included
+                        double Cl1 = analysis->Cl(l1,nu_centre,nu_centre,0,0,0);
+                        double Cl2 = analysis->Cl(l2,nu_centre,nu_centre,0,0,0);
+                        double Cl3 = analysis->Cl(l3,nu_centre,nu_centre,0,0,0);
+                        double noise1 = analysis->Cl_noise(l1, nu_centre, nu_centre, beam_incl);
+                        double noise2 = analysis->Cl_noise(l2, nu_centre, nu_centre, beam_incl);
+                        double noise3 = analysis->Cl_noise(l3, nu_centre, nu_centre, beam_incl);
+
+                        Cl1 += noise1;
+                        Cl2 += noise2;
+                        Cl3 += noise3;
+                        double delta_lll = 0;
+                        if (l1 == l2 and l1 == l3)
+                        {   
+                            delta_lll = 6.0;
+                        }
+                        else if (l1 == l2 or l2 == l3)
+                        {
+                            delta_lll = 2.0;
+                        }
+                        else
+                        {
+                            delta_lll = 1.0;
+                        }
+                        double frac = 1.0/sqrt(delta_lll * Cl1 * Cl2 * Cl3);
+
+                        double B1 = LISW->calc_angular_Blll_all_config_new_parallelism(l1,l2,l3,z,z,z,0,0,0); 
+                        B = frac * B1;
+                    }
+                }
+                else
+                {
+                    B = 0;
+                }
+                file << B << " ";
+            }
+            file << endl;
+        }
+        file.close();
+    }
+    /** triangular plots for NLG over Noise ratio **/
+    if (switch1 == 0 or switch1 == 13)
+    {
+        name = "NLG_Noise_ratio_triangle_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int lmax = 1200;
+        int l1 = lmax;
+        int lmin1 = l1/2;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        bool beam_incl = true;
+
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (int l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {   
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+                    else
+                    {    
+                        // Noise now included
+                        double Cl1 = analysis->Cl(l1,nu_centre,nu_centre,0,0,0);
+                        double Cl2 = analysis->Cl(l2,nu_centre,nu_centre,0,0,0);
+                        double Cl3 = analysis->Cl(l3,nu_centre,nu_centre,0,0,0);
+                        double noise1 = analysis->Cl_noise(l1, nu_centre, nu_centre, beam_incl);
+                        double noise2 = analysis->Cl_noise(l2, nu_centre, nu_centre, beam_incl);
+                        double noise3 = analysis->Cl_noise(l3, nu_centre, nu_centre, beam_incl);
+
+                        Cl1 += noise1;
+                        Cl2 += noise2;
+                        Cl3 += noise3;
+                        double delta_lll = 0;
+                        if (l1 == l2 and l1 == l3)
+                        {   
+                            delta_lll = 6.0;
+                        }
+                        else if (l1 == l2 or l2 == l3)
+                        {
+                            delta_lll = 2.0;
+                        }
+                        else
+                        {
+                            delta_lll = 1.0;
+                        }
+                        double frac = 1.0/sqrt(delta_lll * Cl1 * Cl2 * Cl3);
+
+                        double B1 = NLG->calc_angular_B_limber(l1, l2, l3, 0, 0, 0, nu_centre, nu_width, 0, 0, 0);
+                        B = frac * B1;
+                    }
+                }
+                else
+                {
+                    B = 0;
+                }
+                file << B << " ";
+            }
+            file << endl;
+        }
+        file.close();
     }
 }
 

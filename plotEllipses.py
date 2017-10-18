@@ -36,8 +36,8 @@ for i in range(0,num_params - 1):
         sig_y = content[ellipse_number*7 + 7]
         frame_index = (num_params-1)*i + j
         ax1 = plt.subplot(num_params-1,num_params-1, frame_index)
-        #ax1.ticklabel_format(axis='y',style='sci',scilimits=(-2,2))
-        #ax1.ticklabel_format(axis='x',style='sci',scilimits=(-2,2))
+        ax1.ticklabel_format(axis='y',style='sci',scilimits=(-2,2), useOffset = False, useMathText=True, useLocale=True)
+        ax1.ticklabel_format(axis='x',style='sci',scilimits=(-2,2), useOffset = False, useMathText=True, useLocale=True)
         #ax1.yaxis.get_major_formatter().set_powerlimits((0,1))
         plt.subplots_adjust(hspace = 0., wspace = 0.)
         if (j-i) > 1:
@@ -70,7 +70,8 @@ for i in range(0,num_params - 1):
         ax1.add_artist(contour_2sig)
         ax1.add_artist(ellipse_1sig)
         ax1.add_artist(ellipse_2sig)
-        
+        ax1.axhline(y=y, color='black', linestyle='--')
+        ax1.axvline(x=x, color='black', linestyle='--')
         #alpha = 1.
         #contour = ptc.Arc(xy = (x,y), width=alpha * w, height=alpha * h, angle=theta)
         #ax1.add_artist(contour)

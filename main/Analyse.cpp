@@ -41,7 +41,6 @@ int main(int argc, char* argv[])
         
     Fisher_return_pair finv;
     Analyser analyse(&parser);
-    
     finv = analyse.build_Fisher_inverse();
     
     

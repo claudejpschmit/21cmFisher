@@ -7,10 +7,10 @@
 ###########################################################################
 ###########################################################################
 
-### Space for comments on the run #######
-# LISW_only, no noise up to lmax of 50 #
-# interpolation used                    #
-#########################################
+### Space for comments on the run ###
+#                                   #
+#                                   #
+#####################################
 
 ###############
 ## Verbosity ##
@@ -18,7 +18,7 @@
 
 # The verbosity options in ascending order are:
 #   NOTHING, ERROR, BASIC, VERBOSE, DEBUG
--verbosity = BASIC
+-verbosity = NOTHING
 ######################
 ### Path variables ###
 ######################
@@ -40,7 +40,7 @@
 
 # output path for Fisher values
 #path_fisher = output/cx1/Fisher/all
--path_fisher = output/Fisher_Bispectrum/NoiseIncl/testingNEW
+-path_fisher = UnitTestData/output/analyser_check/output
 
 ####################
 ### Methods used ###
@@ -69,7 +69,7 @@
 #          highz (Computes Cl's for z > 25, making simplifying assumptions that hold in this regime.)
 -analysis = intensitymapping
 
-# if analysis = intensitymapping, consider setting this parameter to true, as it speeds up the computation
+# if analysis = intensitymapping, consiter setting this parameter to true, as it speeds up the computation
 # fo the Cls a lot.
 # options: T = 1 or F = 0
 -interp_Cls = 1
@@ -77,35 +77,28 @@
 # Fisher analysis.
 # It is important to choose an (lmax - 2) that is divisible by the number of cores one tries to use,
 # otherwise the performance will be compromised.
-# This also sets the lmodes precomputed for the SN calculation.
--lmax_Fisher_Bispectrum = 1600
+-lmax_Fisher_Bispectrum = 500
 
 # gaps between l-triangles
--gaps_bispectrum = 80
-
-###     BIAS computation    ###
+-gaps_bispectrum = 0
 
 # Controls the overall LISW amplitude in the Bispectrum:
 # B = B_NLG + lambda B_LISW
 # Necessary for bias computation
--lambda_LISW = 1
+-lambda_LISW = 0
 
 # Tick 1 if Bias computation should be done, ie lambda_LISW will be added as an
 # additional parameter to be varied.
 # 0 otherwise
 # This only works if the effects are set to ALL!
 -Bias_included = 0
-
-####
-
 # sets the frequency limit of the experiments, ie. the frequencies that the Cls and Qls will be interpolated over
--Bispectrum_numin = 400
--Bispectrum_numax = 800
+-Bispectrum_numin = 300
+-Bispectrum_numax = 320
 
 # Bispectrum effects to be included
 # effects can be: LISW_only, NLG_only, ALL
 -effects_Bispectrum = ALL
-
 #######################################
 ### list of parameters being varied ###
 #######################################
@@ -122,12 +115,10 @@
 #
 # simply add param_key_## = name to include additional parameters.
 
-#-param_key_1 = ombh2
-#-param_key_2 = omch2
-#-param_key_3 = omega_lambda
-#-param_key_4 = n_s
--param_key_5 = A_s
-#-param_key_6 = hubble
+-param_key_1 = ombh2
+-param_key_2 = omch2
+-param_key_3 = omega_lambda
+#param_key_4 = n_s
 
 ##########################################
 ### Cosmology parameters - base values ###
@@ -137,7 +128,7 @@
 -omch2 = 0.127
 -omnuh2 = 0.00064
 -omk = 0.0
--hubble = 67
+-hubble = 69.6
 -A_s = 1.562e-9
 -n_s = 0.962
 -sigma8 = 0.834
@@ -153,7 +144,7 @@
 
 # If one wants to use Omega_Lambda as a parameter, then set here.
 # otherwise set it to -1.
--omega_lambda = 0.684
+-omega_lambda = -1
 
 ###########################
 ### Experimental ranges ###
@@ -161,16 +152,16 @@
 
 # For Bispectrum, zmin needs to be zero
 
+
 # zmin = lower bound of Pkz_interpolator and q_interpolator 
 -zmin = 0
 
 # zmax = upper bound of Pkz_interpolator and q_interpolator
-# as LISW takes integrals up to z = 100, this needs to be 100 minimum.
 
 -zmax = 100
 
 # zsteps = # of equally spaced steps considered between zmin and zmax.
--zsteps = 100
+-zsteps = 1000
 
 ############################################
 ### model = santos - specific parameters ###
@@ -233,12 +224,10 @@
 # Ae = effective area per antenna
 -Ae = 0.1
 
-# df = frequency bandwidth in Hz
-# 2 MHz for Chime
+# df = frequency bandwidth
 -df = 2000000
 
-# Tsys = system temperature in mK
-# 40K for Chime
+# Tsys = system temperature in K
 -Tsys = 40000
 
 # fcover = cover fraction of the experiment
@@ -246,11 +235,9 @@
 
 # lmax_noise = largest angular scale probed by the experiment.
 # this should be equivalent to the lmax parameter.
-# lmax = 1500 for z = 2.5 and 850 for z = 1
 -lmax_noise = 850
 
 # tau_noise = integration time in seconds
-# 1000h = 3.6 x 10^6 s
 -tau_noise = 3600000
 
 ###################
@@ -281,10 +268,6 @@
 ######################################
 ### Multi-thread system parameters ###
 ######################################
-
-######################
-# For Power spectrum #
-######################
 
 # note that the total number of points calculated are:
 # l_total = n_threads * n_points_per_thread
@@ -317,14 +300,14 @@
 
 # n_threads determines the number of threads to be run in parallel. These threads handle the 
 # lmax.
--n_threads_bispectrum = 40
+-n_threads_bispectrum = 64
 
 # if nested is set to 1, then nested parallelism is used which should be done for large number 
 # of cores.
--nested = 0
+-nested = 65
 
 # if nested is set to 1, n_sub_threads determines how many threads are used in the computation
 # of each bispectrum triangle. The total number of cores used is then 
 # n_tot = n_threads_bispectrum * n_sub_threads. 
 # be careful not to have more threads than cores, as this may reduce efficiency.
--sub_threads = 8
+-sub_threads = 66

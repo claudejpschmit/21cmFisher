@@ -418,12 +418,14 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                         {
                             double p = priors[priorParams[k]];
                             F_priors_included(i,j) += p;
-                            log<LOG_DEBUG>("Priors added: F_prior(%1%,%2%) = %3%.") % i % j % p;
+                            log<LOG_BASIC>("Priors added: F_prior(%1%,%2%) = %3%.") % i % j % p;
                         }
                     }
                 }
             }
         }
+
+        // Plot F_ij/sqrt(F_ii * F_jj) as a 2D greyscale plot
         if (parser->giveShowMatrix())
         {
             ofstream param_name_file("params.tmp.dat");
@@ -456,7 +458,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
             (void)r;
         }
 
-
+        // Compute Inverse Fisher Matrix
         if (parser->giveUsePseudoInv())
         {
             // here using penrose pseudo inverse.
@@ -469,16 +471,22 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
             RESULT.matrix = F_priors_included.i();
             log<LOG_DEBUG>("Standard Inverse used for Fisher inversion.");
         }
+        // Print Fisher Matrix with diagnostics
         cout << "Fisher matrix:" << endl;
         cout << F_priors_included << endl;
         vec eigval;
         mat eigvec;
         eig_sym(eigval, eigvec, F_priors_included);
         cout << " Eigenvalues : ";
-        
         for (int i = 0; i < eigval.size(); i++)
             cout << eigval(i) << " ";
         cout << endl;
+        cout << " Determinant of Fisher Matrix: " << det(F_priors_included) << endl;
+        cout << " Reciprocal condition number (0 -> badly conditioned, 1 -> well-conditioned): " <<\
+            rcond(F_priors_included) << endl;
+        cout << " Condition number: " << cond(F_priors_included) << endl;
+        
+        // Plot F^-1_ij/sqrt(F^-1_ii * F^-1_jj) as a 2D greyscale plot
         if (parser->giveShowInverse())
         {
             ofstream param_name_file("params.tmp.dat");
@@ -491,7 +499,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                 for (int j = 0; j < num_params; j++)
                     I(i,j) = RESULT.matrix(i,j)/\
                              sqrt(RESULT.matrix(i,i) * RESULT.matrix(j,j));
-
+            cout << I << endl;
             ofstream outfile_Fisher("Fisher_matrix.tmp.dat");
             for (int i = 0; i < num_params; i++)
             {
@@ -511,6 +519,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
             (void)r;
         }
 
+        // Check that non of the inverse diagonal elements are < 0. That would indicate an error.
         bool ERROR = false;
         for (int i = 0; i < num_params; i++)
             if (RESULT.matrix(i,i) < 0)
@@ -524,6 +533,8 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
         }
         cout << "inverse Fisher: " << endl;
         cout << RESULT.matrix << endl;
+        cout << " F x F^-1: " << endl;
+        cout << RESULT.matrix * F_priors_included << endl;
 
         RESULT.matrix_indecies = indecies;
     }
@@ -532,7 +543,7 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
         log<LOG_ERROR>("ERROR: could not build Fisher inverse!");
     }
     
-        return RESULT;
+    return RESULT;
 }
 
 Fisher_return_pair Analyser::build_Fisher()
@@ -1028,6 +1039,7 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
         double err = sqrt(sig_xx);
         double fiducial = RunParser.giveRunParams()[param1];
         double rel_Err = err/fiducial;
+        cout << sig_xx << endl;
         cout << finv.matrix_indecies[index1][index1][0].c_str() <<\
             " = " << fiducial << endl;
         log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel Err = %3%") %\
@@ -1052,7 +1064,7 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
         double err = sqrt(sig_yy);
         double fiducial = RunParser.giveRunParams()[param2];
         double rel_Err = err/fiducial;
-
+        cout << sig_yy << endl;
         cout << finv.matrix_indecies[index2][index2][0].c_str() <<\
             " = " << fiducial << endl;
 
@@ -1313,7 +1325,13 @@ void Analyser::getBias()
             FThTh(i,j) = fmat.matrix(i,j);
         }
     }
-
+    for (int i = size-1; i < size; i++)
+    {
+        for (int j = 0; j < size-1; j++)
+        {
+            FThPs(j,0) = fmat.matrix(i,j);
+        }
+    }
     mat finv; 
     if (parser->giveUsePseudoInv())
     {
@@ -1327,15 +1345,7 @@ void Analyser::getBias()
         finv = FThTh.i();
         log<LOG_DEBUG>("Standard Inverse used for Fisher inversion.");
     }
-    /*for (int i = 0; i < size-1; i++)
-    {
-        for (int j = 0; j < size-1; j++)
-        {
-            cout << finv(i,j) << " ";        
-        }
-        cout << endl;
-    }
-    */
+    
     cout <<  "###   Bias introduced by including LISW effect   ###" << endl;
     for (int i = 0; i < size - 1; i++)
     {
@@ -1345,6 +1355,7 @@ void Analyser::getBias()
         {
             bias += -finv(i, k) * FThPs(k, 0) * delta_lambda;
         }
+        cout << endl;
         cout << fmat.matrix_indecies[i][0][0] << " bias is " << bias << endl;
     }
     cout << " ############## " << endl;

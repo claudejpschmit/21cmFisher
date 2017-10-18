@@ -16,6 +16,8 @@ formatted_params = {'ombh2':r'$\Omega_b h^2$',\
         'gamma': r'$\gamma$',\
         'RLy': r'$R_{Ly}$',\
         'n_s': r'$n_s$',\
+        'A_s': r'$A_s$',\
+        'hubble': r'$H_0$',\
         'extragal_ps_A': r'$A^{EG_{ps}}$',\
         'extragal_ps_beta': r'$\beta^{EG_{ps}}$',\
         'extragal_ps_alpha': r'$\alpha^{EG_{ps}}$',\
