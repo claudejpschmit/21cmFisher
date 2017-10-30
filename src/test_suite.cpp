@@ -2649,7 +2649,6 @@ BOOST_AUTO_TEST_CASE(check_mode_count)
 // Here we try and understand whether Ql is wrong
 BOOST_AUTO_TEST_CASE(check_Ql)
 {
- 
     // ini file to which the output will be compared.
     string iniFilename = "UnitTestData/test_params_make_paper_plots.ini";
 
@@ -2708,6 +2707,83 @@ BOOST_AUTO_TEST_CASE(check_Ql)
             //double nlg = NLG->calc_angular_B_noInterp(l,l,l,0,0,0,z);
             cout << k << " " << p << endl;
             file << k << " " << p << endl;
+        }
+    }
+}
+
+// This 
+BOOST_AUTO_TEST_CASE(check_derivative)
+{
+    /**     SETUP       **/
+
+    /**
+     * Simple non-computational intensive plots should be implemented here.
+     */
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_derivative.ini";
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name = "derivative_";
+
+    IniReader parser(iniFilename);
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+    bool limber = true;
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+
+    Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+
+    Bispectrum* NLG = new Bispectrum(analysis);
+
+    Bispectrum_Effects effects = ALL_eff;
+    Bispectrum_Fisher* fish = new Bispectrum_Fisher(analysis, LISW, NLG, keys, fisherPath);
+
+
+    int l1 = 10;
+    int l2 = 10;
+    int l3 = 10;
+    double nu = 450;
+    string param_key = "A_s";
+    /* Here I do 1 very small FM run, so that all the models are interpolated.*/   
+    double nu_min = 400;
+    double nu_stepsize = 10;
+    int n_points_per_thread = 1;
+    int n_threads = 1;
+    
+    vector<string> param_names;
+    param_names.push_back("ombh2");
+    param_names.push_back("omch2");
+    param_names.push_back("omega_lambda");
+    param_names.push_back("n_s");
+    param_names.push_back("A_s");
+    param_names.push_back("hubble");
+    //////////////////////////////
+    for (int j = 0; j < 7; j++)
+    {
+
+        param_key = param_names[j];
+        cout << param_key << endl;
+        stringstream outfilename;
+        outfilename << base << name << param_key << "_5pd" << suffix;
+        ofstream file(outfilename.str());
+
+        for (int i = 1; i < 20; i++)
+        {
+            double deriv = 500 * i; 
+            double mu = fish->calc_mu_direct(l1, l2, l3, nu, nu_stepsize, deriv, param_key,\
+                    &Pk_index, &Tb_index, &q_index, effects, limber);
+            file << deriv << " " << mu << endl;
         }
     }
 }

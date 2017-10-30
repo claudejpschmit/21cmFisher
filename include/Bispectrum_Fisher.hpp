@@ -50,6 +50,9 @@ class Bispectrum_Fisher {
         vector<string> model_param_keys;
         
     //protected:
+        // same as calc_mu but doesn't rely on any interpolation.
+        double calc_mu_direct(int l1, int l2, int l3, double nu, double nu_stepsize,double deriv, string param_key,int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
+
         virtual double calc_mu(int l1, int l2, int l3, double nu, string param_key,\
                 int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
         double Cl(int l, double nu);

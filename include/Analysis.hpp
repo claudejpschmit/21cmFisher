@@ -51,6 +51,9 @@ class Cosmology3D : public AnalysisInterface {
                 int Tb_index, int q_index);
         double Cl_limber(int l, double k1, double k2, int Pk_index,\
                 int Tb_index, int q_index);
+        double Cl_limber_Window(int l, double nu1, double nu2, double nu_width,\
+                int Pk_index, int Tb_index, int q_index);
+
         double M(int l, double k1, double kappa, int Pk_index, int Tb_index, int q_index);
         double N_bar(int l, double k1, double k2, int Pk_index, int Tb_index, int q_index);
         

@@ -113,7 +113,7 @@ double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, dou
 {
     //return 0;
     //At the same redshift
-    
+     
     if (z1 == z2 and z1 == z3)
     {
         double term1, term2, term3, term4, term5, term6;

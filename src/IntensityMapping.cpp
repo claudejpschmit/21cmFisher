@@ -359,7 +359,6 @@ double IntensityMapping::calc_Cl(int l, double nu1, double nu2,\
     double dTb2 = model->T21_interp(z2, Tb_index);
     auto integrand = [&](double k)
     {
-
         double r1 = model->q_interp(z1,q_index);
         double r2 = model->q_interp(z2,q_index);
 
@@ -378,7 +377,6 @@ double IntensityMapping::calc_Cl(int l, double nu1, double nu2,\
     
     double integral = integrate_simps(integrand, lower_kappa_bound, higher_kappa_bound, steps);
     return 2.0/(model->pi) * dTb1 * dTb2 * BIAS_squared * integral;
-
 }
 
 double IntensityMapping::Cl(int l, double nu1, double nu2,\
@@ -459,9 +457,74 @@ double IntensityMapping::Cl_noise(int l, double nu1, double nu2, bool beam_incl)
     } else {
         return 0.0;
     }
- 
 }
 
+double IntensityMapping::Cl_limber_Window(int l, double nu1, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index)
+{
+    // ONLY WORKS FOR NU1 = NU2!!!
+    double z1 = 1420.0/nu1 - 1.0;
+    double z2 = 1420.0/nu2 - 1.0;
+    double zmin, zmax;
+    double delta_z = z1 - (1420.4/(nu1+nu_width) - 1);
+
+    int steps;
+    if (l < 20)
+    {
+        zmin = z1 - 4 * delta_z;
+        zmax = z1 + 4 * delta_z;
+        steps = 80;
+    }
+    else 
+    {
+        zmin = z1 - 2 * delta_z;
+        zmax = z2 + 2 * delta_z;
+        steps = 40;
+    }
+    //
+    
+    double dTb1 = model->T21_interp(z1, Tb_index);
+    double dTb2 = model->T21_interp(z2, Tb_index);
+    auto integrand = [&](double z)
+    {
+        double w1 = Wnu_z(z, nu1, nu_width);
+        double w2 = Wnu_z(z, nu2, nu_width);
+
+        double r = model->q_interp(z,q_index);
+        double rp = (r - model->q_interp(z+0.0001, q_index))/0.0001;
+        //double r2 = model->q_interp(z2,q_index);
+
+        //TODO: I should probably put the window function in here instead of simply jl
+        //double jl1 = model->sph_bessel_camb(l,k*r1);//I(l, k, nu1)
+        //double jl2 = model->sph_bessel_camb(l,k*r2);//I(l, k, nu2)
+        double k = (l+0.5)/r;
+        double Pdd = P(k,z1,z2, Pk_index);
+        double ratio = 1.0/(r*r*rp);
+
+        return w1*w2*ratio*Pdd;
+    };
+    //TODO: set bias
+    //      b = 2 (b^2 = 4) as in Hall et al. 2013
+    double BIAS_squared = 4.0;
+    //cout << lower_kappa_bound << " " << higher_kappa_bound << endl;
+    cout << zmin << " " << zmax << endl;
+    double integral = integrate_simps(integrand, zmin, zmax, steps);
+    return  dTb1 * dTb2 * BIAS_squared * integral;
+}
+
+double IntensityMapping::Cl_Window(int l, double nu1, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index)
+{
+    return 0;
+}
+
+double IntensityMapping::Wnu_z(double z, double nu_centre, double nu_width)
+{
+    double pi = M_PI;
+    double nu = 1420.4/(1.0+z);
+    double pre = nu/(1.0+z); // There should be a minus sign, but we used that to flip the integration around
+    double sigma = nu_width / 2.0;
+    double norm = 1.0/(sqrt(2.0*pi) * sigma);
+    return pre * norm * exp(-0.5*pow((nu - nu_centre)/sigma,2));
+}
 
 //TODO: Review this, make sure it is the same as for tomography2D
 double IntensityMapping::Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values)

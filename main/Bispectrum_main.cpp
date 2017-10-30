@@ -117,14 +117,13 @@ int main(int argc, char* argv[])
         //LISW_SN* SN = new LISW_SN(analysis);
         //SN->detection_SN(2, 1000, 1, 1, "SN_2_1000_delta1.dat");
         
-        
         // the minimum and maximum of the frequency regime also affect the theta interpolation
         // to be safe leave min = 400 & max = 800
         double nu_min = 400;
         //nu_max = 790, so between z = 0.8 and z = 2.55
         double nu_stepsize = 10;
         int n_points_per_thread = 1;
-        int n_threads = 40;
+        int n_threads = 1;
         bool limber = true;
         Bispectrum_Effects effects = parser.giveBispectrumEffects();
         t1 = steady_clock::now();

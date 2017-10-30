@@ -493,7 +493,7 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
             double D = D_Growth_interp(z,q_index);
             double r = analysis->model->q_interp(z,q_index);
             // 1000 factor is necessary to convert km into m.
-            double hub = analysis->model->H_interp(z,q_index)*1000.0;
+            //double hub = analysis->model->H_interp(z,q_index)*1000.0;
             //double Fz = (analysis->model->c/hub)*D*D*f1(z,q_index)*Wnu_z(z, nu_centre, nu_width);
             double Fz = D*D*f1(z,q_index)*Wnu_z(z, nu_centre, nu_width);
             double THETA2 = 0;
@@ -2847,7 +2847,7 @@ double Bispectrum::theta_approx(int l, double z, double nu_centre, double nu_wid
 {
     double r = analysis->model->r_interp(z);
     double D = D_Growth_interp(z, q_index);
-    double hub = analysis->model->H_interp(z,q_index)*1000.0;
+    //double hub = analysis->model->H_interp(z,q_index)*1000.0;
     //double F = (analysis->model->c / hub) * D * f1(z,Tb_index);
     double F = D * f1(z,Tb_index);
     double w = Wnu_z(z, nu_centre, nu_width);

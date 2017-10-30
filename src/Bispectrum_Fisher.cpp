@@ -891,6 +891,134 @@ double Bispectrum_Fisher::Cl(int l, double nu)
     //cout << cl << " --- " << noise << endl; 
     return cl+noise;
 }
+double Bispectrum_Fisher::calc_mu_direct(int l1, int l2, int l3, double nu, double nu_stepsize,double deriv, string param_key, int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber)
+{
+    log<LOG_VERBOSE>("entered mu");
+    double z = (1420.4/nu) - 1.0;
+    map<string,double> working_params = fiducial_params;
+    double h = working_params[param_key]/deriv; 
+    double x = working_params[param_key];
+    this->nu_stepsize_CLASS = nu_stepsize;        
+    working_params[param_key] = x;
+    analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+    cout << h << endl;
+    // 5-point stencil derivative:
+    double B1 = 0;
+    double B2 = 0;
+    double B3 = 0;
+    double B4 = 0;
+    double B1_NLG = 0;
+    double B2_NLG = 0;
+    double B3_NLG = 0;
+    double B4_NLG = 0;
+    bool five_point = true;
+    // The NLG term should use Blll not Blll000!!!
+    // this is because the m's have already been dealt with analytically.
+    // So all W3J terms that contain m's have been summed away already.
+    if (effects == NLG_eff)
+    {
+        working_params[param_key] = x + h;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        if (limber)
+            B1_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
+            //B1_NLG = NLG->calc_angular_B_limber(l1,l2,l3,0,0,0,nu, nu_stepsize_CLASS,*Pk_index, *Tb_index, *q_index);
+        else
+            B1_NLG = NLG->calc_Blll(l1,l2,l3,z,*Pk_index,*Tb_index,*q_index);
+            //B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+        working_params[param_key] = x;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        if (limber)
+            B2_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
+            //B2_NLG = NLG->calc_angular_B_limber(l1,l2,l3,0,0,0,nu, nu_stepsize_CLASS,*Pk_index, *Tb_index, *q_index);
+        else
+            B2_NLG = NLG->calc_Blll(l1,l2,l3,z,*Pk_index,*Tb_index,*q_index);
+            //B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index)
+
+        //cout << B1_NLG << endl;
+        //cout << B2_NLG << endl;
+        return (B1_NLG - B2_NLG)/h;
+
+    }
+    else if (effects == LISW_eff)
+    {
+        working_params[param_key] = x + h;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+        B1 = LISW->calc_angular_Blll_all_config_new_parallelism(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+        working_params[param_key] = x;
+        analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+        //B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+        B2 = LISW->calc_angular_Blll_all_config_new_parallelism(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+     
+        return (B1 - B2)/h;
+    }
+    else
+    {
+        if (param_key == "lambda_LISW")
+        {
+            double BLISW = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, 0, 0, 0);
+            return BLISW;
+        }
+        else 
+        {
+                       
+            if (five_point)
+            {
+                working_params[param_key] = x + 2*h;
+                analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            
+                B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+                B1_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
+
+                working_params[param_key] = x + h;
+                analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            
+                B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+                B2_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
+
+                working_params[param_key] = x - h;
+                analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            
+                B3 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+                B3_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
+
+                working_params[param_key] = x - 2 * h;
+                analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            
+                B4 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+                B4_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
+               
+                return (-B1 + 8* B2 - 8* B3 + B4)/(12.0*h) + (-B1_NLG + 8* B2_NLG - 8* B3_NLG + B4_NLG)/(12.0*h);
+            }
+            else
+            {
+                working_params[param_key] = x + h;
+                analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            
+                B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+                // In the limber case, we should now no longer 
+                // concern with the m modes, those have been taken care of.
+           
+                if (limber)
+                    B1_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
+                else
+                    B1_NLG = NLG->calc_Blll(l1,l2,l3,z,*Pk_index,*Tb_index,*q_index);
+
+                working_params[param_key] = x;
+                analysis->model->update(working_params, Pk_index, Tb_index, q_index);
+            
+                B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
+                if (limber)
+                    B2_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
+                else
+                    B2_NLG = NLG->calc_Blll(l1,l2,l3,z,*Pk_index,*Tb_index,*q_index);
+
+                return (B1 - B2)/h + (B1_NLG - B2_NLG)/h;
+            }
+        }
+    }
+
+}
 
 double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string param_key,\
         int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber)
@@ -900,12 +1028,7 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     map<string,double> working_params = fiducial_params;
     double h = this->var_params[param_key];
     double x = working_params[param_key];
-    //cout << param_key << " " << x << " " << h << endl;
-    //  mat f1matrix = randu<mat>(range.size(),range.size());
-    //  mat f2matrix = randu<mat>(range.size(),range.size());
-    //  mat f3matrix = randu<mat>(range.size(),range.size());
-    //  mat f4matrix = randu<mat>(range.size(),range.size());
-    
+        
     // 5-point stencil derivative:
     double B1 = 0;
     double B2 = 0;
