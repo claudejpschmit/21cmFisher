@@ -139,6 +139,11 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
     log<LOG_BASIC>("... Bispectrum Class initialized ...");
 }
 
+void Bispectrum::update_params(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
+{
+    this->analysis->model->update(params, Pk_index, Tb_index, q_index);
+}
+
 Bispectrum::~Bispectrum()
 {}
 
@@ -2852,7 +2857,7 @@ double Bispectrum::theta_approx(int l, double z, double nu_centre, double nu_wid
     double F = D * f1(z,Tb_index);
     double w = Wnu_z(z, nu_centre, nu_width);
     double k = (l+0.5)/r;
-    double P = power(k);
+    double P = power(k, Pk_index);
     double rp = abs(r - analysis->model->r_interp(z+0.005))/0.005;
     double A = pi / (2*r*r*rp);
  

@@ -2787,4 +2787,88 @@ BOOST_AUTO_TEST_CASE(check_derivative)
         }
     }
 }
+
+// The test case checks the scaling relation for the bispectrum in terms
+// of A_s, so checks mu = As^2 / Asf^2 muf
+BOOST_AUTO_TEST_CASE(check_scaling)
+{
+    /**     SETUP       **/
+
+    /**
+     * Simple non-computational intensive plots should be implemented here.
+     */
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_derivative.ini";
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name = "derivative_";
+
+    IniReader parser(iniFilename);
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+    double z = 1;
+    int l1 = 10;
+    int l2 = 10;
+    int l3 = 10;
+    double nu = 1420.0/(1.0+z);
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+    bool limber = true;
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+
+    Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+    Bispectrum* NLG = new Bispectrum(analysis);
+    Bispectrum_Effects effects = ALL_eff;
+    Bispectrum_Fisher* fish = new Bispectrum_Fisher(analysis, LISW, NLG, keys, fisherPath);
+    
+    map<string,double> working_params = params;
+    string param_key = "A_s";
+    double x = working_params[param_key];
+     
+    double mu_fiducial_l = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, Pk_index, Tb_index, q_index);
+    double mu_fiducial_nlg = NLG->calc_Blll_limber(l1,l2,l3,nu,10,Pk_index,Tb_index,q_index);
+  
+    working_params[param_key] = 2.*x ;
+    LISW->update_params(working_params, &Pk_index, &Tb_index, &q_index);
+    cout << Pk_index << " " << Tb_index << " " << q_index << endl;
+    
+    NLG->update_params(working_params, &Pk_index, &Tb_index, &q_index);
+    cout << Pk_index << " " << Tb_index << " " << q_index << endl;
+    
+    double mu2_l = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, Pk_index, Tb_index, q_index);
+    double mu2_nlg = NLG->calc_Blll_limber(l1,l2,l3,nu,10,Pk_index,Tb_index,q_index);
+
+    working_params[param_key] = 3.*x ;
+    LISW->update_params(working_params, &Pk_index, &Tb_index, &q_index);
+    cout << Pk_index << " " << Tb_index << " " << q_index << endl;
+    
+    NLG->update_params(working_params, &Pk_index, &Tb_index, &q_index);
+    cout << Pk_index << " " << Tb_index << " " << q_index << endl;
+    
+    double mu3_l = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, Pk_index, Tb_index, q_index);
+    double mu3_nlg = NLG->calc_Blll_limber(l1,l2,l3,nu,10,Pk_index,Tb_index,q_index);
+
+    working_params[param_key] = 4.*x ;
+    LISW->update_params(working_params, &Pk_index, &Tb_index, &q_index);
+    cout << Pk_index << " " << Tb_index << " " << q_index << endl;
+    
+    NLG->update_params(working_params, &Pk_index, &Tb_index, &q_index);
+    cout << Pk_index << " " << Tb_index << " " << q_index << endl;
+    
+    double mu4_l = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, Pk_index, Tb_index, q_index);
+    double mu4_nlg = NLG->calc_Blll_limber(l1,l2,l3,nu,10,Pk_index,Tb_index,q_index);
+
+    cout << mu2_nlg/mu_fiducial_nlg << " " << mu3_nlg /mu_fiducial_nlg << " " << mu4_nlg/mu_fiducial_nlg << endl;
+    cout << mu2_l/mu_fiducial_l << " " << mu3_l /mu_fiducial_l << " " << mu4_l/mu_fiducial_l << endl;
+
+
+}
     // EOF
