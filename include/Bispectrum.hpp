@@ -131,6 +131,7 @@ class Bispectrum {
         void plot_theta_integrand(int li, double z, string filename);
         double Wnu_z(double z, double nu_centre, double nu_width);
 
+        void update_params(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index);
 
     protected:
         /**

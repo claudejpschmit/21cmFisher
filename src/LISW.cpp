@@ -107,7 +107,10 @@ Bispectrum_LISW::~Bispectrum_LISW()
 ///////////////////////////////////////
 /**         Public Functions        **/
 ///////////////////////////////////////
-
+void Bispectrum_LISW::update_params(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
+{
+    this->analysis->model->update(params, Pk_index, Tb_index, q_index);
+}
 double Bispectrum_LISW::calc_angular_Blll_all_config(int l1, int l2, int l3, double z1,\
         double z2, double z3, int Pk_index, int Tb_index, int q_index)
 {
