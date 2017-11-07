@@ -293,7 +293,8 @@ double Bispectrum_Fisher::compute_F_matrix_parallel_nu(double nu_min, double nu_
                         m = ((k-1)*n_threads) % (nu_steps - 1) + 1;
                     int nu = nu_min + m * nu_stepsize;
                     stringstream ss;
-                    ss << "Computation of F_nu starts for nu = " << nu << " on thread " << omp_get_thread_num() << "\n";
+                    ss << "Computation of F_nu starts for nu = " << nu <<\
+                        " on thread " << omp_get_thread_num() << "\n";
                     FL_INTERP flnuab;
                     flnuab.nu_bin = m;
                     flnuab.param_key1 = param_key1;

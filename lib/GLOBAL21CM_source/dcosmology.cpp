@@ -714,8 +714,8 @@ double Cosmology::dndlM(double z, double tM)
   dCritZ = delCrit0(z)/growthFac(z);
   sigM = sigma0fM(tM,dsdM,1);
   dlsdlM = tM*dsdM/sigM;
-  tdn = (sqrt(2.0/PI)*dCritZ*fabs(dlsdlM)*
-	 exp(-dCritZ*dCritZ/(2.0*sigM*sigM))/(tM*sigM));
+  double ee = exp(-dCritZ*dCritZ/(2.0*sigM*sigM)) /(tM*sigM);
+  tdn = sqrt(2.0/PI)*dCritZ*fabs(dlsdlM)*ee;
   tdn *= CRITDENMSOLMPC*om0hh;
   return tdn;
 }
@@ -930,7 +930,6 @@ void Cosmology::resetPowerSpectrum()
   
   thetaCMB = TCMB/2.7;
   // Set up transfer function parameters
-
   TFSetParameters();
 
   // Normalize sigma8 at present time
@@ -944,6 +943,7 @@ void Cosmology::resetPowerSpectrum()
   sigma8 += qromb(sigmatop,log(10.0/scale),log(100.0/scale),acc);
   sigma8 = sqrt(sigma8);
   sNorm = sig8/sigma8;
+  cout << "sNorm = " << sNorm << endl;
 }
 
 /* Sets up transfer function parameters.  Ultimately from Hu and 

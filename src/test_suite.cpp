@@ -25,7 +25,7 @@
 #include "levinBase.h"
 #include "levinIteration.h"
 #include "levinFunctions.h"
-
+#include "dcosmology.h"
 #include <omp.h>
 using namespace std;
 
@@ -2845,7 +2845,7 @@ BOOST_AUTO_TEST_CASE(check_scaling)
     
     double mu2_l = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, Pk_index, Tb_index, q_index);
     double mu2_nlg = NLG->calc_Blll_limber(l1,l2,l3,nu,10,Pk_index,Tb_index,q_index);
-
+    
     working_params[param_key] = 3.*x ;
     LISW->update_params(working_params, &Pk_index, &Tb_index, &q_index);
     cout << Pk_index << " " << Tb_index << " " << q_index << endl;
@@ -2855,7 +2855,7 @@ BOOST_AUTO_TEST_CASE(check_scaling)
     
     double mu3_l = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, Pk_index, Tb_index, q_index);
     double mu3_nlg = NLG->calc_Blll_limber(l1,l2,l3,nu,10,Pk_index,Tb_index,q_index);
-
+    
     working_params[param_key] = 4.*x ;
     LISW->update_params(working_params, &Pk_index, &Tb_index, &q_index);
     cout << Pk_index << " " << Tb_index << " " << q_index << endl;
@@ -2865,10 +2865,47 @@ BOOST_AUTO_TEST_CASE(check_scaling)
     
     double mu4_l = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, Pk_index, Tb_index, q_index);
     double mu4_nlg = NLG->calc_Blll_limber(l1,l2,l3,nu,10,Pk_index,Tb_index,q_index);
-
+    
     cout << mu2_nlg/mu_fiducial_nlg << " " << mu3_nlg /mu_fiducial_nlg << " " << mu4_nlg/mu_fiducial_nlg << endl;
     cout << mu2_l/mu_fiducial_l << " " << mu3_l /mu_fiducial_l << " " << mu4_l/mu_fiducial_l << endl;
+}
+
+// This test checks the computation of the halomass function dn/dM
+BOOST_AUTO_TEST_CASE(check_halo)
+{
+    /*s8 = params["sigma8"];
+    h = params["hubble"] / 100.0;
+    omb = params["ombh2"] / (h*h);
+
+    double T_CMB = params["T_CMB"];
+    double O_cdm = params["omch2"] / pow(h,2);
+    double O_nu = params["omnuh2"] / pow(h,2);
+    double O_gamma = pow(pi,2) * pow(T_CMB/11605.0,4) / (15.0*8.098*pow(10,-11)*pow(h,2));
+    double O_nu_rel = O_gamma * 3.0 * 7.0/8.0 * pow(4.0/11.0, 4.0/3.0);
+    double O_R = O_gamma + O_nu_rel;
+    double O_k = params["omk"];
+    double O_tot = 1.0 - O_k;
+
+    // This warameter is currently not used.
+    double w = params["w_DE"];
+
+    om0 = omb + O_cdm + O_nu;
+    lam0 = O_tot - om0 - O_R;
+    n = params["n_s"];
+    omNu = O_nu;
+*/
+    double omLambda = 0.684;
+    double hub = 0.67;
+    double omM = 0.127/(hub*hub);
+    double omb = 0.022 / (hub*hub);
+    double n_s = 0.962;
+    double s8 = 0.834;
+    double omnu = 0.00064 / (hub*hub);
+    Cosmology cosmo(omM,omLambda,omb,hub,s8,n_s,omnu);
+    double c = cosmo.dndlM(1,pow(10,10));
+    cout << c << endl;
 
 
 }
+
     // EOF
