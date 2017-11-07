@@ -5,6 +5,8 @@
 #include <map>
 #include <boost/multiprecision/cpp_dec_float.hpp>
 
+#define NORMALIZED false
+
 using namespace alglib;
 using boost::multiprecision::cpp_dec_float_50;
 
@@ -337,6 +339,39 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                         nus[n] = nu[indices[n]];
                         fs[n] = F_nu[indices[n]];
                     }
+                    if (parser->giveAsNormalization())
+                    {
+                        if (param_keys[i] == "A_s" && param_keys[j] == "A_s")
+                        {
+                            for (unsigned int n = 0; n < nu.size(); n++) {
+                                nus[n] = nu[indices[n]];
+                                fs[n] = 10e-8*F_nu[indices[n]];
+                            }
+                        }
+                        else if (param_keys[i] == "A_s" || param_keys[j] == "A_s")
+                        {
+                            for (unsigned int n = 0; n < nu.size(); n++) {
+                                nus[n] = nu[indices[n]];
+                                fs[n] = 10e-8*F_nu[indices[n]];
+                            }
+
+                        }
+                        else
+                        {
+                            for (unsigned int n = 0; n < nu.size(); n++) {
+                                nus[n] = nu[indices[n]];
+                                fs[n] = F_nu[indices[n]];
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        for (unsigned int n = 0; n < nu.size(); n++) {
+                            nus[n] = nu[indices[n]];
+                            fs[n] = F_nu[indices[n]];
+                        }
+                    }
 
 
                     spline1dinterpolant Fl_interp;
@@ -614,9 +649,39 @@ Fisher_return_pair Analyser::build_Fisher()
                     real_1d_array ls, fs;
                     ls.setlength(l.size());
                     fs.setlength(F_l.size());
-                    for (unsigned int n = 0; n < l.size(); n++) {
-                        ls[n] = l[n];
-                        fs[n] = F_l[n];
+
+                    if (parser->giveAsNormalization())
+                    {
+                        if (param_keys[i] == "A_s" && param_keys[j] == "A_s")
+                        {
+                            for (unsigned int n = 0; n < l.size(); n++) {
+                                ls[n] = l[n];
+                                fs[n] = 10e-18*F_l[n];
+                            }
+                        }
+                        else if (param_keys[i] == "A_s" || param_keys[j] == "A_s")
+                        {
+                            for (unsigned int n = 0; n < l.size(); n++) {
+                                ls[n] = l[n];
+                                fs[n] = 10e-9*F_l[n];
+                            }
+
+                        }
+                        else
+                        {
+                            for (unsigned int n = 0; n < l.size(); n++) {
+                                ls[n] = l[n];
+                                fs[n] = F_l[n];
+                            }
+
+                        }
+                    }
+                    else
+                    {
+                        for (unsigned int n = 0; n < l.size(); n++) {
+                            ls[n] = l[n];
+                            fs[n] = F_l[n];
+                        }
                     }
                     spline1dinterpolant Fl_interp;
                     try {

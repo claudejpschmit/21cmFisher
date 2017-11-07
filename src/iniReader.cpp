@@ -512,6 +512,7 @@ void IniReaderAnalysis::parse()
     usePseudoInv = determineUsePseudoInv();
     modeUsed = determineAnalysisMode();
     bias = determineGiveBias();
+    normUsed = determineAsNormalization();
 }
 
 bool IniReaderAnalysis::determineEllipsesRequired()
@@ -724,3 +725,26 @@ bool IniReaderAnalysis::determineGiveBias()
     }
     return result;
 }
+
+bool IniReaderAnalysis::determineAsNormalization()
+{
+    bool result = false;
+    for (unsigned int i = 0; i < iniFileContent.size(); i++)
+    {
+        if (iniFileContent[i].find("-norm") != string::npos) 
+        {
+            string a, b;
+            stringstream line(iniFileContent[i]);
+            line >> a >> b >> result;
+            break;
+        }
+    }
+    return result;
+
+}
+
+bool IniReaderAnalysis::giveAsNormalization()
+{
+    return normUsed;
+}
+

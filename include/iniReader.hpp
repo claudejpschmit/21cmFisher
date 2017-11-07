@@ -247,6 +247,8 @@ class IniReaderAnalysis : public IniReader
          * Function returns whether biasing should be computed
          */
         bool giveBias();
+        
+        bool giveAsNormalization();
 
     private:
         
@@ -296,10 +298,12 @@ class IniReaderAnalysis : public IniReader
         Mode determineAnalysisMode();
 
         bool determineGiveBias();
+    
+        bool determineAsNormalization();
 
         /////////// Parameters
         bool ellipsesRequired, showMatrix, showInverse, usePriors, usePseudoInv,\
-            useInterpolation, bias;
+            useInterpolation, bias, normUsed;
         Mode modeUsed;
         map<string,double> priors;  
 };
