@@ -345,14 +345,14 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                         {
                             for (unsigned int n = 0; n < nu.size(); n++) {
                                 nus[n] = nu[indices[n]];
-                                fs[n] = 10e-8*F_nu[indices[n]];
+                                fs[n] = 1e-18*F_nu[indices[n]];
                             }
                         }
                         else if (param_keys[i] == "A_s" || param_keys[j] == "A_s")
                         {
                             for (unsigned int n = 0; n < nu.size(); n++) {
                                 nus[n] = nu[indices[n]];
-                                fs[n] = 10e-8*F_nu[indices[n]];
+                                fs[n] = 1e-9*F_nu[indices[n]];
                             }
 
                         }
@@ -645,7 +645,8 @@ Fisher_return_pair Analyser::build_Fisher()
 
                 if (DEBUG_single_mode)
                     v = (2*l[0]+1) * F_l[0];
-                else {
+                else 
+                {
                     real_1d_array ls, fs;
                     ls.setlength(l.size());
                     fs.setlength(F_l.size());
@@ -656,14 +657,14 @@ Fisher_return_pair Analyser::build_Fisher()
                         {
                             for (unsigned int n = 0; n < l.size(); n++) {
                                 ls[n] = l[n];
-                                fs[n] = 10e-18*F_l[n];
+                                fs[n] = 1e-18*F_l[n];
                             }
                         }
                         else if (param_keys[i] == "A_s" || param_keys[j] == "A_s")
                         {
                             for (unsigned int n = 0; n < l.size(); n++) {
                                 ls[n] = l[n];
-                                fs[n] = 10e-9*F_l[n];
+                                fs[n] = 1e-9*F_l[n];
                             }
 
                         }
@@ -906,9 +907,37 @@ Fisher_return_pair Analyser::build_Fisher()
                     
                     ////////////////////////
                     // nus and fs are now ordered correctly.
-                    for (unsigned int n = 0; n < nu.size(); n++) {
-                        nus[n] = nu[indices[n]];
-                        fs[n] = F_nu[indices[n]];
+                    if (parser->giveAsNormalization())
+                    {
+                        if (param_keys[i] == "A_s" && param_keys[j] == "A_s")
+                        {
+                            for (unsigned int n = 0; n < nu.size(); n++) {
+                                nus[n] = nu[indices[n]];
+                                fs[n] = 1e-18*F_nu[indices[n]];
+                            }
+                        }
+                        else if (param_keys[i] == "A_s" || param_keys[j] == "A_s")
+                        {
+                            for (unsigned int n = 0; n < nu.size(); n++) {
+                                nus[n] = nu[indices[n]];
+                                fs[n] = 1e-9*F_nu[indices[n]];
+                            }
+
+                        }
+                        else
+                        {
+                            for (unsigned int n = 0; n < nu.size(); n++) {
+                                nus[n] = nu[indices[n]];
+                                fs[n] = F_nu[indices[n]];
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (unsigned int n = 0; n < nu.size(); n++) {
+                            nus[n] = nu[indices[n]];
+                            fs[n] = F_nu[indices[n]];
+                        }
                     }
 
                     spline1dinterpolant Fl_interp;
@@ -926,6 +955,7 @@ Fisher_return_pair Analyser::build_Fisher()
                     }
                 }
 
+                
                 F_ab_value.value = v;
                 F_ab.push_back(F_ab_value);
             }
@@ -1101,15 +1131,39 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
     }
     if (show_marginal) {
         // compute relative error. ie sigma/theta_fid
-        double err = sqrt(sig_xx);
-        double fiducial = RunParser.giveRunParams()[param1];
-        double rel_Err = err/fiducial;
-        cout << sig_xx << endl;
-        cout << finv.matrix_indecies[index1][index1][0].c_str() <<\
-            " = " << fiducial << endl;
-        log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel Err = %3%") %\
-            finv.matrix_indecies[index1][index1][0].c_str() %\
-            sqrt(sig_xx) % rel_Err;
+        double err, fiducial, rel_Err;
+        err = sqrt(sig_xx);
+        if (param1 == "A_s")
+        {
+            if (parser->giveAsNormalization())
+            {
+                fiducial = 1e9*RunParser.giveRunParams()[param1];
+                rel_Err = 100*err/fiducial;
+                cout << "Fiducial A_s * 10^9 = " << fiducial << endl;
+                log<LOG_BASIC>("Marginalized error on A_s * 10^9 is %1%. Rel Err = %2% %%") %\
+                    sqrt(sig_xx) % rel_Err;
+            }
+            else
+            {
+                fiducial = RunParser.giveRunParams()[param1];
+                rel_Err = 100*err/fiducial;
+                cout << "Fiducial " << finv.matrix_indecies[index1][index1][0].c_str() <<\
+                    " = " << fiducial << endl;
+                log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel Err = %3% %%") %\
+                    finv.matrix_indecies[index1][index1][0].c_str() %\
+                    sqrt(sig_xx) % rel_Err;
+            }
+        }
+        else 
+        {
+            fiducial = RunParser.giveRunParams()[param1];
+            rel_Err = 100*err/fiducial;
+            cout << "Fiducial " << finv.matrix_indecies[index1][index1][0].c_str() <<\
+                " = " << fiducial << endl;
+            log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel Err = %3% %%") %\
+                finv.matrix_indecies[index1][index1][0].c_str() %\
+                sqrt(sig_xx) % rel_Err;
+        }
         params_done.push_back(finv.matrix_indecies[index1][index1][0]);
     }
 
@@ -1126,18 +1180,43 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
         }
     }
     if (show_marginal) {
-        double err = sqrt(sig_yy);
-        double fiducial = RunParser.giveRunParams()[param2];
-        double rel_Err = err/fiducial;
-        cout << sig_yy << endl;
-        cout << finv.matrix_indecies[index2][index2][0].c_str() <<\
-            " = " << fiducial << endl;
-
-        log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel err = %3%") %\
-            finv.matrix_indecies[index2][index2][0].c_str() %\
-            sqrt(sig_yy) % rel_Err;
+        // compute relative error. ie sigma/theta_fid
+        double err, fiducial, rel_Err;
+        err = sqrt(sig_yy);
+        if (param2 == "A_s")
+        {
+            if (parser->giveAsNormalization())
+            {
+                fiducial = 1e9*RunParser.giveRunParams()[param2];
+                rel_Err = 100*err/fiducial;
+                cout << "Fiducial A_s * 10^9 = " << fiducial << endl;
+                log<LOG_BASIC>("Marginalized error on A_s * 10^9 is %1%. Rel Err = %2% %%") %\
+                    sqrt(sig_xx) % rel_Err;
+            }
+            else
+            {
+                fiducial = RunParser.giveRunParams()[param2];
+                rel_Err = 100*err/fiducial;
+                cout << "Fiducial " << finv.matrix_indecies[index2][index2][0].c_str() <<\
+                    " = " << fiducial << endl;
+                log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel Err = %3% %%") %\
+                    finv.matrix_indecies[index2][index2][0].c_str() %\
+                    sqrt(sig_yy) % rel_Err;
+            }
+        }
+        else 
+        {
+            fiducial = RunParser.giveRunParams()[param2];
+            rel_Err = 100*err/fiducial;
+            cout << "Fiducial " << finv.matrix_indecies[index2][index2][0].c_str() <<\
+                " = " << fiducial << endl;
+            log<LOG_BASIC>("Marginalized error on %1% is %2%. Rel Err = %3% %%") %\
+                finv.matrix_indecies[index2][index2][0].c_str() %\
+                sqrt(sig_yy) % rel_Err;
+        }
         params_done.push_back(finv.matrix_indecies[index2][index2][0]);
     }
+
 
     log<LOG_DEBUG>("    %1% %2%") % sig_xx % sig_xy;
     log<LOG_DEBUG>("    %1% %2%") % sig_xy % sig_yy;
@@ -1170,9 +1249,29 @@ Ellipse Analyser::find_error_ellipse(Fisher_return_pair finv, string param1, str
     //tmp << parser->giveFisherPath() << "/PARAMS.INI.dat";
     //string runIniFile = tmp.str();
     //IniReader RunParser(runIniFile);
-    ellipse.cx = RunParser.giveRunParams()[param1];
-    ellipse.cy = RunParser.giveRunParams()[param2];
-
+    if (parser->giveAsNormalization())
+    {
+        if (param1 == "A_s")
+        {
+            ellipse.cx = 1e9 * RunParser.giveRunParams()[param1];
+            ellipse.cy = RunParser.giveRunParams()[param2];
+        }
+        else if (param2 == "A_s")
+        {
+            ellipse.cx = RunParser.giveRunParams()[param1];
+            ellipse.cy = 1e9 * RunParser.giveRunParams()[param2];
+        }
+        else
+        {
+            ellipse.cx = RunParser.giveRunParams()[param1];
+            ellipse.cy = RunParser.giveRunParams()[param2];
+        }
+    }
+    else
+    {
+        ellipse.cx = RunParser.giveRunParams()[param1];
+        ellipse.cy = RunParser.giveRunParams()[param2];
+    }
     ellipse.sigma_x = sqrt(sig_xx);
     ellipse.sigma_y = sqrt(sig_yy);
 
@@ -1244,6 +1343,11 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv)
     }
     if (!ERROR)
     {
+        int norm;
+        if (parser->giveAsNormalization())
+            norm = 1;
+        else
+            norm = 0;
         //write a temporary file with the parameter names & pass to drawer
         ofstream param_file("paramfile.tmp.dat");
         for (int i = 0; i < num_params; i++)
@@ -1253,7 +1357,7 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv)
         param_file.close();
         stringstream command_buff;
         command_buff << "python plotEllipses.py " << filename <<\
-            " paramfile.tmp.dat";
+            " paramfile.tmp.dat " << norm;
         char* command = new char[command_buff.str().length() + 1];
         strcpy(command, command_buff.str().c_str());
         int r = system(command);
@@ -1335,6 +1439,12 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv1, Fisher_return_pair 
     }
     if (!ERROR)
     {
+        int norm;
+        if (parser->giveAsNormalization())
+            norm = 1;
+        else
+            norm = 0;
+
         //write a temporary file with the parameter names & pass to drawer
         ofstream param_file("paramfile.tmp.dat");
         for (int i = 0; i < num_params; i++)
@@ -1344,7 +1454,7 @@ void Analyser::draw_error_ellipses(Fisher_return_pair finv1, Fisher_return_pair 
         param_file.close();
         stringstream command_buff;
         command_buff << "python plotEllipsesDouble.py " << filename << " " <<\
-            filename2 << " paramfile.tmp.dat";
+            filename2 << " paramfile.tmp.dat " << norm;
         char* command = new char[command_buff.str().length() + 1];
         strcpy(command, command_buff.str().c_str());
         int r = system(command);
@@ -1421,7 +1531,21 @@ void Analyser::getBias()
             bias += -finv(i, k) * FThPs(k, 0) * delta_lambda;
         }
         cout << endl;
-        cout << fmat.matrix_indecies[i][0][0] << " bias is " << bias << endl;
+        if (parser->giveAsNormalization())
+        {
+            if (fmat.matrix_indecies[i][0][0] == "A_s")
+            {
+                cout << "A_s * 10^9 bias is " << bias << endl;
+            }
+            else
+            {
+                cout << fmat.matrix_indecies[i][0][0] << " bias is " << bias << endl;
+            }
+        }
+        else
+        {
+            cout << fmat.matrix_indecies[i][0][0] << " bias is " << bias << endl;
+        }
     }
     cout << " ############## " << endl;
 }

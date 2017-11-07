@@ -6,6 +6,7 @@ from math import *
 
 filename = sys.argv[1]
 param_filename = sys.argv[2]
+normalized_As = sys.argv[3]
 with open(filename) as f:
     content = [float(x) for x in f if x != '\n']
 with open(param_filename) as f:
@@ -13,11 +14,18 @@ with open(param_filename) as f:
 
 num_params = int(content[0])
 fig, ax = plt.subplots()
-
-latex_params = {'ombh2':'\Omega_b h^2', 'omch2':'\Omega_{CDM} h^2', 'omk':'\Omega_k',\
+if normalized_As == '0':
+    latex_params = {'ombh2':'\Omega_b h^2', 'omch2':'\Omega_{CDM} h^2', 'omk':'\Omega_k',\
                 'hubble':'H_0', 'fesc':'f_{esc}', 'fstar':'f_*', 'w_DE':'w',\
                 'omnuh2':'\Omega_\\nu h^2', 'T_CMB': 't_{CMB}', 'sigma8': '\sigma_8',\
                 'n_s':'n_s', 'A_s':'A_s','100*theta_s':'100 \\theta_s','nion':'N_{ion}',\
+                'omega_lambda':'\Omega_\Lambda', 'alpha':'\\alpha', 'beta':'\\beta',\
+                'gamma':'\gamma', 'RLy':'R_{Ly}'}
+else:
+    latex_params = {'ombh2':'\Omega_b h^2', 'omch2':'\Omega_{CDM} h^2', 'omk':'\Omega_k',\
+                'hubble':'H_0', 'fesc':'f_{esc}', 'fstar':'f_*', 'w_DE':'w',\
+                'omnuh2':'\Omega_\\nu h^2', 'T_CMB': 't_{CMB}', 'sigma8': '\sigma_8',\
+                'n_s':'n_s', 'A_s':'A_s * 10^9','100*theta_s':'100 \\theta_s','nion':'N_{ion}',\
                 'omega_lambda':'\Omega_\Lambda', 'alpha':'\\alpha', 'beta':'\\beta',\
                 'gamma':'\gamma', 'RLy':'R_{Ly}'}
 
