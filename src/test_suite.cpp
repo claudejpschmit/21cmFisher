@@ -1484,7 +1484,7 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     // 11: LISW/NLG triangle
     // 12: LISW/Delta Cl^3 triangle
     // 13: NLG/Delta Cl^3 triangle
-    int switch1 =  7;
+    int switch1 =  10;
     /**
      * Simple non-computational intensive plots should be implemented here.
      */
@@ -2893,7 +2893,9 @@ BOOST_AUTO_TEST_CASE(check_halo)
     lam0 = O_tot - om0 - O_R;
     n = params["n_s"];
     omNu = O_nu;
-*/
+    */
+    double M_max = 15;
+    double M_min = 8;
     double omLambda = 0.684;
     double hub = 0.67;
     double omM = 0.127/(hub*hub);
@@ -2904,6 +2906,77 @@ BOOST_AUTO_TEST_CASE(check_halo)
     Cosmology cosmo(omM,omLambda,omb,hub,s8,n_s,omnu);
     double c = cosmo.dndlM(1,pow(10,10));
     cout << c << endl;
+    ofstream file("haloMassFunction10.dat");
+    ofstream file2("halobias10.dat");
+    double z = 10;
+    for (int i = 0; i<150; i++)
+    {
+        double eM = 4+i*0.1;
+        file << eM << " " << cosmo.dndlM(z,pow(10,eM)) << endl;
+        file2 << eM << " " << cosmo.biasPS(z,pow(10,eM)) << endl;
+    }
+    
+    auto integrand = [&](double M)
+    {
+        double A = 1;
+        double M_HI = A * pow(M, 0.6);
+        double dndm = cosmo.dndlM(1,M)/M;
+        return M_HI * dndm;
+    };
+    cout << "Integrating" << endl;
+    // requires at least 500000 to do a decent job.
+    double I1 = integrate(integrand, 1e8, 1e14, 1000, simpson());
+    cout << I1 << endl;
+    
+    auto integrand2 = [&](double X)
+    {
+        double A = 1;
+        double M_HI = A * exp(0.6*X);
+        double dndm = cosmo.dndlM(1,exp(X));
+        return M_HI * dndm;
+    };
+    cout << "Integrating 2" << endl;
+    double I2 = integrate(integrand2, M_min * log(10), M_max * log(10), 50, simpson());
+    cout << I2 << endl;
+    
+    // Computing A - normalization for the M_HI function
+    //  A = \rho_c,0 * (1+z*)^3 * \Omega_HI(z*) b_HI(z*) / I
+    //  at z* = 0.8, and I = \int dM dn/dM(M,z*) M^(0.6) b(z*,M),
+    //  and \Omega_HI(z*) b_HI(z*) = 0.62 * 10^-3 (Switzer 2013) 
+    
+    auto integrand3 = [&](double X)
+    {
+        double M_HI = exp(0.6*X);
+        double dndm = cosmo.dndlM(0.8,exp(X));
+        double b = cosmo.biasPS(0.8,exp(X));
+        return M_HI * dndm * b;
+    };
+    cout << "Integrating 3" << endl;
+    double I3 = integrate(integrand3, M_min * log(10), M_max * log(10), 500, simpson());
+    cout << I3 << endl;
+    
+    double rho_c = cosmo.rhoCritZ(0);
+    cout << rho_c << endl;
+    double OmTimesb = 0.62 * 1e-3;
+    double A = rho_c * pow(1.8,3) * OmTimesb / I3; 
+    cout << " Then A = " << A << endl;
+    
+    // I can now compute Omega_HI(z)
+    ofstream file3("OmegaHIvsZ.dat");
+    for (int i = 0; i < 50; i++)
+    {
+        double z = i* 0.1;
+        auto integ = [&](double X)
+        {
+            double M_HI = A * exp(0.6*X);
+            double dndm = cosmo.dndlM(z,exp(X));
+            return M_HI * dndm;
+        };
+        double rhoHI = integrate(integ, M_min * log(10), M_max * log(10), 50, simpson());
+        
+        double zz = pow(1+z,-3);
+        file3 << z << " " <<  rhoHI / cosmo.rhoCritZ(0) << " " << (-0.000062667) * (z-3) * (z-3) + 0.00105<< endl;
+    }
 
 
 }

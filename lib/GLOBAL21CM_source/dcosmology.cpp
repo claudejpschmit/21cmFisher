@@ -943,7 +943,7 @@ void Cosmology::resetPowerSpectrum()
   sigma8 += qromb(sigmatop,log(10.0/scale),log(100.0/scale),acc);
   sigma8 = sqrt(sigma8);
   sNorm = sig8/sigma8;
-  cout << "sNorm = " << sNorm << endl;
+  //cout << "sNorm = " << sNorm << endl;
 }
 
 /* Sets up transfer function parameters.  Ultimately from Hu and 
