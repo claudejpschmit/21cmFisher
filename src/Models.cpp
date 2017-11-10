@@ -5,6 +5,7 @@
 #include "Log.hpp"
 #include <sstream>
 #include <math.h>
+#include <dcosmology.h>
 ModelInterface::ModelInterface(map<string,double> params)
     :
         CosmoBasis(params)
@@ -2017,7 +2018,6 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
         CAMB->call(params);    
         vector<double> vk = CAMB->get_k_values();
         vector<vector<double>> Pz = CAMB->get_Pz_values();
-        
         double z_stepsize = (params["zmax"] - params["zmin"])/(params["Pk_steps"] - 1);
         vector<double> vz, vP;
         for (unsigned int i = 0; i < Pz.size(); ++i) {
@@ -2062,6 +2062,8 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
                 params["hubble"] == Tb_interpolators[i].hubble &&\
                 params["T_CMB"] == Tb_interpolators[i].T_CMB &&\
                 params["w_DE"] == Tb_interpolators[i].w_DE &&\
+                params["n_s"] == Tb_interpolators[i].n_s &&\
+                params["A_s"] == Tb_interpolators[i].A_s &&\
                 params["omega_lambda"] == Tb_interpolators[i].omega_lambda ){
 
             log<LOG_VERBOSE>("Found precalculated T21");
@@ -2081,6 +2083,9 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
         interp.hubble = params["hubble"];
         interp.T_CMB = params["T_CMB"];
         interp.w_DE = params["w_DE"];
+        interp.n_s = params["n_s"];
+        interp.A_s = params["A_s"];
+
         if (params.find("omega_lambda") == params.end()) {
             interp.omk = params["omk"];
             interp.omega_lambda = 0;
@@ -2099,11 +2104,35 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
         real_1d_array xs, dTb;
         xs.setlength(zsteps_IM+1);
         dTb.setlength(zsteps_IM+1);
-        double z;       
+        double z;    
+        CAMB->call(params); 
+        double omLambda = params["omega_lambda"];
+        double hub = params["hubble"]/100.0;
+        double omM = params["omch2"]/(hub*hub);
+        double omb = params["ombh2"] / (hub*hub);
+        double n_s = params["n_s"];
+        double s8 = CAMB->get_sigma8();
+        cout << " ------------------   " << s8 << endl;
+        double omnu = params["omnuh2"] / (hub*hub);
+        Cosmology cosmo(omM,omLambda,omb,hub,s8,n_s,omnu);
+        // computing the normalization integral here, as it is only needed once.
+        auto integrand = [&](double X)
+        {
+            double M_HI = exp(0.6*X);
+            double dndm = cosmo.dndlMSheth(0.8,exp(X));
+            //double b = cosmo.biasPS(0.8,exp(X));
+            double b = biasmST(exp(X),0.8, &cosmo);
+            return M_HI * dndm * b;
+        };
+        double M_min = 1e10 * pow(1+0.8,-1.5);
+        double M_max = pow(200,3)/pow(30,3)*1e10 * pow(1+0.8, -1.5);
+        double I = integrate(integrand, log(M_min), log(M_max), 50, simpson());
+        /////////
+        
         for (int n = 0; n <= zsteps_IM; n++) {
             z = zmin_IM + n * zbin_size; 
             xs[n] = z;
-            dTb[n] = Tb(params, z);
+            dTb[n] = Tb(params, z, &cosmo, I);
         }
         spline1dinterpolant interpolator;
         spline1dbuildlinear(xs,dTb,interpolator);
@@ -2113,6 +2142,16 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
         
         Tb_interpolators.push_back(interp);
         *Tb_index = Tb_interpolators.size() - 1;
+        if (*Tb_index == 0)
+        {
+            ofstream file("OmegaHI.dat");
+            for (int i = 0; i < 50; i++)
+            {
+                double z = i* 0.1;
+                double OmHI = Omega_HI(z, &cosmo, I);
+                file << z << " " << OmHI << endl;
+            }
+        }
         log<LOG_VERBOSE>("T21 update done");
     }
 }
@@ -2245,7 +2284,7 @@ void Model_Intensity_Mapping::update_q(map<string,double> params, int *q_index)
 }
 
 //in micro_K
-double Model_Intensity_Mapping::Tb(map<string,double> params, double z)
+double Model_Intensity_Mapping::Tb(map<string,double> params, double z, Cosmology* cosmo, double Norm)
 {
     bool use_non_physical;
     if (params.find("omega_lambda") == params.end()) {
@@ -2297,7 +2336,7 @@ double Model_Intensity_Mapping::Tb(map<string,double> params, double z)
     // Update some container that that holds the halo mass function
     // at this redshift which is needed to compute Omega
     
-    double OmHI = Omega_HI(z);
+    double OmHI = Omega_HI(z, cosmo, Norm);
 
     double h = h2;// this->give_fiducial_params("hubble")/100.0;
     double H0 = H_02;//Hf_interp(0);
@@ -2346,14 +2385,33 @@ double Model_Intensity_Mapping::M_HI(double M, double z)
     */
 }
 
-double Model_Intensity_Mapping::Omega_HI(double z)
+double Model_Intensity_Mapping::Omega_HI(double z, Cosmology* cosmo, double Norm)
 {
     //TODO: I am right now just fitting a function to their figure,
     // the code below uses hmf, but that is dependent on which fitting
     // model the code hmf_for_LISW.py uses. 
     //
     // This function reproduces figure 20 from bull et al 2015 exactly
-    return (-0.000062667) * (z-3) * (z-3) + 0.00105;
+    bool approx = false;
+    if (approx)
+        return (-0.000062667) * (z-3) * (z-3) + 0.00105;
+    else
+    {
+        double OmTimesb = 0.62 * 1e-3;
+        auto integrand = [&](double X)
+        {
+            double M_HI = exp(0.6*X);
+            double dndm = nmST(exp(X),z,cosmo);
+            return M_HI * dndm;
+        };
+        
+        double M_min = 1e10 * pow(1+z,-1.5);
+        double M_max = pow(200,3)/pow(30,3)*1e10 * pow(1+z, -1.5);
+
+        double II = integrate(integrand, log(M_min), log(M_max), 50, simpson());
+        double res = OmTimesb*II/Norm;
+        return res;
+    }
 
     //TODO: need to make Omega_Hi dependent on the cosmo_params. Currently it is not
     

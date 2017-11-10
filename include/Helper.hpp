@@ -86,7 +86,7 @@ struct Tb_interpolator_Santos_ARES {
  * is simpler to calculate, according to Bull et al 2015
  */
 struct Tb_interpolator_IM{
-    double ombh2, omnuh2, omch2, omk, hubble, T_CMB, w_DE, omega_lambda;
+    double ombh2, omnuh2, omch2, omk, hubble, T_CMB, w_DE, omega_lambda, A_s, n_s;
     spline1dinterpolant interpolator;
     spline1dinterpolant fz_interpolator;
 };

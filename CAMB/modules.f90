@@ -2203,6 +2203,13 @@
     integer in, j
     !JD 08/13 Changes in here to PK arrays and variables
     integer j_PK
+    j=CP%Transfer%PK_num_redshifts
+    !Claude added: writes sigma 8 at z = 0 to file.
+    open(unit=fileio_unit,file='CAMB/sigma8.dat', form='formatted', status='replace')
+        write(fileio_unit, '(f7.3," ",f7.4)') &
+                CP%Transfer%redshifts(j), MTrans%sigma_8(j,1)
+    close(fileio_unit)
+    !end Claude
 
     !do in=1, CP%InitPower%nn
     !    if (CP%InitPower%nn>1)  write(*,*) 'Power spectrum : ', in

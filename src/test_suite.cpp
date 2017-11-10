@@ -2901,7 +2901,8 @@ BOOST_AUTO_TEST_CASE(check_halo)
     double omM = 0.127/(hub*hub);
     double omb = 0.022 / (hub*hub);
     double n_s = 0.962;
-    double s8 = 0.834;
+    double s8 = 0.7269;
+    //double s8 = 0.834;
     double omnu = 0.00064 / (hub*hub);
     Cosmology cosmo(omM,omLambda,omb,hub,s8,n_s,omnu);
     double c = cosmo.dndlM(1,pow(10,10));
@@ -2947,38 +2948,83 @@ BOOST_AUTO_TEST_CASE(check_halo)
     auto integrand3 = [&](double X)
     {
         double M_HI = exp(0.6*X);
-        double dndm = cosmo.dndlM(0.8,exp(X));
-        double b = cosmo.biasPS(0.8,exp(X));
+        double dndm = cosmo.dndlMSheth(0.8,exp(X));
+        //double b = cosmo.biasPS(0.8,exp(X));
+        double b = biasmST(exp(X),0.8, &cosmo);
         return M_HI * dndm * b;
     };
     cout << "Integrating 3" << endl;
-    double I3 = integrate(integrand3, M_min * log(10), M_max * log(10), 500, simpson());
+    M_min = 1e10 * pow(1+0.8,-1.5);
+    M_max = pow(200,3)/pow(30,3)*1e10 * pow(1+0.8, -1.5);
+
+    double I3 = integrate(integrand3, log(M_min), log(M_max), 50, simpson());
     cout << I3 << endl;
     
     double rho_c = cosmo.rhoCritZ(0);
     cout << rho_c << endl;
     double OmTimesb = 0.62 * 1e-3;
-    double A = rho_c * pow(1.8,3) * OmTimesb / I3; 
+    double A = rho_c * OmTimesb / I3; 
     cout << " Then A = " << A << endl;
-    
+
     // I can now compute Omega_HI(z)
     ofstream file3("OmegaHIvsZ.dat");
     for (int i = 0; i < 50; i++)
     {
         double z = i* 0.1;
+        M_min = 1e10 * pow(1+z,-1.5);
+        M_max = pow(200,3)/pow(30,3)*1e10 * pow(1+z, -1.5);
         auto integ = [&](double X)
         {
             double M_HI = A * exp(0.6*X);
-            double dndm = cosmo.dndlM(z,exp(X));
+            double dndm = cosmo.dndlMSheth(z,exp(X));
             return M_HI * dndm;
         };
-        double rhoHI = integrate(integ, M_min * log(10), M_max * log(10), 50, simpson());
-        
+        double rhoHI = integrate(integ, log(M_min), log(M_max), 50, simpson());
+        auto integ2 = [&](double X)
+        {
+            double M_HI = exp(0.6*X);
+            double dndm = nmST(exp(X),z,&cosmo);
+            return M_HI * dndm;
+        };
+        double II = integrate(integ2, log(M_min), log(M_max), 50, simpson());
+
         double zz = pow(1+z,-3);
-        file3 << z << " " <<  rhoHI / cosmo.rhoCritZ(0) << " " << (-0.000062667) * (z-3) * (z-3) + 0.00105<< endl;
+        file3 << z << " " <<  rhoHI / cosmo.rhoCritZ(0) << " " <<\
+            OmTimesb*II/I3 << " " << ((-0.000062667) * (z-3) * (z-3) + 0.00105)<< endl;
     }
 
 
 }
+BOOST_AUTO_TEST_CASE(check_sigma8)
+{
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_sigma8.ini";
 
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename;
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+
+    Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+
+    Bispectrum* NLG = new Bispectrum(analysis);
+    
+}
     // EOF

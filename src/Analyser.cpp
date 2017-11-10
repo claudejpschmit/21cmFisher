@@ -381,6 +381,10 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                     catch(alglib::ap_error e)
                     {
                         cout << param_keys[i] << " " << param_keys[j] << endl;
+                        for (unsigned int n = 0; n < nu.size(); n++) {
+                            cout << nus[n] << " " << fs[n] << endl;
+                        }
+
                         printf("error msg: %s\n", e.msg.c_str());
                     }
                     for (int k = nu_sorted[0]; k <= nu_sorted[nu.size()-1]; k++)

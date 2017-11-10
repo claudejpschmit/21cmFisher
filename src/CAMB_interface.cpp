@@ -85,7 +85,10 @@ void CAMB_CALLER::call(map<string, double> params)
     system("./CAMB/camb CAMB/new_params.ini");
     
     //recovering Power spectrum.
-    read_matterpower_files(params["Pk_steps"]);    
+    read_matterpower_files(params["Pk_steps"]);   
+    
+    //recovering sigma8
+    read_sigma8_file();
 }
 
 void CAMB_CALLER::call_full(map<string, double> params)
@@ -103,7 +106,6 @@ void CAMB_CALLER::call_full(map<string, double> params)
 
 void CAMB_CALLER::update_params_ini_full(map<string, double> params)
 {
-
     int n_redshifts = params["zmax_interp"] + 1;
     double zmin = 0;
     double zmax = params["zmax_interp"];
@@ -344,4 +346,17 @@ vector<vector<double>> CAMB_CALLER::get_Pz_values()
 vector<double> CAMB_CALLER::get_k_values()
 {
     return k_values;
+}
+
+void CAMB_CALLER::read_sigma8_file()
+{
+    ifstream file("CAMB/sigma8.dat");
+    double z, sigma8;
+    file >> z >> sigma8;
+    this->sig8 = sigma8;
+}
+
+double CAMB_CALLER::get_sigma8()
+{
+    return sig8;
 }

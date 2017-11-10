@@ -200,13 +200,13 @@ class Model_Intensity_Mapping : public ModelParent<Tb_interpolator_IM> {
         Model_Intensity_Mapping(map<string, double> params,\
                 int *Pk_index, int *Tb_index, int *q_index);
         ~Model_Intensity_Mapping(); 
-        double Omega_HI(double z); 
+        double Omega_HI(double z, Cosmology* cosmo, double Norm); 
         
         //should be private
         double interp_dndm(double M, double z);
         void update_hmf(map<string,double> params);
 
-        double Tb(map<string,double> params, double z);
+        double Tb(map<string,double> params, double z, Cosmology* cosmo, double Norm);
     protected:
         void update_Pkz(map<string,double> params, int *Pk_index);
         void update_T21(map<string,double> params, int *Tb_index);
