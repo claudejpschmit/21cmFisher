@@ -13,7 +13,6 @@ typedef std::complex<double> dcomp;
  * from non-linear gravitational collapse.
  */
 class Bispectrum {
-
     public:
         /**
          * The class constructor uses a pointer to an AnalysisInterface that 
@@ -107,7 +106,7 @@ class Bispectrum {
         double Blll_equilateral(int l);
         double k_integrand2(int l, double z, double k);
 
-        double theta_approx(int l, double z, double nu_centre, double nu_width,\
+        double theta_approx(int l, double z, int q, double nu_centre, double nu_width,\
                 int Pk_index, int Tb_index, int q_index);
 
         //PNG functions
@@ -133,7 +132,16 @@ class Bispectrum {
 
         void update_params(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index);
 
-    protected:
+        double theta_for_B1(int l, int lp, double z, double nu_centre, double nu_width, int nsteps);
+        double beta_for_B1(int l,int lp, int k_power,  double z, double zp);
+        double theta_approx_for_B1(int l, int lp, double z, double nu_centre, double nu_width,int Pk_index, int Tb_index, int q_index);
+        double Beta_integral(int l, int lp, double z, int n_steps);
+        double Beta_approx(int l, double z);
+        double Beta_approx(int l,int q, double z);
+        double Beta_integral(int l, int lp, int q, double z, int n_steps);
+
+
+    //protected:
         /**
          * Main work function to compute the NLG bispectrum contribution.
          *
@@ -249,7 +257,6 @@ class TEST_Bispectrum : public Bispectrum{
         double z_of_r(double r);
         spline1dinterpolant zor_interpolator;
         double alpha_approx(int l, double k, double zc, double deltaz);
-
 };
 
 

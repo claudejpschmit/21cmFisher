@@ -29,7 +29,6 @@
 
 
 using namespace std;
-
 template<typename Method, typename Function, typename Double> 
 double integrate(Function f, Double a, Double b, int steps, Method m)
 {
@@ -72,7 +71,6 @@ double integrate_simps(Function f, double a, double b, int steps)
     }
     return res * stepsize / 3.0;
 }
-
 /**
  * This class contains the simpson integration method, any other methods
  * are to be added in the same manner.
@@ -287,3 +285,4 @@ double integrate_levin(T &f, const double a, const double b)
     }
     return ans;
 }
+

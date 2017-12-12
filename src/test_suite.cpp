@@ -2528,7 +2528,7 @@ BOOST_AUTO_TEST_CASE(check_Theta)
             ls.push_back(l);
         if (l < 10000 && calc)
         {
-            double th = NLG->theta_approx(l, z, nu_centre, nu_width, 0, 0, 0);
+            double th = NLG->theta_approx(l, z, 0, nu_centre, nu_width, 0, 0, 0);
             double th_2 = NLG_test->theta_calc_5(l, l, z, 0, nu_centre, nu_width, 100, 0,0,0);
             //double th_3 = NLG_test->theta_calc_4(l, l, z, 0, 1, delta_z, 500);
             double th_4 = NLG_test->theta_calc_2(l, l, z, 0, 1, delta_z);
@@ -2992,8 +2992,6 @@ BOOST_AUTO_TEST_CASE(check_halo)
         file3 << z << " " <<  rhoHI / cosmo.rhoCritZ(0) << " " <<\
             OmTimesb*II/I3 << " " << ((-0.000062667) * (z-3) * (z-3) + 0.00105)<< endl;
     }
-
-
 }
 BOOST_AUTO_TEST_CASE(check_sigma8)
 {
@@ -3019,12 +3017,103 @@ BOOST_AUTO_TEST_CASE(check_sigma8)
     int q_index = 0; 
 
     Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
-
     IntensityMapping* analysis = new IntensityMapping(model, keys.size());
-
     Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
-
     Bispectrum* NLG = new Bispectrum(analysis);
+}
+BOOST_AUTO_TEST_CASE(check_limber_NLG)
+{
+    // Setup
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_sigma8.ini";
+
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename, outfilename2;
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+    Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+    Bispectrum* NLG = new Bispectrum(analysis);
+    TEST_Bispectrum* NLG_test = NULL;
+    NLG_test = new TEST_Bispectrum(analysis);
+
+    int l = 100;
+    int lp = l;
+    double z = 1;
+    double nu_centre = 1420.4/(1+z);
+    double nu_width = 10;
+    //double th1 = NLG->theta_for_B1(l,lp,z,nu_centre,nu_width, 500);
+    //double th2 = NLG->theta_approx(l,z,nu_centre,nu_width,0,0,0);
+    //cout << th1 << " " << th2 << endl;
     
+    //double z = 1;
+    //double nu_centre = 1420.4/(1.0 + z);
+    //double nu_width = 10.0;
+    double delta_z = 0.5;    
+    name = "theta_limber_B1";
+    outfilename << base << name << suffix;
+    name = "beta_limberB";
+    outfilename2 << base << name << suffix;
+    //double beta = NLG->Beta_integral(501, 500, z, 1000);
+
+
+    ofstream file(outfilename.str());
+    //ofstream file2(outfilename2.str());
+    //outfilename.str("");
+    vector<int> ls;
+    for (int i = 1; i < 100; i++)
+    {
+        int l = exp(i*0.1);
+        if (l % 2 == 1)
+            l++;
+        bool calc = true;
+        for (int j = 0; j < ls.size(); j++)
+        {
+            if (ls[j] == l)
+            calc = false;
+        }
+        if (calc)
+            ls.push_back(l);
+        if (l < 10000 && calc)
+        {
+            //double th = NLG->theta_approx(l, z, nu_centre, nu_width, 0, 0, 0);
+            //double th_1 = NLG->theta_approx_for_B1(l, l-1, z, nu_centre, nu_width, 0, 0, 0);
+            //double th_2 = NLG->theta_for_B1(l, l-1, z, nu_centre, nu_width, 100);
+            //double th_3 = NLG->theta_for_B1(l, l-1, z, nu_centre, nu_width, 1000);
+            //double beta = NLG->Beta_integral(l, l-1, z, 1000); 
+            //double betal = NLG ->Beta_approx(l, z);
+            
+            double b = NLG->theta_approx(l, z, 1, nu_centre, nu_width, 0,0,0);
+
+            double betaB = NLG->Beta_integral(l, l, 1, z, 1000); 
+            //double betalB2 = NLG->Beta_approx(l, 1, z);
+            //double betalB2 = NLG->Beta_approx(l,z);
+            //double th_3 = NLG_test->theta_calc_4(l, l, z, 0, 1, delta_z, 500);
+            //double nlg = NLG->calc_Blll_limber(l, l, l, nu_centre, nu_width, 0, 0, 0);
+            //double nlg = NLG->calc_angular_B_noInterp(l,l,l,0,0,0,z);
+            //cout << l << " " << th << " " << th_1 << " " << th_2 << " " << th_3 << endl;
+            //cout << l << " " << beta << " " << betal << " " << " " << th_3 << " " << abs(beta-betal)/beta<< endl;
+            //file2 << l << " " << beta << " " << betal << " " << " " << th_3 << " " << abs(beta-betal)/beta<< endl;
+            cout  << l << " " << b << " " << betaB << endl;
+            file  << l << " " << b << " " << betaB << endl;
+            //file2 << l << " " << betaB << " " << betalB << endl;
+            //file << l << " " << th << " " << th_1 << " " << th_2 << " " << th_3 << " " << abs(th-th_2)/abs(th_2) << " " << abs(th_2-th_3)/abs(th_2) << " " << abs(th-th_3)/th_3 << endl;
+        }
+    }
 }
     // EOF
