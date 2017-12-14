@@ -1921,6 +1921,8 @@ Model_Intensity_Mapping::Model_Intensity_Mapping(map<string, double> params,\
 :
     ModelParent(params)
 {
+    
+    log<LOG_BASIC>(">>> Beginning to build Model_Intensity_Mapping <<<");
     //Changing fiducial values to the ones they have used.
     map<string, double> new_params = give_fiducial_params();
     set_fiducial_params(new_params);
@@ -1961,7 +1963,7 @@ Model_Intensity_Mapping::Model_Intensity_Mapping(map<string, double> params,\
     M_normalization = rho_0 * Om_HI / (hh*hh*hh*hh*integral);
     */
     log<LOG_BASIC>("... 21cm interface built ...");
-    log<LOG_BASIC>("... Model_Intensity_Mapping built ...");
+    log<LOG_BASIC>("^^^ Model_Intensity_Mapping built ^^^");
 }
 
 Model_Intensity_Mapping::~Model_Intensity_Mapping()
@@ -2112,7 +2114,7 @@ void Model_Intensity_Mapping::update_T21(map<string,double> params, int *Tb_inde
         double omb = params["ombh2"] / (hub*hub);
         double n_s = params["n_s"];
         double s8 = CAMB->get_sigma8();
-        cout << " ------------------   " << s8 << endl;
+        //cout << " ------------------   " << s8 << endl;
         double omnu = params["omnuh2"] / (hub*hub);
         Cosmology cosmo(omM,omLambda,omb,hub,s8,n_s,omnu);
         // computing the normalization integral here, as it is only needed once.

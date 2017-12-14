@@ -4,7 +4,7 @@
 
 CosmoBasis::CosmoBasis(map<string, double> params)
 {
-    log<LOG_BASIC>("... Beginning to build CosmoBasis ...");
+    log<LOG_BASIC>(">>> Beginning to build CosmoBasis <<<");
     // Initializing parameters
     fiducial_params = params;
     this->check_params();
@@ -14,7 +14,7 @@ CosmoBasis::CosmoBasis(map<string, double> params)
     b_bias = pow(O_M,0.6) / beta;
     k_eq = 0.073 * O_M * pow(h,2);
 
-    log<LOG_BASIC>("... CosmoBasis built ...");
+    log<LOG_BASIC>("^^^ CosmoBasis built ^^^");
 }
 
 CosmoBasis::~CosmoBasis()

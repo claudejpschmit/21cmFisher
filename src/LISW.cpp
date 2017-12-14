@@ -40,7 +40,7 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
         interpolate_large(false),
         ql_interpolated(false)
 {
-    log<LOG_BASIC>("... Beginning LISW constructor ...");
+    log<LOG_BASIC>(">>> Beginning LISW constructor <<<");
 
     this->analysis = analysis;
     SN_calculation = false;
@@ -97,7 +97,7 @@ Bispectrum_LISW::Bispectrum_LISW(AnalysisInterface* analysis, int num_params)
         Cls_noise.push_back(-1);
     }
 
-    log<LOG_BASIC>("... LISW Class initialized ...");
+    log<LOG_BASIC>("^^^ LISW Class initialized ^^^");
 }
 
 Bispectrum_LISW::~Bispectrum_LISW()

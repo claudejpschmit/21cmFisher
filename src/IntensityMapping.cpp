@@ -36,7 +36,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model)
 
 IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
 {
-    log<LOG_BASIC>("... Entering IntensityMapping constructor ...");
+    log<LOG_BASIC>(">>> Entering IntensityMapping constructor <<<");
     this->model = model;
     
     log<LOG_DEBUG>("-> You better be using camb_ares_2D or camb_ares as your model!");
@@ -162,7 +162,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
     // Here I could include a code that precomputes the Cls between some lmin and lmax,
     // and nu_min and nu_max, then it stores this in a 2D interpolator.
     // I need to then create another function so that Cl(...) just returns the interpolated values.  
-    log<LOG_BASIC>("... IntensityMapping class built ...");
+    log<LOG_BASIC>("^^^ IntensityMapping class built ^^^");
 }
 
 IntensityMapping::~IntensityMapping()
@@ -236,7 +236,6 @@ int IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double 
             double nu = nu_min + i*nu_stepsize;
             vnu.push_back(nu);
         }
-        
         
         for (int l = lmin; l <= lmax; l++)
         {

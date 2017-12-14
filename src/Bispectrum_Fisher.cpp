@@ -19,7 +19,7 @@ using namespace chrono;
 Bispectrum_Fisher::Bispectrum_Fisher(AnalysisInterface* analysis, Bispectrum_LISW* LISW, Bispectrum* NLG,\
         vector<string> param_keys_considered, string fisherPath)
 {
-    log<LOG_BASIC>("... Beginning Bispectrum_Fisher constructor ...");
+    log<LOG_BASIC>(">>> Beginning Bispectrum_Fisher constructor <<<");
     interpolation_done = false;
     omp_set_nested(analysis->model->give_fiducial_params("nested"));
     this->fisherPath = fisherPath;
@@ -42,7 +42,7 @@ Bispectrum_Fisher::Bispectrum_Fisher(AnalysisInterface* analysis, Bispectrum_LIS
     // Determines the largest l-mode to be computed.
     lmax_CLASS = analysis->model->give_fiducial_params("lmax_Fisher_Bispectrum");
     time_file.open("Timing_logger.dat");
-    log<LOG_BASIC>("... Bispectrum_Fisher Class initialized ...");
+    log<LOG_BASIC>("^^^ Bispectrum_Fisher Class initialized ^^^");
 }
 
 Bispectrum_Fisher::~Bispectrum_Fisher()
@@ -835,6 +835,7 @@ spline1dinterpolant Bispectrum_Fisher::compute_Fl_interpolator(double nu, string
     for (unsigned int i = 0; i < fl_values.size(); i++){
         fls[i] = fl_values[i];
     }
+    cout << "creating spline" << endl;
     spline1dbuildcubic(ls, fls, interp);
     
     return interp;  

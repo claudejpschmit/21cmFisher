@@ -15,9 +15,9 @@ using namespace chrono;
 Bispectrum::Bispectrum(AnalysisInterface* analysis)
 {
     this->analysis = analysis;
-    log<LOG_BASIC>("... Entering Bispectrum constructor ...");
-    log<LOG_BASIC>("Precalculating Growth function for fast integrations");
-    log<LOG_BASIC>("Growth function is precalculated between %1% and %2% using %3% points.") % 0 % 100 % 1000;
+    log<LOG_BASIC>(">>> Entering Bispectrum constructor <<<");
+    log<LOG_BASIC>("... Precalculating Growth function for fast integrations ...");
+    log<LOG_BASIC>("... Growth function is precalculated between %1% and %2% using %3% points ...") % 0 % 100 % 1000;
     auto integrand = [&](double z)
     {
         double H3 = this->analysis->model->Hf_interp(z);
@@ -136,7 +136,7 @@ Bispectrum::Bispectrum(AnalysisInterface* analysis)
 
     log<LOG_BASIC>("... D_GROWTH_INTERP is prepared for q_index = 0 ...");
     update_D_Growth(0);
-    log<LOG_BASIC>("... Bispectrum Class initialized ...");
+    log<LOG_BASIC>("^^^ Bispectrum Class initialized ^^^");
 }
 
 void Bispectrum::update_params(map<string, double> params, int *Pk_index, int *Tb_index, int *q_index)
@@ -523,7 +523,7 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
     }
     B0abc = pre * I1 * pow(-1, la + lb);
     //cout << " factors for B0 = " << pre << " " << I1 << endl;
-    log<LOG_DEBUG>("B0 done -> %1%") % B0abc;
+    log<LOG_BASIC>("B0 done -> %1%") % B0abc;
 
     ///////////////////////////////////////////////////////////
     // Calculation for B1abc:
@@ -565,10 +565,14 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
                     //double THETA3 = 0;
                     //double THETA4 = 0;
                     
-                    double THETA1 = theta_approx(la, z, 1, nu_centre, nu_width, Pk_index, Tb_index, q_index);
-                    double THETA2 = theta_approx(lb, z, -1, nu_centre, nu_width, Pk_index, Tb_index, q_index);
-                    double THETA3 = theta_approx(la, z, -1, nu_centre, nu_width, Pk_index, Tb_index, q_index);
-                    double THETA4 = theta_approx(lb, z, 1, nu_centre, nu_width, Pk_index, Tb_index, q_index);
+                    double THETA1 = theta_approx(la, z, 1, nu_centre,\
+                            nu_width, Pk_index, Tb_index, q_index);
+                    double THETA2 = theta_approx(lb, z, -1, nu_centre,\
+                            nu_width, Pk_index, Tb_index, q_index);
+                    double THETA3 = theta_approx(la, z, -1, nu_centre,\
+                            nu_width, Pk_index, Tb_index, q_index);
+                    double THETA4 = theta_approx(lb, z, 1, nu_centre,\
+                            nu_width, Pk_index, Tb_index, q_index);
 
                     /*if (la == lb and l6 == l7)
                     {
@@ -588,17 +592,18 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
             }
             d_sum += I2 * l_terms;
             dcomp i_exp(0,1);
-            i_exp = pow(i_exp, l6+l7);
+            i_exp = pow(i_exp, la+lb+l6+l7);
+            //cout << i_exp << " " << l_terms << " " << la << " " << lb << " " << l6 << " " << l7 << endl;
             dcomp c_res = i_exp * d_sum;
             c_sum = c_sum + c_res;
         }
     }
 
-    dcomp i_exp(0,1);
-    i_exp = pow(i_exp, la+lb);
+    //dcomp i_exp(0,1);
+    //i_exp = pow(i_exp, la+lb);
     // the minus sign here is the (-1) in the Al'l'' formula.
-    B1abc = -i_exp * B1 * c_sum;
-    log<LOG_DEBUG>("B1 done -> %1%") % B1abc;
+    B1abc = -B1 * c_sum;
+    log<LOG_BASIC>("B1 done -> %1%") % B1abc;
 
     ////////////////////////////////////////////////////////
     // Calculation for B2abc:
@@ -645,8 +650,10 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
                         //double THETA1 = theta(la,l6,z,0,z_centre,delta_z);
                         
                         // Similar to before, we assume that for theta, la = l6 and lb = l7. This way it is 
-                        double THETA1 = theta_approx(la, z, 0, nu_centre, nu_width, Pk_index, Tb_index, q_index);
-                        double THETA2 = theta_approx(lb, z, 0, nu_centre, nu_width, Pk_index, Tb_index, q_index);
+                        double THETA1 = theta_approx(la, z, 0, nu_centre,\
+                                nu_width, Pk_index, Tb_index, q_index);
+                        double THETA2 = theta_approx(lb, z, 0, nu_centre,\
+                                nu_width, Pk_index, Tb_index, q_index);
 
                         /*if (la == lb and l6 == l7)
                             THETA2 = THETA1;
@@ -661,17 +668,17 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
                 }
                 d_sum += I3 * l_terms;
                 dcomp i_exp(0,1);
-                i_exp = pow(i_exp, l6+l7);
+                i_exp = pow(i_exp, la+lb+l6+l7);
                 dcomp c_res = i_exp * d_sum;
                 c_sum = c_sum + c_res;
             }
         }
     }
     
-    i_exp = pow(i_exp, la+lb);
+    //i_exp = pow(i_exp, la+lb);
     //i_exp is already i^(la+lb)
-    B2abc = i_exp * B2 * c_sum;
-    log<LOG_DEBUG>("B2 done -> %1%") % B2abc;
+    B2abc = B2 * c_sum;
+    log<LOG_BASIC>("B2 done -> %1%") % B2abc;
 
     /////////////////////////////////////////////////////////////////
     //
@@ -1629,57 +1636,8 @@ void Bispectrum::update_D_Growth(int q_index)
         D.interpolator = interp;
 
         growth_function_interps.push_back(D);
-        log<LOG_BASIC>("Growth function updated for q_index = %1%.") % q_index;
+        log<LOG_BASIC>("... Growth function updated for q_index = %1% ...") % q_index;
     }
-    /*
-    int count = (int)growth_function_interps.size() - 1;
-    while (count < q_index)
-    {
-        count ++;
-        //do calc
-        auto integrand = [&](double z)
-        {
-            double H3 = this->analysis->model->H_interp(z,count);
-            H3 = pow(H3, 3);
-
-            return (1.0+z)/H3;
-        };
-        double I1 = integrate(integrand, 0.0, 10000.0, 1000000, simpson());
-        double norm = 1.0/I1;
-        Growth_function_norms.push_back(norm);
-
-        vector<double> zs_v, D_v;
-
-        // Should precalculate to at least z = 10000. 
-        // Although this takes 20 seconds each run, which is annoying.
-        zs_v.resize(1000);
-        D_v.resize(1000);
-        #pragma omp parallel for
-        for (int i = 0; i < 1000; i++)
-        {
-            double z = i*0.1;
-            double D = D_Growth(z, count);
-
-            zs_v[i] = z;
-            D_v[i] = D;
-        }
-
-        real_1d_array zs, D_pluss;
-        zs.setlength(zs_v.size());
-        D_pluss.setlength(D_v.size());
-
-        for (unsigned int i = 0; i < zs_v.size(); i++){
-            zs[i] = zs_v[i];
-        }
-        for (unsigned int i = 0; i < D_v.size(); i++){
-            D_pluss[i] = D_v[i];
-        }
-        spline1dinterpolant interp;
-        spline1dbuildcubic(zs, D_pluss, interp);
-
-        growth_function_interps.push_back(interp);
-    }
-    */
 }
 
 double Bispectrum::D_Growth_interp(double z)
