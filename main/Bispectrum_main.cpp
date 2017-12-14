@@ -107,6 +107,7 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
+        
         Bispectrum* NLG = new Bispectrum(analysis);
         Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
         Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
@@ -122,7 +123,7 @@ int main(int argc, char* argv[])
         double nu_min = 400;
         //nu_max = 790, so between z = 0.8 and z = 2.55
         double nu_stepsize = 10;
-        int n_points_per_thread = 40;
+        int n_points_per_thread = 5;
         int n_threads = 1;
         bool limber = true;
         Bispectrum_Effects effects = parser.giveBispectrumEffects();

@@ -4,6 +4,7 @@
 #include "wignerSymbols.h"
 #include <complex>
 #include <cmath>
+#include <cfloat>
 #include <map>
 #include <ctime>
 #include <iostream>
@@ -27,6 +28,8 @@
 #include "levinFunctions.h"
 #include "dcosmology.h"
 #include <omp.h>
+#include "WignerPythonInterface.hpp"
+#include <boost/math/special_functions/fpclassify.hpp>
 using namespace std;
 
 log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
@@ -3115,5 +3118,35 @@ BOOST_AUTO_TEST_CASE(check_limber_NLG)
             //file << l << " " << th << " " << th_1 << " " << th_2 << " " << th_3 << " " << abs(th-th_2)/abs(th_2) << " " << abs(th_2-th_3)/abs(th_2) << " " << abs(th-th_3)/th_3 << endl;
         }
     }
+}
+
+BOOST_AUTO_TEST_CASE(check_wigner)
+{
+    WignerPythonInterface WPI;
+
+    for (int l = 0; l < 30; l++)
+    {
+        int l1 = 2 + l * 1;
+        int lmin1 = l1/2;
+        if (lmin1 == 1)
+            lmin1 = 2;
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            for (int l3 = l1-l2; l3 <= l2; l3++)
+            {
+                for (int l6 = l1 - 2; l6 <= l1 + 2; l6++)
+                {
+                    for (int l7 = l2 - 2; l7 <= l2 + 2; l7++)
+                    {
+                        double W6J = WignerSymbols::wigner6j(l1, l2, l3, l7, l6, 2);
+                        if (my_isnan(W6J))
+                            W6J = WPI.W6J(l1,l2,l3,l7,l6,2);
+                        cout << W6J << " " << l1 << " " << l2 << " " << l3 << " " << l7 << " " << l6 << endl;
+                    }
+                }
+            }
+        }
+    }
+    cout << WignerSymbols::wigner6j(31, 31, 31, 32, 33, 2) << " " << WPI.W6J(31,31,31,32,33,2) << endl;
 }
     // EOF

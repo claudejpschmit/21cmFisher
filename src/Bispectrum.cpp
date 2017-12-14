@@ -14,6 +14,7 @@ using namespace chrono;
 
 Bispectrum::Bispectrum(AnalysisInterface* analysis)
 {
+    WPI = new WignerPythonInterface();
     this->analysis = analysis;
     log<LOG_BASIC>(">>> Entering Bispectrum constructor <<<");
     log<LOG_BASIC>("... Precalculating Growth function for fast integrations ...");
@@ -194,14 +195,14 @@ double Bispectrum::calc_Blll_limber(int l1, int l2, int l3, double nu_centre, do
     // Updates the growth functions used in the Blls
     update_D_Growth(q_index);
     
-    dcomp B_lll(0,0);
+    double B_lll;
     if (l1 == l2 and l1 == l3)
         B_lll = 3.0 * B_ll_limber(l1,l2,l3,nu_centre,nu_width,Pk_index,Tb_index,q_index);
     else
         B_lll = B_ll_limber(l1,l2,l3,nu_centre,nu_width,Pk_index,Tb_index,q_index) +\
                 B_ll_limber(l1,l3,l2,nu_centre,nu_width,Pk_index,Tb_index,q_index) +\
                 B_ll_limber(l2,l3,l1,nu_centre,nu_width,Pk_index,Tb_index,q_index);
-    double result = abs(B_lll);
+    double result = B_lll;
     return result;
 }
 
@@ -443,7 +444,7 @@ dcomp Bispectrum::B_ll(int la, int lb, int lc, double z, int Pk_index, int Tb_in
     return Babc * prefactor;
 }
 
-dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double nu_width,\
+double Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double nu_width,\
         int Pk_index, int Tb_index, int q_index)
 {
     log<LOG_DEBUG>("Calculation for la = %1%, lb = %2% and lc = %3%") % la % lb % lc;
@@ -451,9 +452,12 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
     double A1 = 1.0;
     double A2 = 4.0/7.0;
     //dcomp prefactor = (16.0/pi) * sqrt(((2*la+ 1) * (2*lb + 1) * (2*lc + 1))/pow(4.0*pi,3));
-    dcomp B0abc(0,0);
-    dcomp B1abc(0,0);
-    dcomp B2abc(0,0);
+    //dcomp B0abc(0,0);
+    //dcomp B1abc(0,0);
+    //dcomp B2abc(0,0);
+    double B0abc = 0;
+    double B1abc = 0;
+    double B2abc = 0;
     // Integration params:
     // 100 steps is more than enough.    
     int steps;
@@ -523,12 +527,16 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
     }
     B0abc = pre * I1 * pow(-1, la + lb);
     //cout << " factors for B0 = " << pre << " " << I1 << endl;
-    log<LOG_BASIC>("B0 done -> %1%") % B0abc;
+    //log<LOG_BASIC>("B0 done -> %1%") % B0abc;
 
     ///////////////////////////////////////////////////////////
     // Calculation for B1abc:
     double B1 = A1;
-    dcomp c_sum(0,0);
+    W1 = 0;
+    W2 = 0;
+    W3 = 0;
+    W6J = 0;
+    //dcomp c_sum(0,0);
     double d_sum = 0;
     for (int l6 = la - 1; l6 <= la + 1; l6++)
     {
@@ -590,42 +598,52 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
                 log<LOG_DEBUG>("%1% %2% %3% %4%") % W1 % W2 % W3 % W6J; 
                 I2 = integrate(integrand2, zmin, zmax, steps, simpson());
             }
-            d_sum += I2 * l_terms;
-            dcomp i_exp(0,1);
-            i_exp = pow(i_exp, la+lb+l6+l7);
+            int expo = la+lb+l6+l7;
+            if (expo % 2 != 0 && l_terms != 0)
+            {
+                cout << "ERROR: exponent should be even, it is: " << expo << endl; 
+            }
+            double m1exp = pow(-1, expo/2);
+            d_sum += I2 * l_terms * m1exp;
+            //dcomp i_exp(0,1);
+            //i_exp = pow(i_exp, la+lb+l6+l7);
+
             //cout << i_exp << " " << l_terms << " " << la << " " << lb << " " << l6 << " " << l7 << endl;
-            dcomp c_res = i_exp * d_sum;
-            c_sum = c_sum + c_res;
+            //dcomp c_res = i_exp * d_sum;
+            //c_sum = c_sum + c_res;
         }
     }
 
     //dcomp i_exp(0,1);
     //i_exp = pow(i_exp, la+lb);
     // the minus sign here is the (-1) in the Al'l'' formula.
-    B1abc = -B1 * c_sum;
-    log<LOG_BASIC>("B1 done -> %1%") % B1abc;
-
+    B1abc = -B1 * d_sum;
+    //log<LOG_BASIC>("B1 done -> %1%") % B1abc;
+    W1 = 0;
+    W2 = 0;
+    W3 = 0;
+    W6J = 0;
     ////////////////////////////////////////////////////////
     // Calculation for B2abc:
     double B2 = 2.0*A2/3.0;
-    c_sum = 0;
+    //c_sum = 0;
     d_sum = 0;
-    bool debug = false;
-    if (!debug)
+
+    for (int l6 = la - 2; l6 <= la + 2; l6++)
     {
-        for (int l6 = la - 2; l6 <= la + 2; l6++)
-        {
-            for (int l7 = lb - 2; l7 <= lb + 2; l7++)
-            {   
-                log<LOG_DEBUG>("B1 -> l6 = %1% , l7 = %2%.") % l6 % l7;
-                W1 = WignerSymbols::wigner3j(la, l6, 2, 0, 0, 0);
-                W2 = WignerSymbols::wigner3j(lb, l7, 2, 0, 0, 0);
-                W3 = WignerSymbols::wigner3j(lc, l6, l7, 0, 0, 0);
-                //cout << la << " " << lb << " " << lc << " " << l7 << " " << l6 << endl; 
-                W6J = WignerSymbols::wigner6j(la, lb, lc, l7, l6, 2);
+        for (int l7 = lb - 2; l7 <= lb + 2; l7++)
+        {   
+            log<LOG_DEBUG>("B1 -> l6 = %1% , l7 = %2%.") % l6 % l7;
+            W1 = WignerSymbols::wigner3j(la, l6, 2, 0, 0, 0);
+            W2 = WignerSymbols::wigner3j(lb, l7, 2, 0, 0, 0);
+            W3 = WignerSymbols::wigner3j(lc, l6, l7, 0, 0, 0);
+            //cout << la << " " << lb << " " << lc << " " << l7 << " " << l6 << endl; 
+            W6J = WignerSymbols::wigner6j(la, lb, lc, l7, l6, 2);
+            if (my_isnan(W6J))
+                W6J = WPI->W6J(la,lb,lc,l7,l6,2);
+  
+            double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
 
-
-                double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
                 // For debug:
                 // IMPORTANT: before enabling this, updating the theta vector needs to be 
                 //              reviewed. ATM I just initialize the vectors with li = lj
@@ -635,24 +653,26 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
 
                
                 //l_terms = 0;
-
-                double I3 = 0;
-                if (l_terms != 0){
-                    auto integrand3 = [&](double z)
-                    {
-                        double D = D_Growth_interp(z,q_index);
+            if (la == 1 or lb == 1)
+                l_terms = 0;
+            double I3 = 0;
+            if (l_terms != 0)
+            {
+                auto integrand3 = [&](double z)
+                {
+                    double D = D_Growth_interp(z,q_index);
                         //double r = analysis->model->q_interp(z,q_index);
                         // 1000 factor is necessary to convert km into m.
                         //double hub = analysis->model->H_interp(z,q_index)*1000.0;
                         //double Fz = D*D*f1(z,q_index)*Wnu(r,z_centre,delta_z);
-                        double Fz = D*D*f1(z,q_index)*Wnu_z(z, nu_centre, nu_width);
+                    double Fz = D*D*f1(z,q_index)*Wnu_z(z, nu_centre, nu_width);
                         //double THETA2 = 0;
                         //double THETA1 = theta(la,l6,z,0,z_centre,delta_z);
                         
                         // Similar to before, we assume that for theta, la = l6 and lb = l7. This way it is 
-                        double THETA1 = theta_approx(la, z, 0, nu_centre,\
+                    double THETA1 = theta_approx(la, z, 0, nu_centre,\
                                 nu_width, Pk_index, Tb_index, q_index);
-                        double THETA2 = theta_approx(lb, z, 0, nu_centre,\
+                    double THETA2 = theta_approx(lb, z, 0, nu_centre,\
                                 nu_width, Pk_index, Tb_index, q_index);
 
                         /*if (la == lb and l6 == l7)
@@ -660,29 +680,43 @@ dcomp Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double n
                         else
                             THETA2 = theta(lb,l7,z,0,z_centre,delta_z);
                         */
-                        return Fz * THETA1 * THETA2;
-                    };
+                    return Fz * THETA1 * THETA2;
+                };
 
-                    log<LOG_DEBUG>("%1% %2% %3% %4%") % W1 % W2 % W3 % W6J; 
-                    I3 = integrate(integrand3, zmin, zmax, steps, simpson());
-                }
-                d_sum += I3 * l_terms;
-                dcomp i_exp(0,1);
-                i_exp = pow(i_exp, la+lb+l6+l7);
-                dcomp c_res = i_exp * d_sum;
-                c_sum = c_sum + c_res;
+                    //log<LOG_DEBUG>("%1% %2% %3% %4%") % W1 % W2 % W3 % W6J; 
+                I3 = integrate(integrand3, zmin, zmax, steps, simpson());
             }
+                
+            int expo = la+lb+l6+l7;
+            if (expo % 2 != 0 && l_terms != 0)
+            {
+                cout << "ERROR: exponent should be even, it is: " << expo << endl; 
+            }
+            double m1exp = pow(-1, expo/2);
+                
+            d_sum += I3 * l_terms * m1exp;
+                //cout << d_sum << endl;
+                //cout << "l_terms, la, lb, lc, l6, l7: " << l_terms << " " <<\
+                    la << " " << lb << " " << lc << " " << l6 << " " << l7 <<\
+                    " " << W1 << " " << W2 << " " << W3 << " " << W6J << endl;
+                //dcomp i_exp(0,1);
+                //i_exp = pow(i_exp, la+lb+l6+l7);
+                //dcomp c_res = i_exp * d_sum;
+                //c_sum = c_sum + c_res;
         }
     }
+  
     
     //i_exp = pow(i_exp, la+lb);
     //i_exp is already i^(la+lb)
-    B2abc = B2 * c_sum;
-    log<LOG_BASIC>("B2 done -> %1%") % B2abc;
+    B2abc = B2 * d_sum;
+    //cout << "B2 & d_sum = " << B2 << " " << d_sum << endl;
+    //log<LOG_BASIC>("B2 done -> %1%") % B2abc;
 
     /////////////////////////////////////////////////////////////////
     //
-    dcomp Babc = B0abc + B1abc + B2abc;
+    //dcomp Babc = B0abc + B1abc + B2abc;
+    double Babc = B0abc + B1abc + B2abc;
     double lss = (2.0*la+ 1.0) * (2.0*lb + 1.0) * (2.0*lc + 1.0);
     double FpiC = pow(4.0*pi,3);
     double SoPi = 16.0/pi;

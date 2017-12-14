@@ -195,3 +195,12 @@ static bool compare(int i, int j)
     return (i<j);
 }
 
+static bool my_isnan(double a)
+{
+    stringstream ss;
+    ss << a;
+    if (ss.str() == "nan" or ss.str() == "-nan")
+        return true;
+    else 
+        return false;
+}

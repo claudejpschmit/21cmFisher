@@ -4,7 +4,7 @@
 #include <complex>
 #include "Zygelman.hpp"
 #include "Helper.hpp"
-
+#include "WignerPythonInterface.hpp"
 using namespace std;
 typedef std::complex<double> dcomp;
 
@@ -156,8 +156,8 @@ class Bispectrum {
          * This method only produces results for the fiducial model.
          */
         dcomp B_ll_direct(int la, int lb, int lc, double z);
-        
-        dcomp B_ll_limber(int la, int lb, int lc, double nu_centre, double nu_width,\
+
+        double B_ll_limber(int la, int lb, int lc, double nu_centre, double nu_width,\
                 int Pk_index, int Tb_index, int q_index);
 
         double x_bar(double z);
@@ -205,6 +205,8 @@ class Bispectrum {
         vector<Theta> theta_interpolants;
         
         vector<vector<double>> thetas;
+        WignerPythonInterface* WPI;
+
 };
 
 

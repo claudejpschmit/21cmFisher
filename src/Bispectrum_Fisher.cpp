@@ -553,7 +553,7 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
      * they will never have to create a new vector element. It could be that multiple threads 
      * would try and create the same model interpolator, which is BAD!.
      **/
-    int lmin1 = 1;
+    int lmin1 = 2;
     log<LOG_BASIC>("Starting computation with lmax = %1%.") % 2;
     for (int l2 = lmin1; l2 <= 2; l2++)
     {
@@ -610,7 +610,10 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             /*
             if (l1 > lmax_CLASS)
                 l1 = modmax;*/
+            
             int lmin = l1/2;
+            if (lmin == 1)
+                lmin = 2;
             //cout << i << " -- " << l1 << endl;
             if (l1 <= lmax_CLASS)
             {
@@ -788,6 +791,8 @@ spline1dinterpolant Bispectrum_Fisher::compute_Fl_interpolator(double nu, string
     {
         int l1 = 2 + l * stepsize;
         int lmin1 = l1/2;
+        if (lmin1 == 1)
+            lmin1 = 2;
         res = 0;
         if (nu == 420 or nu == 620)
         {
@@ -836,6 +841,7 @@ spline1dinterpolant Bispectrum_Fisher::compute_Fl_interpolator(double nu, string
         fls[i] = fl_values[i];
     }
     cout << "creating spline" << endl;
+    cout << lmodes_vec.size() << " " << fl_values.size() << endl;
     spline1dbuildcubic(ls, fls, interp);
     
     return interp;  
