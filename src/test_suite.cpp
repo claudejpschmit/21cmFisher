@@ -30,6 +30,7 @@
 #include <omp.h>
 #include "WignerPythonInterface.hpp"
 #include <boost/math/special_functions/fpclassify.hpp>
+
 using namespace std;
 
 log_level_t GLOBAL_VERBOSITY_LEVEL = LOG_BASIC;
@@ -3103,7 +3104,7 @@ BOOST_AUTO_TEST_CASE(check_limber_NLG)
             
             double b = NLG->theta_approx(l, z, 1, nu_centre, nu_width, 0,0,0);
 
-            double betaB = NLG->Beta_integral(l, l, 1, z, 1000); 
+            double betaB = NLG->Beta_integral(l, l-1, 1, z, 1000); 
             //double betalB2 = NLG->Beta_approx(l, 1, z);
             //double betalB2 = NLG->Beta_approx(l,z);
             //double th_3 = NLG_test->theta_calc_4(l, l, z, 0, 1, delta_z, 500);
@@ -3124,7 +3125,7 @@ BOOST_AUTO_TEST_CASE(check_wigner)
 {
     WignerPythonInterface WPI;
 
-    for (int l = 0; l < 30; l++)
+    for (int l = 0; l < 3; l++)
     {
         int l1 = 2 + l * 1;
         int lmin1 = l1/2;
@@ -3139,8 +3140,8 @@ BOOST_AUTO_TEST_CASE(check_wigner)
                     for (int l7 = l2 - 2; l7 <= l2 + 2; l7++)
                     {
                         double W6J = WignerSymbols::wigner6j(l1, l2, l3, l7, l6, 2);
-                        if (my_isnan(W6J))
-                            W6J = WPI.W6J(l1,l2,l3,l7,l6,2);
+                        //if (my_isnan(W6J))
+                        //    W6J = WPI.W6J(l1,l2,l3,l7,l6,2);
                         cout << W6J << " " << l1 << " " << l2 << " " << l3 << " " << l7 << " " << l6 << endl;
                     }
                 }

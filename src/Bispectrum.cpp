@@ -638,21 +638,23 @@ double Bispectrum::B_ll_limber(int la, int lb, int lc, double nu_centre, double 
             W2 = WignerSymbols::wigner3j(lb, l7, 2, 0, 0, 0);
             W3 = WignerSymbols::wigner3j(lc, l6, l7, 0, 0, 0);
             //cout << la << " " << lb << " " << lc << " " << l7 << " " << l6 << endl; 
-            W6J = WignerSymbols::wigner6j(la, lb, lc, l7, l6, 2);
-            if (my_isnan(W6J))
-                W6J = WPI->W6J(la,lb,lc,l7,l6,2);
-  
-            double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3 * W6J;
-
-                // For debug:
-                // IMPORTANT: before enabling this, updating the theta vector needs to be 
-                //              reviewed. ATM I just initialize the vectors with li = lj
-                //              because that's the only once needed for the first term.
-                //
-                //             same goes for the qs.
-
-               
-                //l_terms = 0;
+            
+            double l_terms = (2.0*l6 + 1.0) * (2.0*l7 + 1.0) * W1 * W2 * W3;
+            if (l_terms != 0)
+            {
+                W6J = WignerSymbols::wigner6j(la, lb, lc, l7, l6, 2);
+                if (my_isnan(W6J))
+                    W6J = WPI->W6J(la,lb,lc,l7,l6,2);
+                l_terms *= W6J;
+            }
+            
+            // For debug:
+            // IMPORTANT: before enabling this, updating the theta vector needs to be 
+            //              reviewed. ATM I just initialize the vectors with li = lj
+            //              because that's the only once needed for the first term.
+            //
+            //             same goes for the qs.
+            //l_terms = 0;
             if (la == 1 or lb == 1)
                 l_terms = 0;
             double I3 = 0;
