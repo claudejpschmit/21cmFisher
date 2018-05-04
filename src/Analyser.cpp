@@ -18,9 +18,9 @@ Analyser::Analyser(IniReaderAnalysis* parser)
 Analyser::~Analyser()
 {}
 
-Fisher_return_pair Analyser::build_Fisher_inverse()
+Fisher_return_pair Analyser::build_Fisher_inverse(bool outFisher)
 {
-    Fisher_return_pair RESULT;
+    Fisher_return_pair RESULT, RESULT_F;
     if (parser->giveAnalysisMode() == powerspectrum)
     {
         struct F_values 
@@ -267,6 +267,14 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
 
         RESULT.matrix_indecies = indecies;
     }
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////////
     else if (parser->giveAnalysisMode() == bispectrum)
     {
         struct F_values 
@@ -373,24 +381,31 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
                         }
                     }
 
-
-                    spline1dinterpolant Fl_interp;
-                    try {
-                        spline1dbuildcubic(nus,fs,Fl_interp);
-                    }
-                    catch(alglib::ap_error e)
+                    if (nu.size() == 1)
                     {
-                        cout << param_keys[i] << " " << param_keys[j] << endl;
-                        for (unsigned int n = 0; n < nu.size(); n++) {
-                            cout << nus[n] << " " << fs[n] << endl;
+                        v = fs[0];
+                    }
+                    else {
+
+                        spline1dinterpolant Fl_interp;
+                        try {
+                            spline1dbuildcubic(nus,fs,Fl_interp);
                         }
+                        catch(alglib::ap_error e)
+                        {
+                            cout << "ERROR: "<< endl;
+                            cout << param_keys[i] << " " << param_keys[j] << endl;
+                            for (unsigned int n = 0; n < nu.size(); n++) {
+                                cout << nus[n] << " " << fs[n] << endl;
+                            }
 
-                        printf("error msg: %s\n", e.msg.c_str());
-                    }
-                    for (int k = nu_sorted[0]; k <= nu_sorted[nu.size()-1]; k++)
-                    {
-                        double fk = spline1dcalc(Fl_interp, k);
-                        v += fk; 
+                            printf("error msg: %s\n", e.msg.c_str());
+                        }
+                        for (int k = nu_sorted[0]; k <= nu_sorted[nu.size()-1]; k++)
+                        {
+                            double fk = spline1dcalc(Fl_interp, k);
+                            v += fk; 
+                        }
                     }
                 }
                 F_ab_value.value = v;
@@ -502,12 +517,14 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
         {
             // here using penrose pseudo inverse.
             RESULT.matrix = pinv(F_priors_included);
+            RESULT_F.matrix = F_priors_included;
             log<LOG_DEBUG>("Pseudo Inverse used for Fisher inversion.");
         }
         else
         {
             // here using standard inverse.
             RESULT.matrix = F_priors_included.i();
+            RESULT_F.matrix = F_priors_included;
             log<LOG_DEBUG>("Standard Inverse used for Fisher inversion.");
         }
         // Print Fisher Matrix with diagnostics
@@ -576,13 +593,21 @@ Fisher_return_pair Analyser::build_Fisher_inverse()
         cout << RESULT.matrix * F_priors_included << endl;
 
         RESULT.matrix_indecies = indecies;
+        RESULT_F.matrix_indecies = indecies;
+
     }
     else
     {
         log<LOG_ERROR>("ERROR: could not build Fisher inverse!");
     }
-    
-    return RESULT;
+    if (outFisher)
+    {
+        return RESULT_F;
+    }
+    else 
+    {
+        return RESULT;
+    }
 }
 
 Fisher_return_pair Analyser::build_Fisher()

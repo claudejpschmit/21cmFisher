@@ -2,6 +2,8 @@
 #include "Integrator.hpp"
 #include "Log.hpp"
 
+#define NUWIDTH 10
+#define LIMBERWINDOW true
 
 IntensityMapping::IntensityMapping(ModelInterface* model)
 {
@@ -38,7 +40,7 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
 {
     log<LOG_BASIC>(">>> Entering IntensityMapping constructor <<<");
     this->model = model;
-    
+   
     log<LOG_DEBUG>("-> You better be using camb_ares_2D or camb_ares as your model!");
     analysisID = "IntensityMapping_analysis";
     if (model->give_fiducial_params("interp_Cls") == 0)
@@ -50,108 +52,65 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
     lmax_CLASS = model->give_fiducial_params("lmax_Fisher_Bispectrum");
     numin_CLASS = model->give_fiducial_params("Bispectrum_numin");
     numax_CLASS = model->give_fiducial_params("Bispectrum_numax");
-    nu_steps_CLASS = 10;
-    
+    nu_steps_CLASS = (numax_CLASS - numin_CLASS)/(double)model->give_fiducial_params("nu_stepsize");
+    ////////////
+    //
+    log<LOG_BASIC>("... Precalculating Growth function for fast integrations ...");
+    log<LOG_BASIC>("... Growth function is precalculated between %1% and %2% using %3% points ...") % 0 % 100 % 1000;
+    auto integrand = [&](double z)
+    {
+        double H3 = this->model->Hf_interp(z);
+        H3 = pow(H3, 3);
+
+        return (1.0+z)/H3;
+    };
+    double I1 = integrate(integrand, 0.0, 10000.0, 1000000, simpson());
+    Growth_function_norm = 1.0/I1;
+
+    vector<double> zs_v, D_v;
+
+    // Should precalculate to at least z = 10000. 
+    // Although this takes 20 seconds each run, which is annoying.
+    zs_v.resize(1000);
+    D_v.resize(1000);
+
+    // Caution: This introduces a possible memory loss
+    #pragma omp parallel for
+    for (int i = 0; i < 1000; i++)
+    {
+        double z = i*0.1;
+        double D = D_Growth(z);
+
+        zs_v[i] = z;
+        D_v[i] = D;
+    }
+
+    real_1d_array zs, D_pluss;
+    zs.setlength(zs_v.size());
+    D_pluss.setlength(D_v.size());
+
+    for (unsigned int i = 0; i < zs_v.size(); i++){
+        zs[i] = zs_v[i];
+    }
+    for (unsigned int i = 0; i < D_v.size(); i++){
+        D_pluss[i] = D_v[i];
+    }
+    spline1dbuildcubic(zs, D_pluss, Growth_function_interpolator);
+
+    log<LOG_BASIC>("... Writing Growth function to file ...");
+    ofstream file("Growing_mode.dat");
+    for (int i = 0; i < 1000; i++)
+    {
+        double z = i*0.1;
+        file << z << " " << spline1dcalc(Growth_function_interpolator, z) << endl;
+    }
+    log<LOG_BASIC>("... D_GROWTH_INTERP is prepared for q_index = 0 ...");
+    update_D_Growth(0);
+
+
+    /////////////
     if (interpolating)
     {
-        /*this->num_params = num_params;
-        // num_deriv is the number of non_fiducial points calculated for the fisher derivative.
-        // 1 for normal derivative,
-        // 4 for 5 point stencil.
-        int num_deriv = 1;
-        int num_indecies = num_params * num_deriv + 1;
-        //boost::array<Interpol_Array::index,4> dims = {{lmax_CLASS+1,num_indecies,\
-            num_indecies,num_indecies}};
-        //boost::multi_array<Interpol,4> arr(dims);
-        //Cls_interpolators_large = new boost::multi_array<Interpol,4>(dims);
-        for (int l = 0; l < lmax_CLASS+1; l++)
-        {
-            vector<vector<vector<Interpol>>> subvec3;
-            //Cls_interpolators_large2[l].resize(num_indecies);
-            for (int i = 0; i < num_indecies; i++)
-            {
-                //Cls_interpolators_large2[l][i].resize(num_indecies);
-                vector<vector<Interpol>> subvec2;
-                for (int j = 0; j < num_indecies; j++)
-                {
-                    //Cls_interpolators_large2[l][i][j].resize(num_indecies);
-                    vector<Interpol> subvec1;
-                    for (int k = 0; k < num_indecies; k++)
-                    {    
-                        Interpol I;
-                        real_1d_array x;                        
-                        real_1d_array y;
-                        x.setlength(2);
-                        y.setlength(2);
-                        x[0] = 0;
-                        x[1] = 1;
-                        y[0] = 0;
-                        y[1] = 1;
-                        spline1dinterpolant interpol;
-                        spline1dbuildlinear(x, y, 2, interpol);
-                        I.computed = false;
-                        I.interpolator = interpol;
-                        //(*Cls_interpolators_large)[l][i][j][k].computed = false;
-                        subvec1.push_back(I);//Cls_interpolators_large2[l][i][j][k].computed = false;
-                    }
-                    subvec2.push_back(subvec1);
-                }
-                subvec3.push_back(subvec2);
-            }
-            Cls_interpolators_large2.push_back(subvec3);
-        }
-
-        log<LOG_BASIC>("Cls are being interpolated");
-        log<LOG_BASIC>("Parameters are: lmin = %1%, lmax = %2%, nu_min = %3%, nu_max = %4%, nu_steps = %5%.") %\
-            lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
-
-        ////////////////////////////////////////////////////////////////////////////////////
-        */
-        /*
-        double nu_stepsize = abs(numax_CLASS-numin_CLASS)/(double)nu_steps_CLASS;
-        
-        #pragma omp parallel for
-        for (int l = lmin_CLASS; l <= lmax_CLASS; l++)
-        {
-            vector<double> vnu, vCl;
-            for (int i = 0; i <= nu_steps_CLASS; i++)
-            {
-                double nu = numin_CLASS + i*nu_stepsize;
-                vCl.push_back(this->calc_Cl(l,nu,nu,0,0,0));
-                vnu.push_back(nu);
-            }
-        
-            real_1d_array nu_arr, Cl_arr;
-            nu_arr.setlength(vnu.size());
-            Cl_arr.setlength(vCl.size());
-
-            for (unsigned int i = 0; i < vnu.size(); i++){
-                nu_arr[i] = vnu[i];
-            }
-            for (unsigned int i = 0; i < vCl.size(); i++){
-                Cl_arr[i] = vCl[i];
-            }
-
-            spline1dinterpolant interpolator;
-            spline1dbuildcubic(nu_arr, Cl_arr, interpolator);
-
-            //(*Cls_interpolators_large)[l][0][0][0].interpolator = interpolator;
-            (*Cls_interpolators_large)[l][0][0][0].computed = true;
-            //cout << "Cl for l = " << l << " is interpolated." << endl;
-            for (int i = 0; i < num_indecies; i++)
-            {
-                for (int j = 0; j < num_indecies; j++)
-                {
-                    for (int k = 0; k < num_indecies; k++)
-                    {    
-                        //(*Cls_interpolators_large)[l][i][j][k].computed = false;
-                        (*Cls_interpolators_large)[l][i][j][k].interpolator = interpolator;
-                    }
-                }
-            }
-
-        }
-        */
         log<LOG_BASIC>("... Cls are being interpolated for the fiducial cosmology ...");
         log<LOG_BASIC>("... -> parameters used: lmin = %1%, lmax = %2%, numin = %3%, numax = %4%, nu_steps = %5% ...") %\
             lmin_CLASS % lmax_CLASS % numin_CLASS % numax_CLASS % nu_steps_CLASS;
@@ -168,6 +127,23 @@ IntensityMapping::IntensityMapping(ModelInterface* model, int num_params)
 IntensityMapping::~IntensityMapping()
 {
 }
+const int IntensityMapping::getNumin()
+{
+    return this->numin_CLASS;
+}
+const int IntensityMapping::getNusteps()
+{
+    return this->nu_steps_CLASS;
+}
+const int IntensityMapping::getNumax()
+{
+    return this->numax_CLASS;
+}
+const int IntensityMapping::getNustepsize()
+{
+    return model->give_fiducial_params("nu_stepsize");
+}
+
 
 void IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps)
 {
@@ -242,7 +218,15 @@ int IntensityMapping::make_Cl_interps(int lmin, int lmax, double nu_min, double 
             for (int i = 0; i <= nu_steps; i++)
             {
                 double nu = vnu[i];
-                double cl = this->calc_Cl(l,nu,nu,Pk_index,Tb_index,q_index);
+                double cl;
+                if (LIMBERWINDOW)
+                {
+                    cl = this->Cl_limber_Window(l,nu,NUWIDTH,Pk_index,Tb_index,q_index);
+                }
+                else
+                {
+                    cl = this->calc_Cl(l,nu,nu,Pk_index,Tb_index,q_index);
+                }
                 vCls.push_back(cl);
             }
         }
@@ -298,7 +282,7 @@ double IntensityMapping::Cl_interp(int l,double nu1, int Pk_index, int Tb_index,
         return spline2dcalc(Cls_interpolators_large[index].interpolator, nu1, l);
     }
     else{
-        cout << "INTERPOLATION ERROR MUST HAVE OCURRED" << endl;
+        cout << "INTERPOLATION ERROR MUST HAVE OCURRED"  << numin_CLASS << " " << numax_CLASS << " " << nu1 << endl;
         return 0;
     }
 }
@@ -383,9 +367,6 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
 {
     if (interpolating && interpolate_large)
     {
-        //if ((*Cls_interpolators_large)[l][Pk_index][Tb_index][q_index].computed == false)
-        
-        //if (Cls_interpolators_large2[l][Pk_index][Tb_index][q_index].computed == false)
         int index = make_Cl_interps(lmin_CLASS, lmax_CLASS, numin_CLASS, numax_CLASS,\
                     nu_steps_CLASS, Pk_index, Tb_index, q_index);
         // The make_... function doesn't do anything if the interpolator already exists, 
@@ -396,118 +377,205 @@ double IntensityMapping::Cl(int l, double nu1, double nu2,\
     }
     else if (interpolating && Pk_index == 0 && Tb_index == 0 && q_index == 0)
     {
-        return Cl_interp(l,nu1);
+        return Cl_interp(l, nu1);
     }
     else
     {
-        return calc_Cl(l, nu1, nu2, Pk_index, Tb_index, q_index);
+        if (LIMBERWINDOW)
+        { 
+            return Cl_limber_Window(l,nu1,nu2,NUWIDTH,Pk_index,Tb_index,q_index);
+            if (nu2 > nu1)
+            {
+                cout << nu1 << " " << nu2 << endl;
+                return Cl_limber_Window(l,nu1,nu2,NUWIDTH,Pk_index,Tb_index,q_index);
+            }
+        }
+        else
+        {
+            return calc_Cl(l,nu1,nu2,Pk_index, Tb_index, q_index);
+        }
     }
-}
-
-double IntensityMapping::I(int l, double k, double nu_0)
-{
-    double nu_low = nu_0-0.1/2.0;
-    double nu_high = nu_0+0.1/2.0;
-    double nu_stepsize = 0.01;
-    int nu_steps = 0.1/nu_stepsize;
-
-    auto integrand = [&](double nu)
-    {
-        double z = 1420.0/nu - 1.0;
-        double r = model->r_interp(z);
-        
-        // I've taken this denom parameter out, cause I don't know why it is
-        // in there to begin with
-        //double denom = (1+z)*(1+z);
-        double jl = model->sph_bessel_camb(l,k*r);
-        
-        return jl;
-    };
-
-    double integral = integrate_simps(integrand, nu_low, nu_high, nu_steps);
-    // the factor of 1/delta\nu is due to the normalization of the window function.
-    return integral*(1.0/0.2);//*1420 don't know why this factor was here.
 }
 
 double IntensityMapping::Cl_noise(int l, double nu1, double nu2, bool beam_incl)
 {
+    // My thermal noise as well as my beam is now a fun
     // This is the thermal noise.
-    if (nu1==nu2) {
-        // in mK
+    if (nu1 == nu2) {
+        // in mk
         double Tsys = model->give_fiducial_params("Tsys");
         double fcover = model->give_fiducial_params("fcover");
-        double lmax = model->give_fiducial_params("lmax_noise");
+        //double lmax = model->give_fiducial_params("lmax_noise");
+        // size of the array.
+        double D = 20;
+        int lmax = 2.0 * PI * D * nu1 * 1000000.0 / model->c;
         // in seconds
         double t0 = model->give_fiducial_params("tau_noise");
-        double res = pow(2.0*model->pi,3) * Tsys*Tsys/(fcover*fcover *\
-                model->give_fiducial_params("df") * lmax * lmax * t0);
+        double res = pow(2.0*model->pi,3) * Tsys*Tsys/(fcover*fcover *\ 
+                model->give_fiducial_params("df") * lmax * lmax *t0);
 
-        // now the beam
-        double beam = 1.;
+
+        // Now the beam
+        double beam = 1;
         if (beam_incl)
         {
-            double n = 8.0* log(2.0);
-            double sigma = PI/(1500.0*sqrt(n));
+            double n = 8.0 * log(2.0);
+            double sigma = PI/(lmax*sqrt(n));
+            //double sigma = PI/(1500*sqrt(n));
             beam = exp(sigma*sigma*l*l);
         }
 
         // the result is in (mK)^2
         return beam*res;
-    } else {
+    }
+    else {
         return 0.0;
     }
 }
 
-double IntensityMapping::Cl_limber_Window(int l, double nu1, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index)
+double IntensityMapping::Cl_limber_Window(int l, double nu, double nu_width, int Pk_index, int Tb_index, int q_index)
 {
-    // ONLY WORKS FOR NU1 = NU2!!!
-    double z1 = 1420.0/nu1 - 1.0;
-    double z2 = 1420.0/nu2 - 1.0;
+    update_D_Growth(q_index);
+    double znu = 1420.0/nu - 1.0;
     double zmin, zmax;
-    double delta_z = z1 - (1420.4/(nu1+nu_width) - 1);
+    double delta_z = znu - (1420.4/(nu+nu_width) - 1);
 
-    int steps;
+    int steps =100;
+    
     if (l < 20)
     {
-        zmin = z1 - 4 * delta_z;
-        zmax = z1 + 4 * delta_z;
+        zmin = znu - 4 * delta_z;
+        zmax = znu + 4 * delta_z;
         steps = 80;
     }
     else 
     {
-        zmin = z1 - 2 * delta_z;
-        zmax = z2 + 2 * delta_z;
+        zmin = znu - 2 * delta_z;
+        zmax = znu + 2 * delta_z;
         steps = 40;
     }
     //
     
-    double dTb1 = model->T21_interp(z1, Tb_index);
-    double dTb2 = model->T21_interp(z2, Tb_index);
+    double h = model->H_interp(0, q_index) / 100.0;
+    //cout << h << endl; 
     auto integrand = [&](double z)
     {
-        double w1 = Wnu_z(z, nu1, nu_width);
-        double w2 = Wnu_z(z, nu2, nu_width);
+        double w = Wnu_z(z, nu, nu_width);
+        double dTb = model->T21_interp(z, Tb_index);
+        double D = D_Growth_interp(z, q_index);
+
 
         double r = model->q_interp(z,q_index);
-        double rp = (r - model->q_interp(z+0.0001, q_index))/0.0001;
-        //double r2 = model->q_interp(z2,q_index);
+        double rp = abs((r - model->q_interp(z+0.0001, q_index))/0.0001);
 
-        //TODO: I should probably put the window function in here instead of simply jl
-        //double jl1 = model->sph_bessel_camb(l,k*r1);//I(l, k, nu1)
-        //double jl2 = model->sph_bessel_camb(l,k*r2);//I(l, k, nu2)
-        double k = (l+0.5)/r;
-        double Pdd = P(k,z1,z2, Pk_index);
-        double ratio = 1.0/(r*r*rp);
+        
+        double k = (l+0.5)/(r*h);
+        double P = model->Pkz_interp(k,0,Pk_index)/(h*h*h);
+        double ratio = w*w*dTb*dTb*D*D/(r*r*rp);
 
-        return w1*w2*ratio*Pdd;
+        return ratio*P;
     };
+    double integral = integrate_simps(integrand, zmin, zmax, steps);
+    //TODO: set bias
+    //      b = 2 (b^2 = 4) as in Hall et al. 2013
+    double BIAS_squared = 4.0;
+    return  BIAS_squared * integral;
+}
+
+double IntensityMapping::Cl_limber_Window_Olivari(int l, double nu, double nu_width, int Pk_index, int Tb_index, int q_index)
+{
+    update_D_Growth(q_index);
+    double znu = 1420.0/nu - 1.0;
+    double numin = nu - nu_width/2.0;
+    double numax = nu + nu_width/2.0;
+    double zmin = 1420.0/numax - 1.0;
+    double zmax = 1420.0/numin - 1.0;
+    double delta_z = zmax - zmin;
+
+    int steps = 100;
+    
+    double h = model->H_interp(0, q_index) / 100.0;
+    auto integrand = [&](double z)
+    {
+        double w = 1.0/delta_z;
+        double dTb = model->T21_interp(z, Tb_index);
+        double D = D_Growth_interp(z, q_index);
+
+
+        double r = model->q_interp(z,q_index);
+        double rp = abs((r - model->q_interp(z+0.0001, q_index))/0.0001);
+
+        
+        double k = (l+0.5)/(r*h);
+        double P = model->Pkz_interp(k,0,Pk_index)/(h*h*h);
+        double ratio = w*w*dTb*dTb*D*D/(r*r*rp);
+
+        return ratio*P;
+    };
+    double integral = integrate_simps(integrand, zmin, zmax, steps);
+
+
+
+    //TODO: set bias
+    //      b = 2 (b^2 = 4) as in Hall et al. 2013
+    double BIAS_squared = 1.0;
+    return  BIAS_squared * integral;
+}
+
+double IntensityMapping::Cl_limber_Window(int l, double nu, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index)
+{
+    update_D_Growth(q_index);
+    double znu = 1420.0/nu - 1.0;
+    double znu2 = 1420.0/nu2 - 1.0;
+    double zmin, zmax;
+    double delta_z = znu - (1420.4/(nu+nu_width) - 1);
+    double delta_z2 = znu - (1420.4/(nu2+nu_width) - 1);
+
+    int steps =100;
+    
+    if (l < 20)
+    {
+        zmin = znu - 8 * delta_z;
+        zmax = znu + 8 * delta_z;
+        steps = 160;
+    }
+    else 
+    {
+        zmin = znu - 4 * delta_z;
+        zmax = znu + 4 * delta_z;
+        steps = 80;
+    }
+    //
+    
+     
+    auto integrand = [&](double z)
+    {
+        double w = Wnu_z(z, nu, nu_width);
+        double w2 = Wnu_z(z, nu2, nu_width);
+        double dTb = model->T21_interp(z, Tb_index);
+        double D = D_Growth_interp(z, q_index);
+
+
+        double r = model->q_interp(z,q_index);
+        double rp = abs((r - model->q_interp(z+0.0001, q_index))/0.0001);
+
+        double k = (l+0.5)/r;
+        double P = model->Pkz_interp(k,0,Pk_index);
+        double ratio = w*w2*dTb*dTb*D*D/(r*r*rp);
+
+        return ratio*P;
+    };
+        double integral = integrate_simps(integrand, zmin, zmax, steps);
+
     //TODO: set bias
     //      b = 2 (b^2 = 4) as in Hall et al. 2013
     double BIAS_squared = 4.0;
     //cout << lower_kappa_bound << " " << higher_kappa_bound << endl;
-    cout << zmin << " " << zmax << endl;
-    double integral = integrate_simps(integrand, zmin, zmax, steps);
-    return  dTb1 * dTb2 * BIAS_squared * integral;
+   // double integral2 = integrate_simps(integrand2, zmin, zmax, steps);
+    //cout << zmin << " " << zmax << " " << P << " " << D << " " << dTb << " " << rp << " " << r << " " << k << " " << ratio*P*4.0 << endl;
+    //cout << 1000000*integral2 << " " << 1000000.0*integral << endl;
+    // We multiply the result by 1000000 to get the Cls in microK!
+    return  BIAS_squared * integral;
 }
 
 double IntensityMapping::Cl_Window(int l, double nu1, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index)
@@ -736,6 +804,126 @@ double IntensityMapping::P(double k, double z1, double z2, double Pk_index)
     return sqrt(model->Pkz_interp(k,z1,Pk_index)*model->Pkz_interp(k,z2,Pk_index));
 }
 
+double IntensityMapping::D_Growth(double z)
+{
+    auto integrand = [&](double zp)
+    {
+        double H3 = this->model->Hf_interp(zp);
+        H3 = pow(H3, 3);
+
+        return (1+zp)/H3;
+    };
+    double I1 = integrate(integrand, z, 10000.0, 100000, simpson());
+
+    double pre = Growth_function_norm * this->model->Hf_interp(z) /\
+                 this->model->Hf_interp(0);
+    return pre * I1;
+}
+double IntensityMapping::D_Growth(double z, int q_index)
+{
+    auto integrand = [&](double zp)
+    {
+        double H3 = this->model->H_interp(zp, q_index);
+        H3 = pow(H3, 3);
+
+        return (1+zp)/H3;
+    };
+    double I1 = integrate(integrand, z, 10000.0, 100000, simpson());
+
+    if (q_index >= Growth_function_norms.size())
+        cout << "ERROR: D(z) normalization error" << endl;
+    double pre = Growth_function_norms[q_index] * this->model->H_interp(z,q_index) /\
+                 this->model->H_interp(0,q_index);
+    return pre * I1;
+}
+
+void IntensityMapping::update_D_Growth(int q_index)
+{
+    bool do_calc = true;
+    for (int i = 0; i < growth_function_interps.size(); i++)
+    {
+        if (growth_function_interps[i].q_index == q_index)
+        {
+            do_calc = false;
+        }
+    }
+    if (do_calc)
+    {
+        auto integrand = [&](double z)
+        {
+            double H3 = this->model->H_interp(z,q_index);
+            H3 = pow(H3, 3);
+
+            return (1.0+z)/H3;
+        };
+        double I1 = integrate(integrand, 0.0, 10000.0, 1000000, simpson());
+        double norm = 1.0/I1;
+        Growth_function_norms.push_back(norm);
+
+        vector<double> zs_v, D_v;
+
+        // Should precalculate to at least z = 10000. 
+        // Although this takes 20 seconds each run, which is annoying.
+        zs_v.resize(1000);
+        D_v.resize(1000);
+        #pragma omp parallel for
+        for (int i = 0; i < 1000; i++)
+        {
+            double z = i*0.1;
+            double D = D_Growth(z, q_index);
+
+            zs_v[i] = z;
+            D_v[i] = D;
+        }
+
+        real_1d_array zs, D_pluss;
+        zs.setlength(zs_v.size());
+        D_pluss.setlength(D_v.size());
+
+        for (unsigned int i = 0; i < zs_v.size(); i++){
+            zs[i] = zs_v[i];
+        }
+        for (unsigned int i = 0; i < D_v.size(); i++){
+            D_pluss[i] = D_v[i];
+        }
+        spline1dinterpolant interp;
+        spline1dbuildcubic(zs, D_pluss, interp);
+        D_INTERP D;
+        D.q_index = q_index;
+        D.interpolator = interp;
+
+        growth_function_interps.push_back(D);
+        log<LOG_BASIC>("... Growth function updated for q_index = %1% ...") % q_index;
+    }
+}
+double IntensityMapping::D_Growth_interp(double z, int q_index)
+{
+    int index = -1;
+    for (int i = 0; i < growth_function_interps.size(); i++)
+    {
+        if (growth_function_interps[i].q_index == q_index)
+        {
+            index = i;
+            break;
+        }
+    }
+    
+    if (index < 0)
+    {
+        cout << "ERROR: growth function in IntensityMapping gone wrong" << endl;
+        return 0;
+    }
+    else
+    {
+        double result = spline1dcalc(growth_function_interps[index].interpolator, z);
+        if (result == 0)
+        {
+            cout << "ERROR in D_GROWTH_INTERP: index = " << index << ", D(z=" << z << ") = " <<\
+                result << endl;
+        }
+        return result;
+    }
+}
 
 /**     TEST CLASS      **/
 TEST_IntensityMapping::TEST_IntensityMapping(ModelInterface* model, int num_params)

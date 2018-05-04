@@ -67,12 +67,13 @@ for i in range(0,num_params - 1):
             ax1.xaxis.set_ticklabels([])
             ax1.yaxis.set_ticklabels([])
         if (j-i) == 1:
+    
             if params[i] in latex_params:
                 plt.ylabel(r'$'+latex_params[params[i]]+'$', rotation='horizontal', fontsize = 20)
             else:
                 plt.ylabel(params[i],rotation='horizontal', fontsize = 20) 
             ax1.yaxis.labelpad = 40
-            #labels = ax1.yaxis.get_major_ticks()
+
             #labels[-1].label1.set_visible(False)
             plt.gca().yaxis.set_major_locator(MaxNLocator(nbins = 5,prune='upper'))
             plt.gca().xaxis.set_major_locator(MaxNLocator(nbins = 5))
@@ -108,6 +109,9 @@ for i in range(0,num_params - 1):
         ax1.add_artist(ellipse_1sig2)
         ax1.add_artist(ellipse_2sig2)
         
+        ax1.plot([x],[y],marker='x',color='black', markersize=8, mew=2)
+
+        
         #alpha = 1.
         #contour = ptc.Arc(xy = (x,y), width=alpha * w, height=alpha * h, angle=theta)
         #ax1.add_artist(contour)
@@ -120,5 +124,8 @@ for i in range(0,num_params - 1):
 
         ellipse_number += 1
 
+legend_elements = [ptc.Patch(facecolor = 'blue', label ='Power spectrum'),
+                    ptc.Patch(facecolor = 'red', label ='Power spectrum + Bispectrum')]
+plt.legend(handles=legend_elements, loc=(-3.5,0.5))
 
 plt.show()

@@ -433,8 +433,9 @@ void IniReader::setBasicParams()
     basicParams.insert(pair<string,double>("zbin_size",0.01));
     basicParams.insert(pair<string,double>("interp_Cls",0));
     basicParams.insert(pair<string,double>("lmax_Fisher_Bispectrum",100));
-    basicParams.insert(pair<string,double>("Bispectrum_numin",500));
+    basicParams.insert(pair<string,double>("Bispectrum_numin",400));
     basicParams.insert(pair<string,double>("Bispectrum_numax",800));
+    basicParams.insert(pair<string,double>("nu_stepsize",10));
     basicParams.insert(pair<string,double>("gaps_bispectrum",0));
     
     // LISW Bias Computation

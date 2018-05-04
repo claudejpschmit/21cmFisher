@@ -5,6 +5,9 @@
 #include "Zygelman.hpp"
 #include "Helper.hpp"
 #include "WignerPythonInterface.hpp"
+#include <omp.h>
+#include <iostream>
+#include <fstream>
 using namespace std;
 typedef std::complex<double> dcomp;
 
@@ -108,6 +111,7 @@ class Bispectrum {
 
         double theta_approx(int l, double z, int q, double nu_centre, double nu_width,\
                 int Pk_index, int Tb_index, int q_index);
+        double theta_approx_lm2(int l, double z, int Pk_index, int Tb_index, int q_index);
 
         //PNG functions
         double Blll_PNG(int la, int lb, int lc, double fNL);
@@ -139,7 +143,13 @@ class Bispectrum {
         double Beta_approx(int l, double z);
         double Beta_approx(int l,int q, double z);
         double Beta_integral(int l, int lp, int q, double z, int n_steps);
+        double gl(int l, int ldiff, double z, int n_steps);
+        double gl_for_theta_lm2(int l, double z, int n_steps, double z_low, double z_high);
+        void generate_gl_for_theta_lm2_interpolator();
+        double interpolate_gl_for_theta_lm2(int nu, int l);
+        double interpolate_gl_for_theta_lm2_p(int nu, int l);
 
+        void write_gl_for_theta_lm2(double nu_min, double nu_stepsize, int nsteps);
 
     //protected:
         /**
@@ -196,6 +206,7 @@ class Bispectrum {
         double pi = M_PI;
         double Growth_function_norm;
         vector<double> Growth_function_norms;
+        vector<vector<spline1dinterpolant>> gl_interpolators;
         double g1_interp(double z);
         CollisionRates CollisionKappa;
         spline1dinterpolant Growth_function_interpolator;

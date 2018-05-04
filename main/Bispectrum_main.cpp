@@ -107,7 +107,6 @@ int main(int argc, char* argv[])
     // Doing the work, so put commands to be executed in here.
     if (!ERROR)
     {
-        
         Bispectrum* NLG = new Bispectrum(analysis);
         Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
         Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
@@ -120,17 +119,18 @@ int main(int argc, char* argv[])
         
         // the minimum and maximum of the frequency regime also affect the theta interpolation
         // to be safe leave min = 400 & max = 800
-        double nu_min = 400;
+        double nu_min = 800;
         //nu_max = 790, so between z = 0.8 and z = 2.55
-        double nu_stepsize = 10;
-        int n_points_per_thread = 5;
-        int n_threads = 1;
+        double nu_stepsize = params["nu_stepsize"];
+        int n_points_per_thread = 1;
+        int n_threads = 40;
         bool limber = true;
         Bispectrum_Effects effects = parser.giveBispectrumEffects();
         t1 = steady_clock::now();
         // For this, you want n_points_per_thread = 1 and n_threads = 1.
         //fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects, limber);
         // For this, you want n_points_per_thread = 1 or 2, and n_threads = 20.
+        
         fish.compute_F_matrix_parallel_nu(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects, limber);
 
         t2 = steady_clock::now();

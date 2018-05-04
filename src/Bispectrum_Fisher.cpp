@@ -10,6 +10,9 @@
 #define LDIV 200                // determines where the split in resolution in the l-interplotation occurs.
 #define NLOW 1000               // Number of integration steps used for low l values of theta interpolation
 #define NHIGH 1000              // Number of integration steps used for high l values of theta interpolation
+#define WRITE true            // determines whether mu computation should be computed once (true) or
+                                //   just read in from existing files (false)
+#define F_SKY true
 using namespace chrono;
 
 /*********************************/
@@ -221,9 +224,8 @@ double Bispectrum_Fisher::compute_F_matrix_parallel_nu(double nu_min, double nu_
         double numax = nu_min_CLASS + nu_stepsize_CLASS * nu_steps_CLASS;
         LISW->make_Ql_interps(lmax_CLASS,nu_min_CLASS,numax,Pk,Tb,q);
         log<LOG_BASIC>("Qls updated for Pk_i = %1%, Tb = %2%, q = %3%.") % Pk % Tb % q;
-        double cll = LISW->Cl(1, 400, 400, Pk, Tb, q);
+        double cll = LISW->Cl(1, nu_min_CLASS, nu_min_CLASS, Pk, Tb, q);
         log<LOG_BASIC>("Cls updated for Pk_i = %1%, Tb = %2%, q = %3%.") % Pk % Tb % q;
-
     }
     steady_clock::time_point t2 = steady_clock::now();
     system_clock::time_point t22 = system_clock::now();
@@ -568,7 +570,8 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                 }
                 else
                 {   
-                    F = Fisher_element(2,l2,l3,nu,param_key1,param_key2,\
+                    cout << "ERROR need to update Bispectrum_Fisher.cpp" << endl;
+                    F = 0;//Fisher_element(2,l2,l3,nu,param_key1,param_key2,\
                             &Pk_index2, &Tb_index2, &q_index2, effects, limber);
                 }
             }
@@ -641,7 +644,8 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
                                 }
                                 else
                                 {
-                                    F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
+                                    cout << "ERROR need to update in Bispectrum_Fisher.cpp" << endl;
+                                    F = 0;//Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
                                         &Pk_index2, &Tb_index2, &q_index2, effects, limber);
                                 }
                             }
@@ -778,8 +782,18 @@ spline1dinterpolant Bispectrum_Fisher::compute_Fl_interpolator(double nu, string
     vector<int> lmodes_vec;
     vector<double> fl_values;
 
-
-
+    bool first_encounter = false;
+    if (param_key1 == model_param_keys[0])
+    {
+        first_encounter = true;
+    }
+    bool first_param1 = false;
+    if (first_encounter && param_key2 == model_param_keys[0])
+    {
+        first_param1 = true;
+    }
+    vector<mu_data> data_vector1;
+    vector<mu_data> data_vector2;
     //log<LOG_BASIC>("Starting computation with lmax = %1%.") % 2;
     //cout << "inside compute fl" << endl;
 
@@ -798,7 +812,6 @@ spline1dinterpolant Bispectrum_Fisher::compute_Fl_interpolator(double nu, string
         {
             cout << "lmode computed is " << l1 << endl;
         }
-
         for (int l2 = lmin1; l2 <= l1; l2++)
         {
             for (int l3 = l1-l2; l3 <= l2; l3++)
@@ -811,7 +824,8 @@ spline1dinterpolant Bispectrum_Fisher::compute_Fl_interpolator(double nu, string
                 else
                 {   
                     F = Fisher_element(l1,l2,l3,nu,param_key1,param_key2,\
-                            &Pk_index2, &Tb_index2, &q_index2, effects, limber);
+                            &Pk_index2, &Tb_index2, &q_index2, effects, limber,\
+                            data_vector1, data_vector2);
                 }
                 
                 if (l1 == l2 and l1 == l3)
@@ -827,9 +841,42 @@ spline1dinterpolant Bispectrum_Fisher::compute_Fl_interpolator(double nu, string
             }
         }
         lmodes_vec.push_back(l1);
+        if (F_SKY)
+        {
+            double fsky = 0.5;
+            res = fsky*res;
+        }
         fl_values.push_back(res);
     }
 
+    // write the mus to file here
+    if (first_encounter && WRITE)
+    {
+        stringstream filename;
+        filename << "MU_CALCULATED/";
+        if (first_param1)
+        {
+            filename << param_key1 << "/mu_nu" << nu << ".dat";
+            // write all the params1 to file 
+            ofstream file(filename.str());
+            for (int i = 0; i < data_vector1.size(); ++i)
+            {
+                file << data_vector1[i].l1 << " " << data_vector1[i].l2 << " " <<\
+                    data_vector1[i].l3 << " " << data_vector1[i].mu << endl;
+            }
+        }
+        else
+        {
+            filename << param_key2 << "/mu_nu" << nu << ".dat";
+            // write all the params2 to file
+            ofstream file(filename.str());
+            for (int i = 0; i < data_vector2.size(); ++i)
+            {
+                file << data_vector2[i].l1 << " " << data_vector2[i].l2 << " " <<\
+                    data_vector2[i].l3 << " " << data_vector2[i].mu << endl;
+            }
+        }
+    }
 
     real_1d_array ls, fls;
     ls.setlength(lmodes_vec.size());
@@ -846,10 +893,16 @@ spline1dinterpolant Bispectrum_Fisher::compute_Fl_interpolator(double nu, string
     
     return interp;  
 }
-
 double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
         string param_key1, string param_key2, int *Pk_index, int *Tb_index, int *q_index,\
         Bispectrum_Effects effects, bool limber)
+{
+    // dummy
+    return 0;
+}
+double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
+        string param_key1, string param_key2, int *Pk_index, int *Tb_index, int *q_index,\
+        Bispectrum_Effects effects, bool limber, vector<mu_data>& data_vector1, vector<mu_data>& data_vector2)
 {
     // I think these should be at indecies = 0...
     double Cl1 = Cl(l1,nu);
@@ -869,6 +922,17 @@ double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
         delta_lll = 1.0;
     }
     double frac = 1.0/(delta_lll * Cl1 * Cl2 * Cl3);
+    
+    bool first_encounter = false;
+    if (param_key1 == model_param_keys[0])
+    {
+        first_encounter = true;
+    }
+    bool first_param1 = false;
+    if (first_encounter && param_key2 == model_param_keys[0])
+    {
+        first_param1 = true;
+    }
 
     // This Wigner Symbol is actually (l1,l2,l3,m1,m2,m3) but we evaluate it at ms = 0 2l+1 times
     double W3J1 = WignerSymbols::wigner3j(l1,l2,l3,0,0,0);
@@ -881,13 +945,247 @@ double Bispectrum_Fisher::Fisher_element(int l1, int l2, int l3, double nu,\
     }
     else
     {
-        mu_A = calc_mu(l1,l2,l3,nu,param_key1, Pk_index, Tb_index, q_index, effects, limber);
-        if (param_key1 == param_key2)
-            mu_B = mu_A;
+        if (first_encounter && WRITE)
+        {
+            if (first_param1)
+            {
+                mu_A = calc_mu(l1,l2,l3,nu,param_key1, Pk_index, Tb_index, q_index, effects, limber, data_vector1);
+            }
+            else
+            {
+                mu_A = calc_mu_read(l1,l2,l3,nu,param_key1,data_vector1);
+            }
+            if (param_key1 == param_key2)
+                mu_B = mu_A;
+            else
+                mu_B = calc_mu(l1,l2,l3,nu,param_key2, Pk_index, Tb_index, q_index, effects, limber, data_vector2);
+        }
         else
-            mu_B = calc_mu(l1,l2,l3,nu,param_key2, Pk_index, Tb_index, q_index, effects, limber);
+        {
+            mu_A = calc_mu_read(l1,l2,l3,nu,param_key1,data_vector1); 
+            mu_B = calc_mu_read(l1,l2,l3,nu,param_key2,data_vector2);
+        }
     }
     return frac * mu_A * mu_B;
+}
+
+double Bispectrum_Fisher::calc_mu_read(int l1, int l2, int l3, int nu, string param_key, vector<mu_data>& data_vector)
+{
+    int index = -1;
+    if (data_vector.empty())
+        read_mu_data_from_file(data_vector, nu, param_key);
+    int i = 0;
+    int L = 0;
+    int R = 0;
+    if (l1 == 2)
+        i = 0;
+    else if (l1 == 83)
+    {
+        i = 1;
+        L = 1;
+        R = 902;
+    }
+    else if (l1 == 164)
+    {
+        i = 903;
+        L = 903;
+        R = 4387;
+    }
+    else if (l1 == 245)
+    {
+        i = 4388;
+        L = 4388;
+        R = 12012;
+    }
+    else if (l1 == 326)
+    {
+        i = 12013;
+        L = 12013;
+        R = 25541;
+    }
+    else if (l1 == 407)
+    {
+        i = 25542;
+        L = 25542;
+        R = 46450;
+    }
+    else if (l1 == 488)
+    {
+        i = 46451;
+        L = 46451;
+        R = 76584;
+    }
+    else if (l1 == 569)
+    {
+        i = 76585;
+        L = 76585;
+        R = 117338;
+    }
+    else if (l1 == 650)
+    {
+        i = 117339;
+        L = 117339;
+        R = 170638;
+    }
+    else if (l1 == 731)
+    {
+        i = 170639;
+        L = 170639;
+        R = 237798;
+    }
+    else if (l1 == 812)
+    {
+        i = 237799;
+        L = 237799;
+        R = 320825;
+    }
+    else if (l1 == 893)
+    {
+        i = 320826;
+        L = 320826;
+        R = 420952;
+    }
+    else if (l1 == 974)
+    {
+        i = 420953;
+        L = 420953;
+        R = 540267;
+    }
+    else if (l1 == 1055)
+    {
+        i = 540268;
+        L = 540268;
+        R = 679922;
+    }
+    else if (l1 == 1136)
+    {
+        i = 679923;
+        L = 679923;
+        R = 842086;
+    }
+    else if (l1 == 1217)
+    {
+        i = 842087;
+        L = 842087;
+        R = 1027830;
+    }
+    else if (l1 == 1298)
+    {
+        i = 1027831;
+        L = 1027831;
+        R = 1239404;
+    }
+    else if (l1 == 1379)
+    {
+        i = 1239405;
+        L = 1239405;
+        R = 1477798;
+    }
+    else if (l1 == 1460)
+    {
+        i = 1477799;
+        L = 1477799;
+        R = 1745343;
+    }
+    else if (l1 == 1541)
+    {
+        i = 1745344;
+        L = 1745344;
+        R = 2042948;
+    }
+    else
+        cout << "ERROR -- READ MU" << endl;
+    
+    int M = (R+L)/2;
+    //if (l1 == 2)
+    //    index = 0;
+    while (index < 0)
+    {
+        //cout << L << " " << R << " " << M <<  endl;
+        //cout << data_vector[M].l1 << " " << data_vector[M].l2 << " " << data_vector[M].l3 <<  endl;
+        if (data_vector[M].l1 == l1 && data_vector[M].l2 == l2 && data_vector[M].l3 == l3)
+        {
+            index = M;
+        }
+        else if (data_vector[M].l1 == l1 && data_vector[M].l2 == l2 && data_vector[M].l3 < l3)
+        {
+            L = M+1;
+            M = (R+L)/2;
+        }
+        else if (data_vector[M].l1 == l1 && data_vector[M].l2 == l2 && data_vector[M].l3 > l3)
+        {
+            R = M-1;
+            M = (R+L)/2;
+        }
+        else if (data_vector[M].l1 == l1 && data_vector[M].l2 < l2)
+        {
+            L = M+1;
+            M = (R+L)/2;
+        }
+        else if (data_vector[M].l1 == l1 && data_vector[M].l2 > l2)
+        {
+            R = M-1;
+            M = (R+L)/2;
+        }
+        else
+        {
+            cout << "nothing!" << endl;
+        }
+        if (L>R)
+        {
+            cout << "search unsuccessful" << endl;
+        }
+
+   
+    }
+    
+
+    /*
+    while (index < 0)
+    {
+        if (data_vector[i].l1 == l1 && data_vector[i].l2 == l2 && data_vector[i].l3 == l3)
+        {
+            index = i;
+        }
+        else 
+        {
+            i++;
+        }
+        if (i > data_vector.size())
+        {
+            cout << "ERROR IN CALC_MU_READ!!! couldn't find "<< l1<< " " << l2 << " " << l3 << endl;
+            index = 0;
+        }
+    }
+    */
+    return data_vector[index].mu;
+}
+
+void Bispectrum_Fisher::read_mu_data_from_file(vector<mu_data>& data_vector, int nu, string param_key)
+{
+    stringstream filename;
+    cout << "reading " << param_key << " for nu = " << nu << endl;
+    filename << "MU_CALCULATED/" << param_key << "/mu_nu" << nu << ".dat";
+    ifstream file(filename.str());
+    int i = 0;
+    while (!file.eof())
+    {
+        //i++;
+        //if (i % 100000 == 0)
+        //    cout << "index " << i << " read." << endl;
+        int l1, l2, l3;
+        
+        double mu;
+        file >> l1 >> l2 >> l3 >> mu;
+        mu_data data;
+        data.l1 = l1;
+        data.l2 = l2;
+        data.l3 = l3;
+        data.mu = mu;
+        data_vector.push_back(data);
+    }
+    data_vector.pop_back();
+
 }
 
 double Bispectrum_Fisher::Cl(int l, double nu)
@@ -896,8 +1194,33 @@ double Bispectrum_Fisher::Cl(int l, double nu)
     double cl = analysis->Cl(l,nu,nu,0,0,0);
     bool beam_incl = true;
     double noise = analysis->Cl_noise(l, nu, nu, beam_incl);
-    //cout << cl << " --- " << noise << endl; 
-    return cl+noise;
+    //double FG = Cl_fg(l,nu);
+    return cl+noise;//+FG;
+}
+
+double Bispectrum_Fisher::Cl_fg(int l, double nu)
+{
+    double epsilon = 0.000001;
+    double A1 = 57;
+    double A2 = 0.014;
+    double A3 = 700;
+    double A4 = 0.088;
+    double n1 = 1.1;
+    double n2 = 1.0;
+    double n3 = 2.4;
+    double n4 = 3.0;
+    double m1 = 2.07;
+    double m2 = 2.1;
+    double m3 = 2.8;
+    double m4 = 2.15;
+    double lf = 1000;
+    double nuf = 130;
+
+    double res = A1*pow(lf/(double)l,n1)*pow(nuf/nu,m1);
+    res += A2*pow(lf/(double)l,n2)*pow(nuf/nu,m2);
+    res += A3*pow(lf/(double)l,n3)*pow(nuf/nu,m3);
+    res += A4*pow(lf/(double)l,n4)*pow(nuf/nu,m4);
+    return epsilon*epsilon*res;
 }
 double Bispectrum_Fisher::calc_mu_direct(int l1, int l2, int l3, double nu, double nu_stepsize,double deriv, string param_key, int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber)
 {
@@ -1029,7 +1352,8 @@ double Bispectrum_Fisher::calc_mu_direct(int l1, int l2, int l3, double nu, doub
 }
 
 double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string param_key,\
-        int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber)
+        int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber,
+        vector<mu_data>& data_vector)
 {   
     log<LOG_VERBOSE>("entered mu");
     double z = (1420.4/nu) - 1.0;
@@ -1043,6 +1367,11 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     double B1_NLG = 0;
     double B2_NLG = 0;
     
+    mu_data data;
+    data.l1 = l1;
+    data.l2 = l2;
+    data.l3 = l3;
+    double result; 
     // The NLG term should use Blll not Blll000!!!
     // this is because the m's have already been dealt with analytically.
     // So all W3J terms that contain m's have been summed away already.
@@ -1068,7 +1397,6 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
         //cout << B1_NLG << endl;
         //cout << B2_NLG << endl;
         return (B1_NLG - B2_NLG)/h;
-
     }
     else if (effects == LISW_eff)
     {
@@ -1087,8 +1415,8 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
     {
         if (param_key == "lambda_LISW")
         {
-            double BLISW = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, 0, 0, 0);
-            return BLISW;
+            result = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, 0, 0, 0);
+            data.mu = result;
         }
         else 
         {
@@ -1096,14 +1424,14 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
             analysis->model->update(working_params, Pk_index, Tb_index, q_index);
             
             B1 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
-            // In the limber case, we should now no longer 
-            // concern with the m modes, those have been taken care of.
+                // In the limber case, we should now no longer 
+                // concern with the m modes, those have been taken care of.
             if (limber)
                 B1_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
-                //B1_NLG = NLG->calc_angular_B_limber(l1,l2,l3,0,0,0,nu,nu_stepsize_CLASS,*Pk_index, *Tb_index, *q_index);
+                    //B1_NLG = NLG->calc_angular_B_limber(l1,l2,l3,0,0,0,nu,nu_stepsize_CLASS,*Pk_index, *Tb_index, *q_index);
             else
                 B1_NLG = NLG->calc_Blll(l1,l2,l3,z,*Pk_index,*Tb_index,*q_index);
-                //B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+                    //B1_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
 
             working_params[param_key] = x;
             analysis->model->update(working_params, Pk_index, Tb_index, q_index);
@@ -1111,13 +1439,16 @@ double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string para
             B2 = LISW->calc_angular_Blll_all_config(l1,l2,l3,z,z,z, *Pk_index, *Tb_index, *q_index);
             if (limber)
                 B2_NLG = NLG->calc_Blll_limber(l1,l2,l3,nu,nu_stepsize_CLASS,*Pk_index,*Tb_index,*q_index);
-                //B2_NLG = NLG->calc_angular_B_limber(l1,l2,l3,0,0,0,nu,nu_stepsize_CLASS,*Pk_index, *Tb_index, *q_index);
+                    //B2_NLG = NLG->calc_angular_B_limber(l1,l2,l3,0,0,0,nu,nu_stepsize_CLASS,*Pk_index, *Tb_index, *q_index);
             else
                 B2_NLG = NLG->calc_Blll(l1,l2,l3,z,*Pk_index,*Tb_index,*q_index);
-                //B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
-
-            return (B1 - B2)/h + (B1_NLG - B2_NLG)/h;
+                    //B2_NLG = NLG->calc_angular_B(l1,l2,l3,0,0,0,z,*Pk_index, *Tb_index, *q_index);
+      
+            result = (B1 - B2)/h + (B1_NLG - B2_NLG)/h;
+            data.mu = result;
         }
+        data_vector.push_back(data);
+        return result;
     }
 }
 
@@ -1144,6 +1475,13 @@ vector<double> Bispectrum_Fisher::set_range(int l, double xmin, double xmax)
       return range;
       */
     return range;
+}
+
+double Bispectrum_Fisher::calc_mu(int l1, int l2, int l3, double nu, string param_key,\
+        int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber)
+{
+    // dummy
+    return 0;
 }
 
 /*************************/

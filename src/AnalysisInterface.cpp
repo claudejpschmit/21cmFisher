@@ -22,6 +22,23 @@ double AnalysisInterface::Cl_FG_deriv_analytic(int l, double x1, double x2, stri
 {
     return 0;
 }
+const int AnalysisInterface::getNumin()
+{
+    return 0;
+}
+const int AnalysisInterface::getNusteps()
+{
+    return 0;
+}
+const int AnalysisInterface::getNumax()
+{
+    return 0;
+}
+const int AnalysisInterface::getNustepsize()
+{
+    return 0;
+}
+
 string AnalysisInterface::give_analysisID()
 {
     return analysisID;

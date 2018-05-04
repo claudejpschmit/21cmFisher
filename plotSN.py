@@ -14,7 +14,8 @@ ys2 = []
 xs3 = []
 ys3 = []
 
-filename1 = "SN_all4.dat"
+#filename1 = "SN_all4.dat"
+filename1 = "SN_min-2_max-10000_delta-100_z-1.dat"
 #filename2 = "LISW_compare.dat"
 #filename3 = "Bispectrum_equilateral_new.dat"
 f1 = file(filename1)

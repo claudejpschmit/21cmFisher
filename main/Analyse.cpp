@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
         
     Fisher_return_pair finv;
     Analyser analyse(&parser);
-    finv = analyse.build_Fisher_inverse();
+    finv = analyse.build_Fisher_inverse(false);
     
     
     if (argc < 3)
@@ -62,12 +62,38 @@ int main(int argc, char* argv[])
         Fisher_return_pair finv2;
         Analyser analyse2(&parser2);
 
-        finv2 = analyse2.build_Fisher_inverse();
+        finv2 = analyse2.build_Fisher_inverse(false);
         
         // Draw both runs on the same plot
         log<LOG_BASIC>("### Ellispes in BLUE represent %1%, and ellipses in RED represent %2% ###") %\
             iniFilename % iniFilename2;
         analyse.draw_error_ellipses(finv, finv2, &analyse2);
     }
+    // combine 2 runs
+    else if (argc == 4)
+    {
+        cout << "Combining the Fisher Matrices of two runs" << endl;
+        Fisher_return_pair f,f2;
+        f = analyse.build_Fisher_inverse(true);
+        
+        string iniFilename2 = argv[2];
+        IniReaderAnalysis parser2(iniFilename2);    
+        Analyser analyse2(&parser2);
+
+        f2 = analyse2.build_Fisher_inverse(true);
+        Fisher_return_pair finv, finv2;
+        finv2 = analyse2.build_Fisher_inverse(false);
+        mat fisher = f.matrix + f2.matrix;
+    
+        finv.matrix = fisher.i();
+        finv.matrix_indecies = f.matrix_indecies;
+        
+        //analyse.draw_error_ellipses(finv);
+        analyse.draw_error_ellipses(finv2, finv, &analyse);
+
+        // Draw both runs on the same plot
+        //analyse.draw_error_ellipses(finv, finv2, &analyse2);
+    }
+
     return 0;
 }

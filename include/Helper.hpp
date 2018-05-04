@@ -73,6 +73,7 @@ struct Tb_interpolator_Santos {
     spline1dinterpolant interpolator;
     spline1dinterpolant fz_interpolator;
 };
+
 struct Tb_interpolator_Santos_ARES {
     double ombh2, omnuh2, omch2, omk, hubble, s8, T_CMB, n_s, w_DE,\
         fstar, fesc, nion, fX, Tmin, Nlw, cX, HeByMass, omega_lambda;
@@ -119,7 +120,6 @@ struct Theta_1D {
     int li, lj, q, Pk_index, Tb_index, q_index;
     spline1dinterpolant interpolator;
 };
-
 
 /**
  *
@@ -204,3 +204,9 @@ static bool my_isnan(double a)
     else 
         return false;
 }
+
+struct mu_data
+{
+    int l1, l2, l3;
+    double mu;
+};

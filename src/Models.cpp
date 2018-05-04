@@ -2017,6 +2017,7 @@ void Model_Intensity_Mapping::update_Pkz(map<string,double> params, int *Pk_inde
             cout << "key: " << i->first << endl;
             cout << "value: " << i->second << endl;
         }*/
+
         CAMB->call(params);    
         vector<double> vk = CAMB->get_k_values();
         vector<vector<double>> Pz = CAMB->get_Pz_values();

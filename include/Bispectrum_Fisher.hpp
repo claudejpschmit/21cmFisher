@@ -41,6 +41,10 @@ class Bispectrum_Fisher {
                             int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
 
         virtual double Fisher_element(int l1, int l2, int l3, double nu, string param_key1, string param_key2,\
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber,\
+                vector<mu_data>& data_vector1, vector<mu_data>& data_vector2);
+        
+        virtual double Fisher_element(int l1, int l2, int l3, double nu, string param_key1, string param_key2,\
                 int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
         vector<double> set_range(int l, double xmin, double xmax);
         
@@ -51,11 +55,22 @@ class Bispectrum_Fisher {
         
     //protected:
         // same as calc_mu but doesn't rely on any interpolation.
-        double calc_mu_direct(int l1, int l2, int l3, double nu, double nu_stepsize,double deriv, string param_key,int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
+        double calc_mu_direct(int l1, int l2, int l3, double nu, double nu_stepsize,double deriv, string param_key,\
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
 
         virtual double calc_mu(int l1, int l2, int l3, double nu, string param_key,\
+                int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber,\
+                vector<mu_data>& data_vector);
+        virtual double calc_mu(int l1, int l2, int l3, double nu, string param_key,\
                 int *Pk_index, int *Tb_index, int *q_index, Bispectrum_Effects effects, bool limber);
+
         double Cl(int l, double nu);
+        double Cl_fg(int l, double nu);
+
+        bool mu_computed(int l1, int l2, int l3,int nu, string param_key);
+        void read_mu_data_from_file(vector<mu_data>& data_vector, int nu, string param_key);
+        double calc_mu_read(int l1, int l2, int l3, int nu, string param_key, vector<mu_data>& data_vector);
+   
         ofstream time_file;
 
         AnalysisInterface* analysis;

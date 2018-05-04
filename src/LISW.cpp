@@ -603,12 +603,15 @@ double Bispectrum_LISW::integrand_Ql(int l, double z, double z_fixed)
     double k = l/analysis->model->r_interp(z);
     double Omega_M = analysis->model->Omega_M(0);
     double H_0 = analysis->model->give_fiducial_params()["hubble"]*1000.0;    
+    
+    double hub = this->analysis->model->H_interp(0, 0) / 100.0;
+
     double pre2 = pow(3.0 * Omega_M/2.0,2) * pow(H_0/(k* analysis->model->c),4);
     double h = 0.01;
-    double P0 = analysis->model->Pkz_interp(k,z,0);
-    double P1 = analysis->model->Pkz_interp(k,z+h,0);
+    double P0 = analysis->model->Pkz_interp(k/hub,z,0)/(hub*hub*hub);
+    double P1 = analysis->model->Pkz_interp(k/hub,z+h,0)/(hub*hub*hub);
 
-    double deriv = pre2 * (2*(1.0+z) * P0+ pow(1.0+z,2) * (P1-P0)/h);
+    double deriv = pre2 * (2*(1.0+z) * P0 + pow(1.0+z,2) * (P1-P0)/h);
 
     return pre*deriv;
 }
@@ -749,14 +752,16 @@ double Bispectrum_LISW::Ql_calc(int l, double z, int Pk_index, int Tb_index, int
               double deriv = (P_phi(l/rzp,z + h) - P_phi(l/rzp, z))/h;
             */
             double k = l/rzp;
+            double hub = this->analysis->model->H_interp(0, q_index) / 100.0;
+
             //TODO: need to use current params...
             double Omega_M = analysis->model->Omega_M(0);
             double H_0 = analysis->model->give_fiducial_params()["hubble"]*1000.0;    
 
             double pre2 = pow(3.0 * Omega_M/2.0,2) * pow(H_0/(k* analysis->model->c),4);
             double h2 = 0.01;
-            double P0 = analysis->model->Pkz_interp(k,zp,Pk_index);
-            double P1 = analysis->model->Pkz_interp(k,zp+h2,Pk_index);
+            double P0 = analysis->model->Pkz_interp(k/hub,zp,Pk_index)/(hub*hub*hub);
+            double P1 = analysis->model->Pkz_interp(k/hub,zp+h2,Pk_index)/(hub*hub*hub);
             double deriv = pre2 * (2.0 * (1.0+zp) * P0 + pow(1.0+zp,2) * (P1-P0)/h2);
             //if (z < 0.5)
             //    cout << k << endl;
@@ -815,7 +820,6 @@ void LISW_SN::detection_SN_new(int lmin, int lmax, int delta_l, double z, string
     else 
     {
         SN_calculation = true;
-
 
         ofstream file(SN_filename);
         string name_base = "LISW_SN_triangle_l"; 

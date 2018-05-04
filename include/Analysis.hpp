@@ -18,6 +18,10 @@ class AnalysisInterface {
         vector<string> FG_params;
         string give_analysisID();
         ModelInterface* model;
+        virtual const int getNumin();
+        virtual const int getNusteps();
+        virtual const int getNumax();
+        virtual const int getNustepsize();
         
     protected:
         string analysisID;
@@ -118,9 +122,21 @@ class IntensityMapping : public AnalysisInterface {
         double Cl_noise(int l, double nu1, double nu2, bool beam_incl);
         double Cl_foreground(int l, double nu1, double nu2, map<string,double> FG_param_values);
         double Cl_FG_deriv_analytic(int l, double nu1, double nu2, string param_key);
-        double Cl_limber_Window(int l, double nu1, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index);
+        
+        // returns the Cls in mK! (for plotting multiply by 10^6 and plot in microK)
+        double Cl_limber_Window(int l, double nu, double nu_width, int Pk_index, int Tb_index, int q_index);
+        double Cl_limber_Window(int l, double nu, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index);
+        double Cl_limber_Window_Olivari(int l, double nu, double nu_width, int Pk_index, int Tb_index, int q_index);
+
         double Cl_Window(int l, double nu1, double nu2, double nu_width, int Pk_index, int Tb_index, int q_index);
         double Wnu_z(double z, double nu_centre, double nu_width);
+        double calc_Cl(int l, double nu1, double nu2,\
+                int Pk_index, int Tb_index, int q_index);
+        const int getNumin() override; 
+        const int getNusteps() override;
+        const int getNumax() override;
+        const int getNustepsize() override;
+
     protected:
         void make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps);
         int make_Cl_interps(int lmin, int lmax, double nu_min, double nu_max, int nu_steps,\
@@ -131,8 +147,19 @@ class IntensityMapping : public AnalysisInterface {
         double Cl_interp(int l,double nu1, int Pk_index, int Tb_index, int q_index, int index);
 
         bool interpolating, interpolate_large;
-        double calc_Cl(int l, double nu1, double nu2,\
-                int Pk_index, int Tb_index, int q_index);
+                //////////
+        double D_Growth_interp(double z, int q_index);
+        void update_D_Growth(int q_index); 
+        double D_Growth(double z);
+        double D_Growth(double z, int q_index);
+        double Growth_function_norm;
+        vector<double> Growth_function_norms;
+        spline1dinterpolant Growth_function_interpolator;
+        vector<D_INTERP> growth_function_interps;
+
+
+        /////////////
+
         vector<spline1dinterpolant> Clnu_interpolators;
         
         struct Interpol{

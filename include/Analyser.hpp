@@ -44,7 +44,7 @@ class Analyser {
          *              which element of F^-1 corresponds to which parameter
          *              pair.
          */
-        Fisher_return_pair build_Fisher_inverse();
+        Fisher_return_pair build_Fisher_inverse(bool outFisher);
         
         //Fisher_return_pair build_Fisher_inverse_Santos();
 

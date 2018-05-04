@@ -30,16 +30,22 @@ plt.title('Bispectrum due to Non-Linear Gravity')
 #filename = "output/Bispectrum/Triangle_plots/SN_sparse/LISW_SN_triangle_l180_gaps0.dat"
 #filename = "output/Bispectrum/Triangle_plots/SN_new/LISW_test_triangle_l"
 #filename = "output/Bispectrum/Triangle_plots/NLG_2/NLG_signal_triangle_l"
-filename = "test_NLG_triangle_l"
-#filename = "test_LISW_triangle_l"
+filename = "plots/data/test_NLG_triangle_new_l"
+filename2 = "plots/data/test_NLG_triangle_l"
+
+#filename = "plots/data/test_LISW_triangle_new_l"
 number = sys.argv[1]
 filename = filename + str(number) + ".dat"
+filename2 = filename2 + str(number) + ".dat"
+
 print filename
 
 interpolate = sys.argv[2]
 print interpolate
 f = file(filename)
 data_vals = np.loadtxt(f)
+f2 = file(filename2)
+data_vals2 = np.loadtxt(f2)
 
 #inverting triangle
 data_new = []
@@ -47,6 +53,12 @@ rows = len(data_vals)
 columns = len(data_vals[0])
 for i in range(1,rows+1):
     data_new.append(data_vals[rows-i])
+
+data_new2 = []
+rows2 = len(data_vals2)
+columns2 = len(data_vals2[0])
+for i in range(1,rows2+1):
+    data_new2.append(data_vals2[rows2-i])
 
 max_val = 0
 imax = 0
@@ -58,19 +70,34 @@ for i in range(0,rows):
             imax = i
             jmax = j
 
+max_val2 = 0
+imax2 = 0
+jmax2 = 0
+for i in range(0,rows2):
+    for j in range(0,columns2):
+        if max_val2 < data_new2[i][j]:
+            max_val2 = data_new2[i][j]
+            imax2 = i
+            jmax2 = j
+
 ax.annotate('$B_{max} = %s$' % max_val, xy = (0.7,0.52), xytext=(0.7, 0.52))#, fontsize = 16)
 ax.annotate('$\ell_{max} = %s$' % number, xy = (0.2,0.52), xytext=(0.2, 0.52))#, fontsize = 16)
 
 
 data_reduced = np.zeros((rows,columns))
 data = []
+res = 0
 for i in range(0,rows):
     for j in range(0,columns):
         if data_new[i][j] == 0:
             data_reduced[i][j] = np.nan
+        elif i < 1 and j < 1:
+            data_reduced[i][j] = np.nan
         else:
             data_reduced[i][j] = math.log10(abs(data_new[i][j]/max_val))
+            #data_reduced[i][j] = data_new[i][j] - data_new2[i][j]
             data.append(data_reduced[i][j])
+            res += data_new[i][j]
 #print imax, jmax, data_new[imax][jmax], max_val
 
 if interpolate == '1':
@@ -85,9 +112,7 @@ if interpolate == '1':
                 else:
                     data_reduced[i][j] = (data_reduced[i][j-1] + data_reduced[i][j+1] + data_reduced[i+1][j])/3.0
 
-
-
-
+print res
 #print data_reduced[0]
 #print data_new[1]
 #print data_reduced[imax][jmax]
@@ -99,8 +124,9 @@ cax = divider.append_axes("right", size="5%", pad=0.05)
 norm = colors.LogNorm()
 #plt.pcolor(data_reduced,norm=norm)
 plt.colorbar(cax=cax)
+plt.clim(-3,0)
 plt.title('Small difference between \n $B_{l_1l_2l_3}$ and $B_{max}$', y = 1.03)#, fontsize=16)
 plt.xlabel('\n \n Large difference between \n $B_{l_1l_2l_3}$ and $B_{max}$')#, fontsize=16)
-plt.ylabel(r'$\log_{10}\left(\frac{B_{\ell_1\ell_2\ell_3}}{B_{max}}\right)$' ,fontsize=30)
+plt.ylabel(r'$\log_{10}\left(|\frac{B_{\ell_1\ell_2\ell_3}}{B_{max}}|\right)$' ,fontsize=30)
 fig.set_size_inches(5,5)
 plt.show()

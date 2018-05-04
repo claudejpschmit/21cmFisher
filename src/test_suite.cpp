@@ -10,6 +10,7 @@
 #include <iostream>
 
 #include "Log.hpp"
+#include "Powerspectrum_Fisher.hpp"
 #include "Model.hpp"
 #include "Analysis.hpp"
 #include "Fisher.hpp"
@@ -75,7 +76,7 @@ BOOST_AUTO_TEST_CASE(check_parser)
     ModelAnalysis analyse_case = parser.giveModelAndAnalysis()[1];
 
     vector<string> parameter_keys = {"interp_Cls", "lmax_Fisher_Bispectrum", "gaps_bispectrum",\
-        "lambda_LISW","Bias_included", "Bispectrum_numin",\
+        "lambda_LISW","Bias_included", "Bispectrum_numin", "nu_stepsize",\
             "Bispectrum_numax","ombh2","omch2","omnuh2","omk","hubble","A_s",\
             "n_s","sigma8","tau_reio","T_CMB","w_DE","100*theta_s","k_pivot","YHe",\
             "z_pk","omega_lambda","zmin","zmax","zsteps","zmax_interp","gamma",\
@@ -178,6 +179,7 @@ BOOST_AUTO_TEST_CASE(check_parser)
     BOOST_CHECK(params["n_threads_bispectrum"] == 64);
     BOOST_CHECK(params["nested"] == 65);
     BOOST_CHECK(params["sub_threads"] == 66);
+    BOOST_CHECK(params["nu_stepsize"] == 67);
     // Analysis Parser
     BOOST_CHECK(EllipseRequired);
     BOOST_CHECK(ShowMatrix);
@@ -234,7 +236,6 @@ BOOST_AUTO_TEST_CASE(check_integrator)
     BOOST_CHECK(I7 > ans2 - 0.0001 && I7 < ans2 + 0.0001);
     //BOOST_CHECK(I8 > ans2 - 0.001 && I8 < ans2 + 0.001);
 }
-
 
 /** In this test a couple of things related to the integration of Bessel
  *  functions are tested. The main aim is to show the performance of Levin
@@ -786,7 +787,6 @@ BOOST_AUTO_TEST_CASE(check_bispectrum_integrals)
     */
 }
 
-
 /**
  * This test case checks whether the basic cosmology functions
  * implemented in the CosmoBasis class are working as expected.
@@ -993,7 +993,8 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
     /**     CHECKS      **/
 
     // The right values are recovered to within 1% of the true value.
-    /*
+    // CURRENTLY NOT WORKING
+    cout << ombh1 << " " << ombh2 << endl;
        BOOST_CHECK(ombh1 > ombh2_ref - 0.01 * ombh2_ref);
        BOOST_CHECK(ombh1 < ombh2_ref + 0.01 * ombh2_ref);
        BOOST_CHECK(ombh2 > ombh2_ref - 0.01 * ombh2_ref);
@@ -1003,7 +1004,7 @@ BOOST_AUTO_TEST_CASE(check_Fisher_Bispectrum)
        BOOST_CHECK(omch1 < omch2_ref + 0.01 * omch2_ref);
        BOOST_CHECK(omch2 > omch2_ref - 0.01 * omch2_ref);
        BOOST_CHECK(omch2 < omch2_ref + 0.01 * omch2_ref);
-       */
+       
 }
 
 /**
@@ -1214,8 +1215,8 @@ BOOST_AUTO_TEST_CASE(check_Cl_limber)
     double z = 1;
     double nu = 1420.4/(1+z);
     double nu_width = 10;
-    double cl = analysis->Cl_limber_Window(l, nu, nu, nu_width, 0, 0, 0);
-    double cl2 = analysis->Cl(l, nu, nu,0,0,0);
+    double cl = analysis->Cl_limber_Window(l, nu, nu_width, 0, 0, 0);
+    double cl2 = analysis->calc_Cl(l,nu,nu,0, 0, 0);
 
     cout << cl << " " << cl2 << endl;
     cout << "Cls for nu = " << nu << " computed" << endl;
@@ -1225,13 +1226,226 @@ BOOST_AUTO_TEST_CASE(check_Cl_limber)
         int l = exp(i*0.1);
         if (l < 10000)
         {
-            double cl1 = analysis->Cl(l, nu, nu, 0, 0, 0);
-            double cl2 = analysis->Cl_limber_Window(l, nu, nu, nu_width, 0, 0, 0);
+            double cl1 = analysis->calc_Cl(l,nu,nu,0, 0, 0);
+            double cl2 = analysis->Cl_limber_Window(l, nu, nu_width, 0, 0, 0);
             file << l << " " << l*(l+1)*cl1/(2.0*M_PI)<< " " <<  l*(l+1)*cl2/(2.0*M_PI)<< endl;
             cout << l << " " << l*(l+1)*cl1/(2.0*M_PI) << " " << l*(l+1)*cl2/(2.0*M_PI)<< endl;
         }
     }
 }
+
+BOOST_AUTO_TEST_CASE(check_Cl_limber_fct_h)
+{
+    /**     SETUP       **/
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_LISW.ini";
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    int l = 1200;
+    double z = 1;
+    double nu = 1420.4/(1+z);
+    double nu_width = 10;
+    
+    double A = 0.5*params["hubble"];
+    params["hubble"] = A;
+    cout << params["hubble"] << endl;
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+    //Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+    
+    /**     CHECKS      **/
+    double n = analysis->Cl_noise(600, 700, 700, true);
+    cout << "N = " << n << endl;
+
+    double cl = analysis->Cl_limber_Window(l, nu, nu_width, 0, 0, 0);
+    double cl2 = analysis->calc_Cl(l,nu,nu,0, 0, 0);
+
+    cout << cl << " " << cl2 << endl;
+    
+    params["hubble"] = 1.2*A;
+    cout << params["hubble"] << endl;
+    model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    analysis = new IntensityMapping(model, keys.size());
+
+    cl = analysis->Cl_limber_Window(l, nu, nu_width, 0, 0, 0);
+    cl2 = analysis->calc_Cl(l,nu,nu,0, 0, 0);
+
+    cout << cl << " " << cl2 << endl;
+
+    params["hubble"] = 2.4*A;
+    cout << params["hubble"] << endl;
+    model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    analysis = new IntensityMapping(model, keys.size());
+
+    cl = analysis->Cl_limber_Window(l, nu, nu_width, 0, 0, 0);
+    cl2 = analysis->calc_Cl(l,nu,nu,0, 0, 0);
+
+    cout << cl << " " << cl2 << endl;
+
+}
+
+BOOST_AUTO_TEST_CASE(check_Cl_contributions)
+{
+    /**     SETUP       **/
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_LISW.ini";
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    int l = 1200;
+    double z = 1;
+    double nu = 1420.4/(1+z);
+    double nu_width = 10;
+    
+    double A = 0.5*params["hubble"];
+    params["hubble"] = A;
+    cout << params["hubble"] << endl;
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+    Powerspectrum_Fisher fish(analysis, keys, fisherPath);
+
+    /**     CHECKS      **/
+    fish.Cl(100, 700);
+    fish.Cl(200, 700);
+    fish.Cl(300, 700);
+    fish.Cl(400, 700);
+    fish.Cl(500, 700);
+    fish.Cl(600, 700);
+    fish.Cl(700, 700);
+    fish.Cl(800, 700);
+    cout << "   " << endl; 
+    fish.Cl(100, 500);
+    fish.Cl(200, 500);
+    fish.Cl(300, 500);
+    fish.Cl(400, 500);
+    fish.Cl(500, 500);
+    fish.Cl(600, 500);
+    fish.Cl(700, 500);
+    fish.Cl(800, 500);
+
+}
+
+BOOST_AUTO_TEST_CASE(check_Cl_limber_sum)
+{
+    /**     SETUP       **/
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_Olivari.ini";
+    
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    int lmax = 383;
+  
+    double nu_min = 960;
+    double nu_width = 7.5;
+    
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+    //Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+    
+    /**     CHECKS      **/
+    double sum = 0;
+    for (int l = 0; l <= lmax; l++)
+    {
+        for (int i = 0; i < 41; i++)
+        {
+            double nu = nu_min + i * nu_width;
+            double cl = analysis->Cl_limber_Window_Olivari(l, nu, nu_width, 0, 0, 0);
+            sum += cl;
+        }
+    }
+    cout << sum << endl;
+    
+}
+//trying to reconstruct their figure.3
+BOOST_AUTO_TEST_CASE(check_olivari)
+{
+    /**     SETUP       **/
+
+    // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_check_Olivari.ini";
+    
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename;
+    
+    name = "olivari";
+    outfilename << base << name << suffix;
+    ofstream file(outfilename.str());
+    outfilename.str("");
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    int lmax = 360;
+  
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+    //Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+    
+    /**     CHECKS      **/
+    double sum = 0;
+    
+    double nu_width = 7.5;
+
+    for (int l = 0; l <= lmax; l++)
+    {
+        double nu1 = 1420.0/1.13;
+        double nu2 = 1420.0/1.29;
+        double nu3 = 1420.0/1.48;
+        
+        double cl1 = l*(l+1)*analysis->Cl_limber_Window_Olivari(l, nu1, nu_width, 0, 0, 0)/(2.0*3.1415);
+        double cl2 = l*(l+1)*analysis->Cl_limber_Window_Olivari(l, nu2, nu_width, 0, 0, 0)/(2.0*3.1415);
+        double cl3 = l*(l+1)*analysis->Cl_limber_Window_Olivari(l, nu3, nu_width, 0, 0, 0)/(2.0*3.1415);
+        file << l << " " << cl1 << " " << cl2 << " " << cl3 << endl;
+    }
+    cout << "Done -- Now run - python plotOlivari.py " << endl;
+}
+
 
 /**
  * This check should check various functionalities of the Bispectrum class.
@@ -1488,7 +1702,13 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     // 11: LISW/NLG triangle
     // 12: LISW/Delta Cl^3 triangle
     // 13: NLG/Delta Cl^3 triangle
-    int switch1 =  10;
+    // 14: NLG Bispectrum triangle, this uses the full expression but the limber approximation is applied 
+    // 15: dTb vs z
+    // 16: NLG Bispectrum 2d plot
+    // 17: LISW Bispectrum 2d plot
+    // 18: NLG Bispectrum new 2d plot
+    // 19: LISW Bispectrum new 2d plot
+    int switch1 =  6;
     /**
      * Simple non-computational intensive plots should be implemented here.
      */
@@ -1639,6 +1859,27 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
         outfilename << base << name << suffix;
         ofstream file3_5(outfilename.str());
         outfilename.str("");
+        
+        name = "Cls_z08_delta";
+        outfilename << base << name << suffix;
+        ofstream file3_6(outfilename.str());
+        outfilename.str("");
+        name = "Cls_z1_delta";
+        outfilename << base << name << suffix;
+        ofstream file3_7(outfilename.str());
+        outfilename.str("");
+        name = "Cls_z15_delta";
+        outfilename << base << name << suffix;
+        ofstream file3_8(outfilename.str());
+        outfilename.str("");
+        name = "Cls_z2_delta";
+        outfilename << base << name << suffix;
+        ofstream file3_9(outfilename.str());
+        outfilename.str("");
+        name = "Cls_z25_delta";
+        outfilename << base << name << suffix;
+        ofstream file3_10(outfilename.str());
+        outfilename.str("");
 
         z = 0.8;
         double nu = 1420.0/(1.0+z);
@@ -1648,7 +1889,10 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             int l = exp(i*0.1);
             if (l < 10000)
             {
-                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double cl;
+                //cl = analysis->Cl(l, nu, nu, 0, 0, 0)*1000000;
+                cl = analysis->Cl_limber_Window(l, nu, 10, 0,0,0)*1000000;
+
                 double res = l*(l+1)*cl/(2.0*M_PI);
                 file3_1 << l << " " << res << endl;
             }
@@ -1662,7 +1906,10 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             int l = exp(i*0.1);
             if (l < 10000)
             {
-                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double cl;
+                //cl = analysis->Cl(l, nu, nu, 0, 0, 0)*1000000;
+                cl = analysis->Cl_limber_Window(l, nu, 10, 0,0,0)*1000000;
+
                 double res = l*(l+1)*cl/(2.0*M_PI);
                 file3_2 << l << " " << res << endl;
             }
@@ -1676,7 +1923,10 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             int l = exp(i*0.1);
             if (l < 10000)
             {
-                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double cl;
+                //cl = analysis->Cl(l, nu, nu, 0, 0, 0)*1000000;
+                cl = analysis->Cl_limber_Window(l, nu, 10, 0,0,0)*1000000;
+
                 double res = l*(l+1)*cl/(2.0*M_PI);
                 file3_3 << l << " " << res << endl;
             }
@@ -1690,7 +1940,9 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             int l = exp(i*0.1);
             if (l < 10000)
             {
-                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double cl;
+                //cl = analysis->Cl(l, nu, nu, 0, 0, 0)*1000000;
+                cl = analysis->Cl_limber_Window(l, nu, 10, 0,0,0)*1000000;
                 double res = l*(l+1)*cl/(2.0*M_PI);
                 file3_4 << l << " " << res << endl;
             }
@@ -1704,9 +1956,88 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             int l = exp(i*0.1);
             if (l < 10000)
             {
-                double cl = analysis->Cl(l, nu, nu, 0, 0, 0);
+                double cl;
+                //cl = analysis->Cl(l, nu, nu, 0, 0, 0)*1000000;
+                cl = analysis->Cl_limber_Window(l, nu, 10, 0,0,0)*1000000;
                 double res = l*(l+1)*cl/(2.0*M_PI);
                 file3_5 << l << " " << res << endl;
+            }
+        }
+
+        z = 0.8;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl;
+                cl = analysis->Cl(l, nu, nu+20, 0, 0, 0)*1000000;
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_6 << l << " " << res << endl;
+            }
+        }
+
+        z = 1.0;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl;
+                cl = analysis->Cl(l, nu, nu+20, 0, 0, 0)*1000000;
+
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_7 << l << " " << res << endl;
+            }
+        }
+
+        z = 1.5;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl;
+                cl = analysis->Cl(l, nu, nu+20, 0, 0, 0)*1000000;
+
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_8 << l << " " << res << endl;
+            }
+        }
+
+        z = 2.0;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl;
+                cl = analysis->Cl(l, nu, nu+20, 0, 0, 0)*1000000;
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_9 << l << " " << res << endl;
+            }
+        }
+
+        z = 2.5;
+        nu = 1420.0/(1.0+z);
+        cout << "Cls for nu = " << nu << " computed" << endl;
+        for (int i = 1; i < 100; i++)
+        {
+            int l = exp(i*0.1);
+            if (l < 10000)
+            {
+                double cl;
+                cl = analysis->Cl(l, nu, nu+20, 0, 0, 0)*1000000;
+                double res = l*(l+1)*cl/(2.0*M_PI);
+                file3_10 << l << " " << res << endl;
             }
         }
     }
@@ -1748,9 +2079,10 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
         {
             int l = exp(i*0.1);
             if (l < 10000)
-            {
+            { 
+                // * 10^6 so that we get results in microK^2
                 double cl = analysis->Cl_noise(l, nu, nu, beam_incl);
-                double res = cl;
+                double res = l*(l+1)*cl* 1000000/(2.0*M_PI);
                 file5 << l << " " << res << endl;
             }
         }
@@ -1758,7 +2090,7 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     /** triangular plots for NLG Bispectrum **/
     if (switch1 == 0 or switch1 == 7)
     {
-        name = "NLG_triangle_l1200";
+        name = "NLG_triangle_new_l1200";
         outfilename << base << name << suffix;
         ofstream file(outfilename.str());
         outfilename.str("");
@@ -1798,7 +2130,7 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     /** triangular plots for LISW Bispectrum **/
     if (switch1 == 0 or switch1 == 8)
     {
-        name = "LISW_triangle_l1200";
+        name = "LISW_triangle_new_l1200";
         outfilename << base << name << suffix;
         ofstream file(outfilename.str());
         outfilename.str("");
@@ -2063,6 +2395,199 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
             file << endl;
         }
         file.close();
+    }
+    /** triangular plots for NLG Bispectrum **/
+    /** this uses the full expression but the limber approximation is applied **/
+    if (switch1 == 0 or switch1 == 14)
+    {
+        name = "NLG_triangle_full_new_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int lmax = 1200;
+        int l1 = lmax;
+        int lmin1 = l1/2;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        for (int l2 = lmin1; l2 <= l1; l2++)
+        {
+            vector<double> row;
+            for (int l3 = 0; l3 <= l1; l3++)
+            {
+                double B = 0;
+                if (l3 >= (l1-l2) and l3 <= l2)
+                {   
+                    if (l1 == l2 and l3 == 0)
+                    {
+                        B = 0;
+                    }
+                    else
+                    {   
+                        B = NLG->calc_angular_B_limber(l1, l2, l3, 0, 0, 0, nu_centre, nu_width, 0, 0, 0);
+                    }
+                }
+                else
+                {
+                    B = 0;
+                }
+                file << B << " ";
+            }
+            file << endl;
+        }
+        file.close();
+    }
+    /** This computes the brightness temperature model used **/
+    if (switch1 == 0 or switch1 == 15)
+    {
+        name = "dTb_full";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        for (int i = 0; i <= 100; i++)
+        {
+            z = i * 0.05;
+            double t21 = model->T21_interp(z, 0);
+            file << z << " " << t21 << endl;
+
+        }
+        file.close();
+    }
+    /** This computes the NLG bispectrum for a fixed l1 and l2, as a function of opening angle. **/
+    if (switch1 == 0 or switch1 == 16)
+    {
+        name = "Bispectrum_NLG_l1-1200_l2-1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int l1 = 1200;
+        int l2 = 1200;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        int nsteps = 1000;
+        for (int i = 0; i <= nsteps; i++)
+        {
+            double cosTh = 1 - i * 0.002;
+            double l3 = sqrt(l1*l1+l2*l2 - 2*l1*l2*cosTh);
+            int l3i = l3;
+            // I think I should add one if l3i is odd.
+            if (l3i % 2 == 1)
+                l3i++;
+            double B = NLG->calc_angular_B_limber(l1, l2, l3i, 0, 0, 0, nu_centre, nu_width, 0, 0, 0);
+  
+            cout << cosTh << " " << abs(B) << endl;
+            file << cosTh << " " << abs(B) << endl;
+        }
+    }
+    /** This computes the LISW bispectrum for a fixed l1 and l2, as a function of opening angle. **/
+    if (switch1 == 0 or switch1 == 17)
+    {
+        name = "Bispectrum_LISW_l1-600_l2-1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int l1 = 600;
+        int l2 = 1200;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        int nsteps = 1000;
+        for (int i = 0; i <= nsteps; i++)
+        {
+            double cosTh = 1 - i * 0.002;
+            double l3 = sqrt(l1*l1+l2*l2 - 2*l1*l2*cosTh);
+            int l3i = l3;
+            // I think I should add one if l3i is odd.
+            if (l3i % 2 == 1)
+                l3i++;
+            double B = LISW->calc_angular_Blll_all_config_new_parallelism(l1,l2,l3i,z,z,z,0,0,0); 
+  
+            cout << cosTh << " " << abs(B) << endl;
+            file << cosTh << " " << abs(B) << endl;
+        }
+    }
+    /** This computes the NLG bispectrum as in a new 2D plot. **/
+    if (switch1 == 0 or switch1 == 18)
+    {
+        name = "Bispectrum_NLG_new_2D_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        int l1 = 1200;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        int nsteps = 200;
+        double res;
+        for (int i = 0; i <= nsteps; i++)
+        {
+            double I = (double)i/(double)nsteps * sqrt(3)*0.5*l1;
+            for (int j = 0; j <= nsteps; j++)
+            {
+                double J = (double)j/(double)nsteps * 0.5*l1 + 0.5*l1;
+                double l2 = sqrt(I*I + J*J);
+                double l3 = sqrt(l1*l1 + I*I + J*J - 2*l1*J);
+                if ((l2 > l1) || (l3 > l2))
+                {
+                    res = 0;
+                }
+                else
+                {   
+                    int L2 = l2;
+                    int L3 = l3;
+                    if (L2 % 2 == 1)
+                        L2++;
+                    if (L3 % 2 == 1)
+                        L3++;
+                    res = NLG->calc_angular_B_limber(l1, L2, L3, 0, 0, 0, nu_centre, nu_width, 0, 0, 0);
+                }
+                file << abs(res) << " ";
+            }
+            file << endl;
+        }
+    }
+    /** This computes the LISW bispectrum as in a new 2D plot. **/
+    if (switch1 == 0 or switch1 == 19)
+    {
+        name = "Bispectrum_LISW_new_2D_l1200";
+        outfilename << base << name << suffix;
+        ofstream file(outfilename.str());
+        outfilename.str("");
+        
+        int l1 = 1200;
+        z = 1;
+        double nu_centre = 1420.0/(1.0+z);
+        double nu_width = 10;
+        int nsteps = 400;
+        double res;
+        for (int i = 0; i <= nsteps; i++)
+        {
+            double I = (double)i/(double)nsteps * sqrt(3)*0.5*l1;
+            for (int j = 0; j <= nsteps; j++)
+            {
+                double J = (double)j/(double)nsteps * 0.5*l1 + 0.5*l1;
+                double l2 = sqrt(I*I + J*J);
+                double l3 = sqrt(l1*l1 + I*I + J*J - 2*l1*J);
+                if ((l2 > l1) || (l3 > l2))
+                {
+                    res = 0;
+                }
+                else
+                {   
+                    int L2 = l2;
+                    int L3 = l3;
+                    if (L2 % 2 == 1)
+                        L2++;
+                    if (L3 % 2 == 1)
+                        L3++;
+                    res = LISW->calc_angular_Blll_all_config_new_parallelism(l1,L2,L3,z,z,z,0,0,0); 
+
+                }
+                file << res << " ";
+            }
+            file << endl;
+        }
     }
 }
 
@@ -3032,10 +3557,9 @@ BOOST_AUTO_TEST_CASE(check_limber_NLG)
     string iniFilename = "UnitTestData/test_params_check_sigma8.ini";
 
     // sets up a base for the output filenames.
-    string base = "plots/data/test_";
+    string base = "plots/data/theta_tests_plus/test_";
     string suffix = ".dat";
     string name;
-    stringstream outfilename, outfilename2;
 
     IniReader parser(iniFilename);
 
@@ -3058,69 +3582,63 @@ BOOST_AUTO_TEST_CASE(check_limber_NLG)
 
     int l = 100;
     int lp = l;
-    double z = 1;
-    double nu_centre = 1420.4/(1+z);
-    double nu_width = 10;
-    //double th1 = NLG->theta_for_B1(l,lp,z,nu_centre,nu_width, 500);
-    //double th2 = NLG->theta_approx(l,z,nu_centre,nu_width,0,0,0);
-    //cout << th1 << " " << th2 << endl;
-    
     //double z = 1;
-    //double nu_centre = 1420.4/(1.0 + z);
-    //double nu_width = 10.0;
-    double delta_z = 0.5;    
-    name = "theta_limber_B1";
-    outfilename << base << name << suffix;
-    name = "beta_limberB";
-    outfilename2 << base << name << suffix;
-    //double beta = NLG->Beta_integral(501, 500, z, 1000);
-
-
-    ofstream file(outfilename.str());
-    //ofstream file2(outfilename2.str());
-    //outfilename.str("");
-    vector<int> ls;
-    for (int i = 1; i < 100; i++)
+    //double nu_centre = 1420.4/(1+z);
+    
+    #pragma omp parallel num_threads(20) 
     {
-        int l = exp(i*0.1);
-        if (l % 2 == 1)
-            l++;
-        bool calc = true;
-        for (int j = 0; j < ls.size(); j++)
+        double a = 1; 
+        #pragma omp for
+        for (int i = 0; i < 40; ++i)
         {
-            if (ls[j] == l)
-            calc = false;
-        }
-        if (calc)
-            ls.push_back(l);
-        if (l < 10000 && calc)
-        {
-            //double th = NLG->theta_approx(l, z, nu_centre, nu_width, 0, 0, 0);
-            //double th_1 = NLG->theta_approx_for_B1(l, l-1, z, nu_centre, nu_width, 0, 0, 0);
-            //double th_2 = NLG->theta_for_B1(l, l-1, z, nu_centre, nu_width, 100);
-            //double th_3 = NLG->theta_for_B1(l, l-1, z, nu_centre, nu_width, 1000);
-            //double beta = NLG->Beta_integral(l, l-1, z, 1000); 
-            //double betal = NLG ->Beta_approx(l, z);
-            
-            double b = NLG->theta_approx(l, z, 1, nu_centre, nu_width, 0,0,0);
-
-            double betaB = NLG->Beta_integral(l, l-1, 1, z, 1000); 
-            //double betalB2 = NLG->Beta_approx(l, 1, z);
-            //double betalB2 = NLG->Beta_approx(l,z);
-            //double th_3 = NLG_test->theta_calc_4(l, l, z, 0, 1, delta_z, 500);
-            //double nlg = NLG->calc_Blll_limber(l, l, l, nu_centre, nu_width, 0, 0, 0);
-            //double nlg = NLG->calc_angular_B_noInterp(l,l,l,0,0,0,z);
-            //cout << l << " " << th << " " << th_1 << " " << th_2 << " " << th_3 << endl;
-            //cout << l << " " << beta << " " << betal << " " << " " << th_3 << " " << abs(beta-betal)/beta<< endl;
-            //file2 << l << " " << beta << " " << betal << " " << " " << th_3 << " " << abs(beta-betal)/beta<< endl;
-            cout  << l << " " << b << " " << betaB << endl;
-            file  << l << " " << b << " " << betaB << endl;
-            //file2 << l << " " << betaB << " " << betalB << endl;
-            //file << l << " " << th << " " << th_1 << " " << th_2 << " " << th_3 << " " << abs(th-th_2)/abs(th_2) << " " << abs(th_2-th_3)/abs(th_2) << " " << abs(th-th_3)/th_3 << endl;
+           
+            stringstream outfilename, outfilename2;
+            double nu_centre = 400 + i*10;
+            int nu = nu_centre;
+            cout << nu << endl;
+            double z = 1420.4/nu_centre -1;
+            double nu_width = 10;
+            double delta_z = 0.5;    
+            name = "theta_limber_B1_lp2_gl_nu";
+            outfilename << base << name << nu << suffix;
+            //name = "beta_limberB";
+            //outfilename2 << base << name << suffix;
+            ofstream file(outfilename.str());
+            //ofstream file2(outfilename2.str());
+            //outfilename.str("");
+            vector<int> ls;
+            for (int i = 15; i < 100; i++)
+            {
+                int l = exp(i*0.2);
+                if (l % 2 == 1)
+                    l++;
+                bool calc = true;
+                for (int j = 0; j < ls.size(); j++)
+                {
+                    if (ls[j] == l)
+                        calc = false;
+                }
+                if (calc)
+                    ls.push_back(l);
+                if (l < 10000 && calc)
+                {
+                    int ldiff = -2;
+                    int q = 0;
+                    double b = NLG->theta_approx_lm2(l, z, 0,0,0);
+                    double fl = NLG->gl(l,ldiff,z,1000);// * b;
+                    double fl_pre = NLG->interpolate_gl_for_theta_lm2(nu, l);
+                    double betaB = NLG->Beta_integral(l, l-ldiff, q, z, 1000); 
+                    cout  << l << " " << fl << " " << fl_pre << " " << b << " " << fl*b << " " <<\
+                        fl_pre*b << " " << betaB << " " << abs(fl*b-betaB)/abs(betaB) << " " <<\
+                        abs(fl_pre*b-betaB)/abs(betaB) << endl;
+                    file  << l << " " << fl << " " << fl_pre << " " << b << " " << fl*b << " " <<\
+                        fl_pre*b << " " << betaB << " " << abs(fl*b-betaB)/abs(betaB) << " " <<\
+                        abs(fl_pre*b-betaB)/abs(betaB) << endl;
+                }
+            }
         }
     }
 }
-
 BOOST_AUTO_TEST_CASE(check_wigner)
 {
     WignerPythonInterface WPI;
@@ -3148,6 +3666,117 @@ BOOST_AUTO_TEST_CASE(check_wigner)
             }
         }
     }
-    cout << WignerSymbols::wigner6j(31, 31, 31, 32, 33, 2) << " " << WPI.W6J(31,31,31,32,33,2) << endl;
+    cout << WignerSymbols::wigner6j_f(31, 31, 31, 32, 33, 2) << " " << WPI.W6J(31,31,31,32,33,2) << endl;
 }
+
+BOOST_AUTO_TEST_CASE(make_GL_files)
+{
+     // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_make_paper_plots.ini";
+
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename;
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+
+    //Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+
+    Bispectrum* NLG = new Bispectrum(analysis);
+    NLG->write_gl_for_theta_lm2(810, 10, 40);
+
+}
+BOOST_AUTO_TEST_CASE(check_mudata)
+{
+     // ini file to which the output will be compared.
+    string iniFilename = "UnitTestData/test_params_make_paper_plots.ini";
+
+    // sets up a base for the output filenames.
+    string base = "plots/data/test_";
+    string suffix = ".dat";
+    string name;
+    stringstream outfilename;
+
+    IniReader parser(iniFilename);
+
+    map<string,double> params = parser.giveRunParams();
+
+    vector<string> keys = parser.giveParamKeys();
+    string matrixPath = parser.giveMatrixPath();
+    string fisherPath = parser.giveFisherPath();
+
+    int Pk_index = 0;
+    int Tb_index = 0;
+    int q_index = 0; 
+    vector<mu_data> data_vector;
+    Model_Intensity_Mapping* model = new Model_Intensity_Mapping(params, &Pk_index, &Tb_index, &q_index);
+    IntensityMapping* analysis = new IntensityMapping(model, keys.size());
+    Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
+
+    Bispectrum* NLG = new Bispectrum(analysis);
+    
+    Bispectrum_Fisher fish(analysis, LISW, NLG, keys, fisherPath);
+
+    fish.calc_mu(4, 3, 1, 410, "lambda_LISW", &Pk_index, &Tb_index, &q_index, ALL_eff, true, data_vector);
+    fish.calc_mu(4, 3, 2, 410, "lambda_LISW", &Pk_index, &Tb_index, &q_index, ALL_eff, true, data_vector);
+    fish.calc_mu(4, 3, 3, 410, "lambda_LISW", &Pk_index, &Tb_index, &q_index, ALL_eff, true, data_vector);
+    fish.calc_mu(4, 2, 1, 410, "lambda_LISW", &Pk_index, &Tb_index, &q_index, ALL_eff, true, data_vector);
+    fish.calc_mu(4, 2, 2, 410, "lambda_LISW", &Pk_index, &Tb_index, &q_index, ALL_eff, true, data_vector);
+    stringstream filename;
+    filename << "MU_CALCULATED/testing" << "/mu_nu" << "410" << ".dat";
+    ofstream file(filename.str());
+
+    for (int i = 0; i < data_vector.size(); i++)
+    {
+        cout << data_vector[i].l1 << " " << data_vector[i].l2 << " " << data_vector[i].l3 << " " << data_vector[i].mu << endl;
+        file << data_vector[i].l1 << " " << data_vector[i].l2 << " " << data_vector[i].l3 << " " << data_vector[i].mu << endl;
+    }
+    vector<mu_data> data_vector2;
+    /*fish.read_mu_data_from_file(data_vector2, 410, "testing");
+    for (int i = 0; i < data_vector2.size(); i++)
+    {
+        cout << i << " " << data_vector2[i].l1 << " " << data_vector2[i].l2 << " " << data_vector2[i].l3 << " " << data_vector2[i].mu << endl;
+    }*/
+    cout << "------------ " << endl;
+    fish.read_mu_data_from_file(data_vector2, 410, "lambda_LISW");
+    cout << data_vector2.size() << endl;
+    cout << fish.calc_mu_read(2, 2, 2, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(83, 42, 41, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(164, 82, 82, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(245, 123, 122, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(326, 163, 163, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(407, 204, 203, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(488, 244, 244, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(569, 285, 284, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(650, 325, 325, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(731, 366, 365, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(812, 406, 406, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(893, 447, 446, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(974, 487, 487, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(1055, 528, 527, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(1136, 568, 568, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(1217, 609, 608, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(1298, 649, 649, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(1379, 690, 689, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(1460, 730, 730, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(1541, 771, 770, 410, "lambda_LISW", data_vector2) << endl; 
+    cout << fish.calc_mu_read(1541, 1521, 1320, 410, "lambda_LISW", data_vector2) << endl; 
+}
+
     // EOF
