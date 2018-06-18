@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-matplotlib.rcParams.update({'font.size':14})
+matplotlib.rcParams.update({'font.size':20})
 
 fig, ax = plt.subplots()
 
@@ -182,9 +182,9 @@ for l in range(1, 10000):
 plt.plot(ls,ys, label = r'Foreground residuals, z = 1', linewidth = 2)
 
 
-plt.legend(loc = 4)
+plt.legend(loc = 4, fontsize = 20)
 plt.ylim([1e-3,1e5])
-plt.xlabel(r'$\ell$', fontsize=18)
-plt.ylabel(r'$\ell(\ell+1)C_\ell/(2\pi)$ ($\mu$K$^2$)', fontsize=18)
+plt.xlabel(r'$\ell$', fontsize=24)
+plt.ylabel(r'$\ell(\ell+1)C_\ell/(2\pi)$ ($\mu$K$^2$)', fontsize=24)
 #plt.title(r'Angular power and foregrounds at $140 MHz$ $(z = 9.2)$')
 plt.show()

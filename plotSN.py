@@ -29,7 +29,7 @@ data1 = np.loadtxt(f1)
 #ax.set_yscale('log')
 
 #plt.xlim([2,5000])
-#plt.ylim([10E-24,10E-11])
+plt.ylim([1E-6,1E-3])
 
 
 for i in range(0, len(data1)):

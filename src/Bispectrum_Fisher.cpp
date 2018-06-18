@@ -10,7 +10,7 @@
 #define LDIV 200                // determines where the split in resolution in the l-interplotation occurs.
 #define NLOW 1000               // Number of integration steps used for low l values of theta interpolation
 #define NHIGH 1000              // Number of integration steps used for high l values of theta interpolation
-#define WRITE true            // determines whether mu computation should be computed once (true) or
+#define WRITE false            // determines whether mu computation should be computed once (true) or
                                 //   just read in from existing files (false)
 #define F_SKY true
 using namespace chrono;
@@ -414,8 +414,10 @@ double Bispectrum_Fisher::compute_Fnu(double nu, string param_key1, string param
             // done!
             log<LOG_BASIC>("Precomputing all theta interpolators.");
             steady_clock::time_point t1 = steady_clock::now();
+            // All of these are set by the main file.
             double zmax = (1420.4/this->nu_min_CLASS) - 1.0;
             double zmin = (1420.4/(this->nu_min_CLASS + this->nu_steps_CLASS * this->nu_stepsize_CLASS) - 1.0);
+            // this delta z is just taken as the integration bounds for the theta interpolation
             double delta_z = (zmax - ((1420.4/(this->nu_min_CLASS+this->nu_stepsize_CLASS)) - 1.0));
 
         

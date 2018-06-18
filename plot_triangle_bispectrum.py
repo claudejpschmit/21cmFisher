@@ -20,8 +20,8 @@ ax.annotate('', xy = (0.99,0.98), xytext=(0.52, 0.51), arrowprops=dict(arrowstyl
 ax.annotate('elongated', xy = (0.22,0.72),xytext=(0.22, 0.72), rotation=-45)
 ax.annotate('isoceles', xy = (0.1,0.72),xytext=(0.69, 0.71), rotation=45)
 #ax.annotate('$l_1 = 40$', xy = (0.8,0.54),xytext=(0.8, 0.54))#, fontsize = 16)
-plt.title('Bispectrum due to Non-Linear Gravity')
-#plt.title('Bispectrum due to LISW')
+#plt.title('Bispectrum due to Non-Linear Gravity')
+plt.title('Bispectrum due to LISW')
 #plt.title('Bispectrum due to PNG')
 
 #filename = "output/Bispectrum/Triangle_plots/Bispectrum_PNG_triangle_l40.dat"
@@ -35,7 +35,7 @@ filename2 = "plots/data/test_NLG_triangle_l"
 
 #filename = "plots/data/test_LISW_triangle_new_l"
 number = sys.argv[1]
-filename = filename + str(number) + ".dat"
+filename = filename + str(number) + "_nu900.dat"
 filename2 = filename2 + str(number) + ".dat"
 
 print filename
@@ -125,8 +125,8 @@ norm = colors.LogNorm()
 #plt.pcolor(data_reduced,norm=norm)
 plt.colorbar(cax=cax)
 plt.clim(-3,0)
-plt.title('Small difference between \n $B_{l_1l_2l_3}$ and $B_{max}$', y = 1.03)#, fontsize=16)
-plt.xlabel('\n \n Large difference between \n $B_{l_1l_2l_3}$ and $B_{max}$')#, fontsize=16)
+plt.title('Small difference between \n $B_{\ell_1\ell_2\ell_3}$ and $B_{max}$', y = 1.03)#, fontsize=16)
+plt.xlabel('\n \n Large difference between \n $B_{\ell_1\ell_2\ell_3}$ and $B_{max}$')#, fontsize=16)
 plt.ylabel(r'$\log_{10}\left(|\frac{B_{\ell_1\ell_2\ell_3}}{B_{max}}|\right)$' ,fontsize=30)
 fig.set_size_inches(5,5)
 plt.show()

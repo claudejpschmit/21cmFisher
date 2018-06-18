@@ -407,7 +407,8 @@ double IntensityMapping::Cl_noise(int l, double nu1, double nu2, bool beam_incl)
         double fcover = model->give_fiducial_params("fcover");
         //double lmax = model->give_fiducial_params("lmax_noise");
         // size of the array.
-        double D = 20;
+        double D = 20.0;
+        
         int lmax = 2.0 * PI * D * nu1 * 1000000.0 / model->c;
         // in seconds
         double t0 = model->give_fiducial_params("tau_noise");

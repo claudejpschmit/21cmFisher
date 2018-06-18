@@ -1511,7 +1511,7 @@ void Bispectrum::write_gl_for_theta_lm2(double nu_min, double nu_stepsize, int n
         
     name = "GL_function_nu";
 
-    #pragma omp parallel num_threads(20) 
+    #pragma omp parallel num_threads(10) 
     {
         double a = 1;
         #pragma omp for
@@ -2901,7 +2901,7 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
     double zmax = zc_max + 1.5 * delta_z_loc;
 
     // This is determined by how many steps are taken to integrate theta in Blll.
-    double stepsize = 0.2/100.0; 
+    double stepsize = 0.002; 
     int steps = (zmax-zmin)/stepsize;
 
     //int z_steps = ceil((zmax - zmin)/delta_z_loc);
@@ -2972,7 +2972,7 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
        
     stringstream filename;
    
-    filename << "Theta_interpolation/NEW/thetas_Pk" << Pk_i <<\
+    filename << "Theta_interpolation/FULL/thetas_Pk" << Pk_i <<\
         "_Tb" << Tb_i << "_q" << q_i << "_l" << li <<"_LDIV"<< l_div << "_NLOW" <<\
         integrationStepsLow << "_NHIGH"<< integrationStepsHigh << ".dat";
     if (read_from_file)
@@ -3008,7 +3008,6 @@ Theta Bispectrum::make_Theta_interp(int li, int lj, int q, int Pk_i, int Tb_i, i
                 };
                 double res;
            
-                
                 if (li < l_div)
                     res = integrate(integrand, lower_k_bound, higher_k_bound, integrationStepsLow, simpson());
                 else

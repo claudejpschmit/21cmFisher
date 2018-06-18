@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
         
         // the minimum and maximum of the frequency regime also affect the theta interpolation
         // to be safe leave min = 400 & max = 800
-        double nu_min = 800;
+        double nu_min = 400;
         //nu_max = 790, so between z = 0.8 and z = 2.55
         double nu_stepsize = params["nu_stepsize"];
         int n_points_per_thread = 1;
@@ -131,7 +131,8 @@ int main(int argc, char* argv[])
         //fish.compute_F_matrix(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects, limber);
         // For this, you want n_points_per_thread = 1 or 2, and n_threads = 20.
         
-        fish.compute_F_matrix_parallel_nu(nu_min, nu_stepsize, n_points_per_thread, n_threads, effects, limber);
+        fish.compute_F_matrix_parallel_nu(nu_min, nu_stepsize,\
+                n_points_per_thread, n_threads, effects, limber);
 
         t2 = steady_clock::now();
         dt = duration_cast<duration<double>>(t2-t1);

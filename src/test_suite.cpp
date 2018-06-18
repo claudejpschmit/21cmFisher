@@ -1708,7 +1708,7 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
     // 17: LISW Bispectrum 2d plot
     // 18: NLG Bispectrum new 2d plot
     // 19: LISW Bispectrum new 2d plot
-    int switch1 =  6;
+    int switch1 =  7;
     /**
      * Simple non-computational intensive plots should be implemented here.
      */
@@ -2086,11 +2086,43 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
                 file5 << l << " " << res << endl;
             }
         }
+
+        // MEERKAT
+        double Tsys = 29000;
+        double fcover = 1;
+        int l = 600;
+        double nu1 = 700;
+        double D = 13.5;
+        int lmax = 2.0 * model->pi * D * nu1 * 1000000.0 / model->c;
+        // in seconds
+        double t0 = 36000000;
+        double res = pow(2.0*model->pi,3) * Tsys*Tsys/(fcover*fcover *\ 
+                10000000 * lmax * lmax *t0);
+
+
+        double n = 8.0 * log(2.0);
+        double sigma = PI/(lmax*sqrt(n));
+        //double sigma = PI/(1500*sqrt(n));
+        double beam = exp(sigma*sigma*l*l);
+        double noiseM = beam * res;
+    
+        // CHIME
+        Tsys = 50000;
+        D = 20;
+        lmax = 2.0 * model->pi * D * nu1 * 1000000.0 / model->c;
+        res = pow(2.0*model->pi,3) * Tsys*Tsys/(fcover*fcover *\ 
+                10000000 * lmax * lmax *t0);
+        sigma = PI/(lmax*sqrt(n));
+        //double sigma = PI/(1500*sqrt(n));
+        beam = exp(sigma*sigma*l*l);
+        double noiseC = beam * res;
+        cout << noiseM << " " << noiseC << endl;
+
     }
     /** triangular plots for NLG Bispectrum **/
     if (switch1 == 0 or switch1 == 7)
     {
-        name = "NLG_triangle_new_l1200";
+        name = "NLG_triangle_new_l1200_nu900";
         outfilename << base << name << suffix;
         ofstream file(outfilename.str());
         outfilename.str("");
@@ -2098,7 +2130,8 @@ BOOST_AUTO_TEST_CASE(make_paper_plots)
         int l1 = lmax;
         int lmin1 = l1/2;
         z = 1;
-        double nu_centre = 1420.0/(1.0+z);
+        double nu_centre = 900;
+        //double nu_centre = 1420.0/(1.0+z);
         double nu_width = 10;
         for (int l2 = lmin1; l2 <= l1; l2++)
         {
@@ -3699,7 +3732,7 @@ BOOST_AUTO_TEST_CASE(make_GL_files)
     //Bispectrum_LISW* LISW = new Bispectrum_LISW(analysis, keys.size());
 
     Bispectrum* NLG = new Bispectrum(analysis);
-    NLG->write_gl_for_theta_lm2(810, 10, 40);
+    NLG->write_gl_for_theta_lm2(300, 10, 10);
 
 }
 BOOST_AUTO_TEST_CASE(check_mudata)
